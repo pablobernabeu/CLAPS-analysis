@@ -1,0 +1,50 @@
+# config/arc_modules.yaml
+# ARC module names for the CLAPS workflow.
+# NOTE: Module names on ARC may change. Verify with `module avail R` and
+#       `module avail cmdstan` on the target cluster before submitting jobs.
+#       Update this file and the SLURM scripts if module names differ.
+#
+# Implementation note (UNRESOLVED):
+#   The exact R module name on ARC as of project start is unknown.
+#   Common ARC R module names include: R/4.3.1-foss-2023a, R/4.4.0, R.
+#   Set ARC_R_MODULE in your environment or update the scripts.
+#   Similarly, a Quarto module may be available as quarto or quarto/1.x.
+
+r:
+  module: "R"                   # Override with ARC_R_MODULE env var
+  min_version: "4.3.0"
+  notes: >
+    Check available versions with: module spider R
+    Recommended: load the latest R/4.x.x-foss-20xx or equivalent.
+
+cmdstan:
+  module: "cmdstan"             # May not be available; install via cmdstanr if absent
+  notes: >
+    If not available as a module, install via:
+      Rscript -e "cmdstanr::install_cmdstan(cores = 4)"
+    on an interactive node. CmdStan will be placed in ~/.cmdstan/.
+
+quarto:
+  module: "quarto"              # May not be available as a module
+  notes: >
+    If not available, install Quarto CLI manually and add to PATH.
+    Download from https://quarto.org/docs/download/
+
+gcc:
+  module: "GCC"                 # Required for CmdStan compilation
+  notes: >
+    GCC or a compatible C++ compiler is required for Stan.
+    Usually loaded as a dependency of the R module on ARC.
+
+# Default module purge and load sequence for SLURM scripts
+load_sequence:
+  - "module purge"
+  - "module load ${ARC_R_MODULE:-R}"
+  - "# optional: module load cmdstan"
+  - "# optional: module load quarto"
+
+# Environment variables set in every SLURM script
+env_vars:
+  OMP_NUM_THREADS:    "${SLURM_CPUS_PER_TASK:-1}"
+  STAN_NUM_THREADS:   "${SLURM_CPUS_PER_TASK:-1}"
+  CMDSTANR_OUTPUT_DIR: "${TMPDIR:-outputs/cmdstan_tmp}"

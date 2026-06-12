@@ -1,0 +1,31 @@
+# Human-subjects data — not distributed in this public repository
+/data/
+
+# R session and renv library
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+renv/library/
+renv/staging/
+
+# Quarto and LaTeX build artefacts
+/.quarto/
+*_files/
+*.aux
+*.log
+*.out
+*.synctex.gz
+
+# Large per-simulation intermediates (committed summaries supersede these)
+outputs/**/prior_sensitivity.csv
+
+# Heavy raw fit outputs (kept on the cluster, not distributed)
+outputs/design_analysis/
+outputs/cmdstan_tmp/
+outputs/logs/
+outputs/pilot_models/
+
+# OS cruft
+.DS_Store
+Thumbs.db

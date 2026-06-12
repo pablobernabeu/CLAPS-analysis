@@ -1,0 +1,14 @@
+# bf_calibration_subset.txt
+# One row per design_grid.csv row index to include in the BF calibration check.
+# These cells run both Savage-Dickey and bridge sampling to validate agreement.
+# Populated after the main design analysis grid is defined.
+# Format: one integer per line (1-based row index into config/design_grid.csv).
+# -------------------------------------------------------------------------
+# PLACEHOLDER — edit before running hpc/submit_bf_calibration_array.sh
+# Recommended: select ~20 diverse cells covering all languages and prior regimes.
+# -------------------------------------------------------------------------
+1
+5
+10
+15
+20

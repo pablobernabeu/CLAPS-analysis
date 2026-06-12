@@ -1,0 +1,146 @@
+# config/analysis_config.yaml
+# Central configuration for the CLAPS Bayesian ordinal workflow.
+# Edit this file to adjust resource allocations, paths, and model defaults.
+# All paths are relative to the project root.
+
+project:
+  name: "CLAPS Bayesian Ordinal Workflow"
+  version: "1.0.0"
+  pi: "Pablo"
+  institution: "University of Oxford"
+
+# ---------------------------------------------------------------------------
+# Data paths
+# ---------------------------------------------------------------------------
+pilot_data_path: "data/pilot/claps_pilot_harmonised.csv"
+confirmatory_data_path: null   # Set when confirmatory data are collected
+
+# ---------------------------------------------------------------------------
+# Languages and pseudo-passive configuration
+# ---------------------------------------------------------------------------
+languages:
+  English:
+    has_pseudo_passive: true
+  Turkish:
+    has_pseudo_passive: true
+  Norwegian:
+    has_pseudo_passive: false
+    exclude_synthetic_passive: true   # Preregistered: synthetic passive excluded
+  Balinese:
+    has_pseudo_passive: false
+  # Add additional languages here as data become available
+
+# ---------------------------------------------------------------------------
+# Model defaults
+# ---------------------------------------------------------------------------
+model:
+  family: "cumulative"
+  link: "logit"
+  threshold: "flexible"
+  backend: "cmdstanr"
+  sample_prior: "yes"
+  adapt_delta: 0.99
+  max_treedepth: 12          # Diagnostic escalation only; do not increase ad hoc
+  # Heavy sampler: reserved for the one-off maximal-model convergence demonstration
+  # (establishing the maximal feasible model). Power-analysis replicates use the
+  # lighter `replication_sampler` below (see scripts/generate_design_grid.R).
+  iter: 5000
+  warmup: 2000
+  chains: 16
+  cores: 16
+  seed: 2025
+
+# Per-replicate sampler for the Bayes-factor power analysis. Standard BFDA
+# settings: enough chains/draws for a reliable single BF per fit, far cheaper
+# than the convergence-demo sampler, so many replicates run concurrently. Every
+# replicate is still convergence-checked (R-hat < 1.01, ESS >= 400, 0 divergences).
+replication_sampler:
+  chains: 4
+  iter: 3000
+  warmup: 1000
+  adapt_delta: 0.99
+  max_treedepth: 12
+
+# Response variable and predictor names
+response_var: "Response"
+semantics_var: "Semantics_scaled"
+
+# Model variations. The gender variation adds a referent-gender covariate
+# (Man/Woman, parsed from Item) and sources the focal affectedness predictor
+# from affectedness_scores_agent (agent/gender-specific) instead of the default
+# whole-event affectedness. In the design analysis it is selected per design-grid
+# row (include_gender / beta_gender columns); on real data it is selected per
+# script via --include_gender and --semantics_source.
+model_variations:
+  baseline:
+    include_gender: false
+    semantics_source: null            # keep existing Semantics (affectedness_scores_all)
+  gender:
+    include_gender: true
+    semantics_source: "affectedness_scores_agent"
+
+# ---------------------------------------------------------------------------
+# Prior defaults
+# ---------------------------------------------------------------------------
+default_prior_regime: "proposal"
+default_threshold_mode: "broad"
+
+# Ceiling calibration
+ceiling_calibration:
+  smooth_alpha: 0.5   # Dirichlet smoothing for cumulative probabilities
+
+# ---------------------------------------------------------------------------
+# Design analysis
+# ---------------------------------------------------------------------------
+design_analysis:
+  n_simulations_per_cell: 200        # replicates per single-language/gender design point (power estimate)
+  n_simulations_per_cell_cross: 50   # replicates per cross-language design point (8-12 h/fit, so fewer)
+  bf_threshold_primary: 10
+  bf_threshold_secondary: 3
+  success_metric: "bayes_factor"   # Never change to posterior_probability
+
+# ---------------------------------------------------------------------------
+# HPC resource defaults (ARC arc cluster)
+# ---------------------------------------------------------------------------
+hpc:
+  cluster: "arc"
+  partition: "long"
+  walltime: "7-00:00:00"
+  cpus_per_task: 16
+  mem_gb: 64
+
+  # HTC high-memory rescue path (CPU only, no GPU)
+  htc_rescue:
+    cluster: "htc"
+    partition: "long"
+    walltime: "7-00:00:00"
+    cpus_per_task: 16
+    mem_gb: 256
+
+# ---------------------------------------------------------------------------
+# Output directories
+# ---------------------------------------------------------------------------
+outputs:
+  pilot_models:      "outputs/pilot_models"
+  design_analysis:   "outputs/design_analysis"
+  prior_sensitivity: "outputs/prior_sensitivity"
+  bf_calibration:    "outputs/bf_calibration"
+  design_summary:    "outputs/design_summary"
+  prior_predictive:  "outputs/prior_predictive"
+  reference_audit:   "outputs/reference_audit"
+  logs:              "outputs/logs"
+  cmdstan_tmp:       "outputs/cmdstan_tmp"
+
+# ---------------------------------------------------------------------------
+# Reproducibility
+# ---------------------------------------------------------------------------
+renv:
+  use_renv: true
+  lockfile: "renv.lock"
+
+targets:
+  use_targets: true
+  store: "_targets"
+
+serialization:
+  format: "qs"   # Compact binary; alternatives: rds, qs2

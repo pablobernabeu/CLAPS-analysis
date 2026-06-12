@@ -1,0 +1,7 @@
+level_name,description,formula_participant_re,formula_verb_re,n_participant_params_approx,use_if_higher_fails
+L5_correlated_maximal,"Maximal correlated random effects for participants and verbs. Theoretically justified by design. Try first.","(1 + S_Type * Semantics_scaled | Participant)","(1 + S_Type | Verb)",15,never_skip_to_lower
+L4_uncorrelated_maximal,"Uncorrelated random effects (||). Reduces correlation parameters; use if L5 fails OOM or divergences.","(1 + S_Type * Semantics_scaled || Participant)","(1 + S_Type || Verb)",9,L5_failed
+L3_no_participant_interaction_slope,"Drop participant interaction slope; retain S_Type and Semantics slopes separately.","(1 + S_Type + Semantics_scaled || Participant)","(1 + S_Type || Verb)",7,L4_failed
+L2_sentence_type_slopes_only,"Participant and verb S_Type slopes only; drop Semantics random slope.","(1 + S_Type || Participant)","(1 + S_Type || Verb)",5,L3_failed
+L1_random_intercepts_plus_participant_semantics,"Participant Semantics slope only; verb intercepts only.","(1 + Semantics_scaled || Participant)","(1 | Verb)",4,L2_failed
+L0_random_intercepts_only,"Intercepts only for participants and verbs. Last resort.","(1 | Participant)","(1 | Verb)",2,L1_failed

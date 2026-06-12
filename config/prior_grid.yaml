@@ -1,0 +1,125 @@
+# config/prior_grid.yaml
+#
+# Complete prior sensitivity grid for the CLAPS Bayesian ordinal workflow.
+# Four prior regimes x two threshold modes = 8 cells per language per
+# model level. Authoritative implementation is in R/03_define_priors.R;
+# the values here are kept synchronised for documentation and for the
+# R/00_reference_audit.R cross-check.
+#
+# Citation keys refer to entries in references.bib.
+
+prior_regimes:
+
+  proposal:
+    role: primary
+    description: >
+      Weakly-to-moderately informative, zero-centred Gaussian priors on
+      focal slopes with scales chosen to cover the previously observed
+      cross-language range of passive affectedness effects without
+      pre-loading the directional Bayes-factor test.
+    citations:
+      - "@gelmanJakulinPittauSu2008"
+      - "@gelmanSimpsonBetancourt2017"
+      - "@burknerVuorre2019"
+      - "@ambridgeArnonBekman2023"
+      - "@schadNicenboimBurknerBetancourtVasishth2023"
+    priors:
+      b_default:    "normal(0, 1.5)"
+      b_semantics:  "normal(0, 0.5)"
+      b_active_int: "normal(0, 0.5)"
+      b_pseudo_int: "normal(0, 0.6)"
+      Intercept:    "student_t(3, 0, 2.5)"
+      sd:           "student_t(3, 0, 1)"
+      cor:          "lkj(2)"
+
+  weak:
+    role: sensitivity
+    description: >
+      Weakly informative priors. Sensitivity check that conclusions are
+      not driven by the more concentrated proposal priors.
+    citations:
+      - "@schadNicenboimBurknerBetancourtVasishth2023"
+    priors:
+      b_default:    "normal(0, 2)"
+      b_semantics:  "normal(0, 1)"
+      b_active_int: "normal(0, 1)"
+      b_pseudo_int: "normal(0, 1)"
+      Intercept:    "student_t(3, 0, 2.5)"
+      sd:           "student_t(3, 0, 2)"
+      cor:          "lkj(1)"
+
+  literature_centred:
+    role: sensitivity_only
+    description: >
+      Sensitivity-only regime. Focal-slope priors are centred on pooled
+      previously observed values across English, Indonesian, Balinese,
+      Hebrew and Mandarin. This regime encodes the predicted direction
+      and is therefore reported as a sensitivity check rather than the
+      primary BF source.
+    citations:
+      - "@ambridgeBidgoodPineRowlandFreudenthal2016"
+      - "@ambridgeArnonBekman2023"
+      - "@aryawibawaAmbridge2018"
+      - "@darmasetiyawanAmbridge2022"
+      - "@liuAmbridge2021"
+    priors:
+      b_default:    "normal(0, 1.5)"
+      b_semantics:  "normal(0.47, 0.35)"
+      b_active_int: "normal(-0.31, 0.4)"
+      b_pseudo_int: "normal(-0.36, 0.5)"
+      Intercept:    "student_t(3, 0, 2.5)"
+      sd:           "student_t(3, 0, 1)"
+      cor:          "lkj(2)"
+
+  heavy_tailed:
+    role: robustness
+    description: >
+      Student-t priors on the focal slopes for robustness to larger
+      language-specific effects without inflating prior mass at zero.
+    citations:
+      - "@gelmanJakulinPittauSu2008"
+    priors:
+      b_default:    "student_t(3, 0, 1.5)"
+      b_semantics:  "student_t(3, 0, 0.5)"
+      b_active_int: "student_t(3, 0, 0.5)"
+      b_pseudo_int: "student_t(3, 0, 0.6)"
+      Intercept:    "student_t(3, 0, 2.5)"
+      sd:           "student_t(3, 0, 1)"
+      cor:          "lkj(2)"
+
+threshold_modes:
+
+  broad:
+    role: primary
+    description: >
+      Generic Student-t(3, 0, 2.5) prior on every ordinal intercept.
+      Wide enough to permit thresholds anywhere on the logit scale of a
+      1-7 Likert scale while remaining proper (required for valid
+      Bayes factors).
+    citations:
+      - "@burknerVuorre2019"
+      - "@schadNicenboimBurknerBetancourtVasishth2023"
+
+  ceiling_calibrated:
+    role: sensitivity
+    description: >
+      Per-threshold normal priors centred on logit cumulative response
+      proportions from an independent pilot sample. Used for languages
+      with documented ceiling effects (e.g. Turkish). The pilot sample
+      is enforced disjoint from the confirmatory sample by
+      split_pilot_confirmatory() in R/01_read_validate_data.R.
+    citations:
+      - "@burknerVuorre2019"
+      - "@schadBetancourtVasishth2021"
+    smooth_alpha: 0.5
+
+# Full sensitivity grid (8 combinations)
+grid:
+  - { regime: proposal,           threshold: broad }
+  - { regime: proposal,           threshold: ceiling_calibrated }
+  - { regime: weak,               threshold: broad }
+  - { regime: weak,               threshold: ceiling_calibrated }
+  - { regime: literature_centred, threshold: broad }
+  - { regime: literature_centred, threshold: ceiling_calibrated }
+  - { regime: heavy_tailed,       threshold: broad }
+  - { regime: heavy_tailed,       threshold: ceiling_calibrated }
