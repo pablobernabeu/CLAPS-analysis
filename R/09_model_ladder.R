@@ -46,7 +46,7 @@ run_model_ladder <- function(df,
                               start_level        = "L5_correlated_maximal",
                               out_dir            = "outputs/models",
                               language           = "unknown",
-                              prior_label        = "proposal",
+                              prior_label        = "primary",
                               include_gender     = FALSE,
                               overwrite          = FALSE) {
   ladder      <- build_model_ladder(has_pseudo_passive = has_pseudo_passive,

@@ -82,7 +82,7 @@ model_variations:
 # ---------------------------------------------------------------------------
 # Prior defaults
 # ---------------------------------------------------------------------------
-default_prior_regime: "proposal"
+default_prior_regime: "primary"
 default_threshold_mode: "broad"
 
 # Ceiling calibration

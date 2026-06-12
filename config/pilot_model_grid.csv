@@ -1,9 +1,9 @@
 language,model_level,prior_regime,threshold_mode,n_participants,n_verbs,seed,notes
-English,L5,proposal,broad,40,20,2025,Primary English pilot cell
-English,L5,proposal,ceiling_calibrated,40,20,2026,English ceiling-calibrated thresholds
-English,L4,proposal,broad,40,20,2027,English L4 fallback check
-Turkish,L5,proposal,broad,40,20,2028,Primary Turkish pilot (has Pseudo_Passive)
-Turkish,L5,proposal,ceiling_calibrated,40,20,2029,Turkish ceiling-calibrated
-Turkish,L4,proposal,broad,40,20,2030,Turkish L4 fallback
-Norwegian,L5,proposal,broad,40,20,2031,Primary Norwegian pilot
-Norwegian,L5,proposal,ceiling_calibrated,40,20,2032,Norwegian ceiling-calibrated
+English,L5,primary,broad,40,20,2025,Primary English pilot cell
+English,L5,primary,ceiling_calibrated,40,20,2026,English ceiling-calibrated thresholds
+English,L4,primary,broad,40,20,2027,English L4 fallback check
+Turkish,L5,primary,broad,40,20,2028,Primary Turkish pilot (has Pseudo_Passive)
+Turkish,L5,primary,ceiling_calibrated,40,20,2029,Turkish ceiling-calibrated
+Turkish,L4,primary,broad,40,20,2030,Turkish L4 fallback
+Norwegian,L5,primary,broad,40,20,2031,Primary Norwegian pilot
+Norwegian,L5,primary,ceiling_calibrated,40,20,2032,Norwegian ceiling-calibrated

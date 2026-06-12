@@ -66,7 +66,7 @@ the other pilot-data scripts, cannot be run without the withheld data.
 
 | Regime               | Role                                          |
 |----------------------|-----------------------------------------------|
-| `proposal`           | Moderately informative; design-analysis default |
+| `primary`           | Moderately informative; design-analysis default |
 | `weak`               | Wider-prior sensitivity check                 |
 | `literature_centred` | Direction-encoding sensitivity check          |
 | `heavy_tailed`       | Student-t robustness check                    |

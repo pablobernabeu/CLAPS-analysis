@@ -31,12 +31,10 @@ echo "Remote home: $REMOTE_WD"
 
 echo ""
 echo "[2/4] Searching for log directories..."
-# Search common locations: ~/design_analysis/outputs/logs, ~/outputs/logs, ~/private_Pablo_CLAPS/design_analysis/outputs/logs
+# Search common locations: ~/design_analysis/outputs/logs, ~/outputs/logs
 SEARCH_PATHS=(
   "design_analysis/outputs/logs"
   "outputs/logs"
-  "private_Pablo_CLAPS/design_analysis/outputs/logs"
-  "OneDrive*/Documents/GitHub/private_Pablo_CLAPS/design_analysis/outputs/logs"
 )
 
 FOUND_PATH=""

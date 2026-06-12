@@ -129,14 +129,14 @@ maximal_feasible_model <- function(df) {
 #' Recommended sample size: per language, the smallest n_participants at which
 #' BOTH focal hypotheses exceed the primary BF threshold with probability >=
 #' target, evaluated at that language's maximal feasible model and the primary
-#' (proposal) prior regime. NA if the target is not reached anywhere in the grid.
+#' (primary) prior regime. NA if the target is not reached anywhere in the grid.
 #' NOTE: a trustworthy exceedance *probability* needs many simulations per design
 #' point (config `design_analysis$n_simulations_per_cell`); with one simulation
 #' per cell this is an indicative 0/1 estimate, not a stable probability.
 recommended_sample_size <- function(exc, mfm, target = 0.80,
                                     focal = c("H1a_semantics_positive",
                                               "H1b_active_interaction_negative"),
-                                    regime = "proposal") {
+                                    regime = "primary") {
   empty <- tibble::tibble(language = character(), recommended_n_participants = integer(),
                           n_verbs = integer(), meets_target = logical(),
                           target = numeric(), regime = character())

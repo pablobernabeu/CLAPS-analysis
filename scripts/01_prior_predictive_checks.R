@@ -2,7 +2,7 @@
 # scripts/01_prior_predictive_checks.R
 # Run prior predictive simulations for each prior regime × threshold mode × language.
 # Saves plots and summary statistics to outputs/prior_predictive/.
-# Usage: Rscript scripts/01_prior_predictive_checks.R --language English --prior proposal --threshold broad
+# Usage: Rscript scripts/01_prior_predictive_checks.R --language English --prior primary --threshold broad
 
 suppressPackageStartupMessages({
   library(brms)
@@ -21,7 +21,7 @@ source("R/04_model_formulas.R")
 # ---------------------------------------------------------------------------
 option_list <- list(
   optparse::make_option("--language",  default = "English",  help = "Language label"),
-  optparse::make_option("--prior",     default = "proposal", help = "Prior regime name"),
+  optparse::make_option("--prior",     default = "primary", help = "Prior regime name"),
   optparse::make_option("--threshold", default = "broad",    help = "Threshold mode"),
   optparse::make_option("--config",    default = "config/analysis_config.yaml"),
   optparse::make_option("--outdir",    default = "outputs/prior_predictive"),

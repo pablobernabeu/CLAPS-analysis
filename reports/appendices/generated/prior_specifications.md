@@ -13,7 +13,7 @@ and t a Student-t prior:
 
 | Regime | default | semantics | active | pseudo | Intercept | sd | cor |
 |---|---|---|---|---|---|---|---|
-| proposal | N(0, 1.5) | N(0, 0.5) | N(0, 0.5) | N(0, 0.6) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |
+| primary | N(0, 1.5) | N(0, 0.5) | N(0, 0.5) | N(0, 0.6) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |
 | weak | N(0, 2) | N(0, 1) | N(0, 1) | N(0, 1) | t(3, 0, 2.5) | t(3, 0, 2) | lkj(1) |
 | literature_centred | N(0, 1.5) | N(0.47, 0.35) | N(-0.31, 0.4) | N(-0.36, 0.5) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |
 | heavy_tailed | t(3, 0, 1.5) | t(3, 0, 0.5) | t(3, 0, 0.5) | t(3, 0, 0.6) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |

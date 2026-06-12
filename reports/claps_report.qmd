@@ -34,15 +34,17 @@ format:
         % Figures use a \\ break; kable tables are longtables, where \\ is unsafe,
         % so they take a \par break instead.
         \usepackage{caption}
-        \DeclareCaptionFormat{apa7}{\textbf{#1}\\[5pt]\textbf{#3}}
-        \DeclareCaptionFormat{apa7par}{\textbf{#1}\par\textbf{#3}}
-        \captionsetup{format=apa7, labelsep=none, justification=raggedright,
-          singlelinecheck=false, skip=6pt}
-        \captionsetup[longtable]{format=apa7par, labelsep=none,
+        % Bold label via labelfont=bf (reliable), italic title via textfont=it;
+        % the format only controls the line break between them.
+        \DeclareCaptionFormat{apa7}{#1\\[5pt]#3}
+        \DeclareCaptionFormat{apa7par}{#1\par\vspace{5pt}#3}
+        \captionsetup{format=apa7, labelsep=none, labelfont=bf, textfont=it,
           justification=raggedright, singlelinecheck=false, skip=6pt}
+        \captionsetup[longtable]{format=apa7par, labelsep=none, labelfont=bf,
+          textfont=it, justification=raggedright, singlelinecheck=false, skip=6pt}
         % Balance the vertical space around in-text figures and longtables.
-        \setlength{\intextsep}{6pt plus 2pt minus 2pt}
-        \setlength{\LTpre}{6pt}
+        \setlength{\intextsep}{11pt plus 2pt minus 2pt}
+        \setlength{\LTpre}{11pt}
         \setlength{\LTpost}{6pt}
 execute:
   echo: false
@@ -190,7 +192,7 @@ order-of-magnitude anchors for the log-odds-scale priors below, not as exact
 transcriptions; the prior scales are deliberately wide enough to absorb the resulting
 scale uncertainty.
 
-The primary `proposal` prior set therefore uses zero-centred Gaussians concentrated
+The `primary` prior set therefore uses zero-centred Gaussians concentrated
 enough to cover the previously observed range without pre-loading the directional
 Bayes factor test. The Semantics slope receives `normal(0, 0.5)`, which places
 approximately 95% of prior mass between −1 and +1. The active–passive interaction
@@ -217,7 +219,7 @@ bridge sampling under all four regimes provides calibration
 [@gronauSarafoglouEtAl2017; @gronauSingmannWagenmakers2020].
 
 The four-regime sensitivity grid follows @schadNicenboimBurknerBetancourtVasishth2023:
-the `proposal` regime is zero-centred and weakly-to-moderately informative; `weak`
+the `primary` regime is zero-centred and weakly-to-moderately informative; `weak`
 relaxes all focal-slope scales; `literature_centred` is sensitivity-only and
 direction-encoding; `heavy_tailed` substitutes Student-t for Gaussian focal-slope
 priors.
@@ -348,7 +350,7 @@ divergent conclusions.
 #| fig-dpi: 300
 pilot_csv <- "../data/pilot/claps_pilot_harmonised.csv"
 if (file.exists(pilot_csv)) {
-  pal_g <- c("Passive" = "#0072B2", "Active" = "#D55E00", "Pseudo-passive" = "#009E73")
+  pal_g <- c("Passive" = "#0072B2", "Active" = "#D55E00", "Pseudo-Passive" = "#009E73")
   dg <- readr::read_csv(pilot_csv, show_col_types = FALSE) |>
     dplyr::mutate(Gender = sub(".*_", "", Item)) |>
     dplyr::filter(S_Type %in% c("Passive", "Active", "Pseudo_Passive"),
@@ -358,7 +360,7 @@ if (file.exists(pilot_csv)) {
     dplyr::ungroup() |>
     dplyr::mutate(
       S_Type   = factor(S_Type, levels = c("Passive", "Active", "Pseudo_Passive"),
-                        labels = c("Passive", "Active", "Pseudo-passive")),
+                        labels = c("Passive", "Active", "Pseudo-Passive")),
       Gender   = factor(Gender, levels = c("Man", "Woman")),
       Language = factor(Language, levels = c("English", "Turkish", "Norwegian")))
   ggplot2::ggplot(dg, ggplot2::aes(affect_z, Response, colour = S_Type, fill = S_Type)) +
@@ -369,9 +371,9 @@ if (file.exists(pilot_csv)) {
     ggplot2::scale_colour_manual(values = pal_g) +
     ggplot2::scale_fill_manual(values = pal_g) +
     ggplot2::scale_y_continuous(breaks = 1:7, limits = c(0.5, 7.5)) +
-    ggplot2::labs(x = "Agent semantic affectedness (z-scored within language)",
-                  y = "Acceptability rating",
-                  colour = "Sentence type", fill = "Sentence type") +
+    ggplot2::labs(x = "Agent Semantic Affectedness (z-Scored Within Language)",
+                  y = "Acceptability Rating",
+                  colour = "Sentence Type", fill = "Sentence Type") +
     ggplot2::guides(colour = ggplot2::guide_legend(title.position = "top"),
                     fill   = ggplot2::guide_legend(title.position = "top")) +
     ggplot2::theme_bw(base_size = 10) +
@@ -394,7 +396,7 @@ if (file.exists(pilot_csv)) {
 ```
 
 ```{=latex}
-\vspace{-1.5em}
+\vspace{-1.9em}
 ```
 
 *Note.* Points are individual ratings (jittered). Lines show per-sentence-type linear trends. The Norwegian pilot has no pseudo-passive. Pilot data are used for calibration only.
@@ -420,7 +422,7 @@ retained.
 ## Prior Sensitivity Results
 
 The sensitivity analysis evaluates how Bayes-factor estimates and posterior summaries
-change across the four prior regimes (proposal, weak, literature-centred and
+change across the four prior regimes (primary, weak, literature-centred and
 heavy-tailed) and the two threshold modes (broad and ceiling-calibrated). The
 quantitative four-regime comparison, computed on the design-analysis simulations, is
 reported in Part III under Prior Sensitivity of BF Category. At the pilot stage the
@@ -437,7 +439,7 @@ distributions more consistent with the Turkish pilot response profile.
 
 ## Conclusions for Prior Determination
 
-The pilot analysis fixes the inputs to the design analysis. The `proposal` prior is
+The pilot analysis fixes the inputs to the design analysis. The `primary` prior is
 retained as prespecified, with `ceiling_calibrated` thresholds for Turkish, where the
 pilot ratings clustered at the upper end. The maximal feasible model is the
 correlated-maximal structure (L5) for each single language and the uncorrelated
@@ -496,7 +498,7 @@ if (file.exists(fail_path)) {
 
 The probability of exceeding the Bayes-factor thresholds rises with sample size for
 every focal hypothesis. The figure shows the power curves for the two focal
-hypotheses under the proposal prior. The full operating characteristics across all
+hypotheses under the primary prior. The full operating characteristics across all
 conditions, prior regimes and hypotheses are tabulated in Appendix D.
 
 ```{r}
@@ -508,7 +510,7 @@ exc_path <- file.path(SUM_DIR, "bf_exceedance.csv")
 if (file.exists(exc_path)) {
   exc_df <- readr::read_csv(exc_path, show_col_types = FALSE)
   plot_df <- exc_df |>
-    dplyr::filter(prior_regime == "proposal", n_verbs == 20,
+    dplyr::filter(prior_regime == "primary", n_verbs == 20,
                   hypothesis %in% c("H1a_semantics_positive",
                                     "H1b_active_interaction_negative"),
                   model_level %in% c("L5_correlated_maximal",
@@ -517,7 +519,7 @@ if (file.exists(exc_path)) {
       Hypothesis = ifelse(hypothesis == "H1a_semantics_positive", "H1a", "H1b"),
       language   = factor(language,
                           levels = c("English", "Norwegian", "Turkish", "AllLanguages"),
-                          labels = c("English", "Norwegian", "Turkish", "All (pooled)"))
+                          labels = c("English", "Norwegian", "Turkish", "All (Pooled)"))
     )
   pc_labels <- plot_df |>
     dplyr::filter(n_participants == 50) |>
@@ -541,7 +543,7 @@ if (file.exists(exc_path)) {
       limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
     ggplot2::scale_colour_manual(values = c(H1a = "#0072B2", H1b = "#D55E00")) +
     ggplot2::labs(
-      x = expression(paste("Participants per language (", italic(N), ")")),
+      x = expression(paste("Participants per Language (", italic(N), ")")),
       y = expression(italic(P)(BF[10] > 10))) +
     ggplot2::guides(colour = "none") +
     ggplot2::theme_minimal(base_size = 10) +
@@ -560,10 +562,10 @@ if (file.exists(exc_path)) {
 ```
 
 ```{=latex}
-\vspace{-1.5em}
+\vspace{-1.9em}
 ```
 
-*Note.* Points are exceedance probabilities, *P*(*BF*~10~ > 10), under the proposal prior. The dashed line marks the conventional 80% target. The pooled cross-language analysis was simulated to *N* = 60.
+*Note.* Points are exceedance probabilities, *P*(*BF*~10~ > 10), under the primary prior. The dashed line marks the conventional 80% target. The pooled cross-language analysis was simulated to *N* = 60.
 
 ## Prior Sensitivity of BF Category
 
@@ -581,7 +583,7 @@ if (file.exists(sens_path)) {
   sens_exc <- readr::read_csv(sens_path, show_col_types = FALSE) |>
     dplyr::filter(hypothesis %in% sens_focal, n_verbs == 20,
                   model_level == "L5_correlated_maximal")
-  # The non-proposal regimes were simulated at a single anchor sample size, so
+  # The non-primary regimes were simulated at a single anchor sample size, so
   # report the N at which the most prior regimes are available.
   anchor_n <- sens_exc |>
     dplyr::group_by(n_participants) |>
@@ -594,7 +596,7 @@ if (file.exists(sens_path)) {
                   power = round(100 * p_bf_primary)) |>
     dplyr::select(Language = language, Hypothesis, prior_regime, power) |>
     tidyr::pivot_wider(names_from = prior_regime, values_from = power) |>
-    dplyr::relocate(dplyr::any_of("proposal"), .after = Hypothesis) |>
+    dplyr::relocate(dplyr::any_of("primary"), .after = Hypothesis) |>
     dplyr::arrange(Language, Hypothesis)
   knitr::kable(
     sens_tbl,

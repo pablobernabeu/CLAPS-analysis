@@ -39,7 +39,7 @@ per row:
 
 | Grid | Rows | Conditions |
 |------|------|-----------|
-| `config/design_grid_single.csv` | 4200 | 3 langs × (N∈{30,40,50,60} proposal + {weak,literature_centred,heavy_tailed}@N50) × 200 |
+| `config/design_grid_single.csv` | 4200 | 3 langs × (N∈{30,40,50,60} primary + {weak,literature_centred,heavy_tailed}@N50) × 200 |
 | `config/design_grid_gender.csv` | 2400 | 3 langs × N∈{30,40,50,60} × gender variation × 200 |
 | `config/design_grid_cross.csv`  | 200  | AllLanguages L4 cross-uncorrelated × N∈{30,40,50,60} × 50 |
 
@@ -78,7 +78,7 @@ echo "single=$JS gender=$JG cross=$JC aggregate=$JA render=$JR"
 ## Monitoring
 
 ```bash
-ssh arc-agent "sacct -j <JOBID> --format=JobID,State,Elapsed --noheader | grep -vE 'batch|extern'"
+ssh <arc-host> "sacct -j <JOBID> --format=JobID,State,Elapsed --noheader | grep -vE 'batch|extern'"
 ```
 
 A SLURM array reports `COMPLETED` even when a cell catches a fit error and exits 0:

@@ -31,7 +31,7 @@
 #
 # Four prior regimes are defined:
 #
-#   1. proposal             - primary, weakly-to-moderately informative,
+#   1. primary             - primary, weakly-to-moderately informative,
 #                              focal slopes zero-centred but scaled to
 #                              previously observed magnitudes
 #   2. weak                  - weak-prior sensitivity check
@@ -113,7 +113,7 @@ PRIOR_REGIMES <- list(
   # (Gelman et al., 2008, 2017). Threshold, sd and cor priors follow
   # Bürkner & Vuorre (2019), Gelman (2006), Chung et al. (2015),
   # Simpson et al. (2017) and Lewandowski et al. (2009).
-  proposal = list(
+  primary = list(
     b_default     = "normal(0, 1.5)",
     b_semantics   = "normal(0, 0.5)",
     b_active_int  = "normal(0, 0.5)",
@@ -235,7 +235,7 @@ compute_ceiling_calibrated_thresholds <- function(pilot_df,
 #' @param has_pseudo_passive Logical; whether the language has a
 #'   Pseudo_Passive level.
 #' @return A brmsprior object suitable for passing to brms::brm().
-build_brms_prior <- function(regime_name        = "proposal",
+build_brms_prior <- function(regime_name        = "primary",
                              threshold_mode     = "broad",
                              threshold_params   = NULL,
                              has_pseudo_passive = TRUE) {

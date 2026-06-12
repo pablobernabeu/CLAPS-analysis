@@ -26,12 +26,12 @@ d <- read_csv(data_path, show_col_types = FALSE) |>
   ungroup() |>
   mutate(
     S_Type   = factor(S_Type, levels = c("Passive", "Active", "Pseudo_Passive"),
-                       labels = c("Passive", "Active", "Pseudo-passive")),
+                       labels = c("Passive", "Active", "Pseudo-Passive")),
     Gender   = factor(Gender, levels = c("Man", "Woman")),
     Language = factor(Language, levels = c("English", "Turkish", "Norwegian"))
   )
 
-pal <- c("Passive" = "#0072B2", "Active" = "#D55E00", "Pseudo-passive" = "#009E73")
+pal <- c("Passive" = "#0072B2", "Active" = "#D55E00", "Pseudo-Passive" = "#009E73")
 
 p <- ggplot(d, aes(affect_z, Response, colour = S_Type, fill = S_Type)) +
   geom_jitter(width = 0.04, height = 0.20, alpha = 0.05, size = 0.45, show.legend = FALSE) +
@@ -43,10 +43,10 @@ p <- ggplot(d, aes(affect_z, Response, colour = S_Type, fill = S_Type)) +
   # Title/subtitle/caption are intentionally omitted here and supplied in the
   # report's figure caption instead. Margins are balanced top and bottom.
   labs(
-    x      = "Agent semantic affectedness (z-scored within language)",
-    y      = "Acceptability rating",
-    colour = "Sentence type",
-    fill   = "Sentence type"
+    x      = "Agent Semantic Affectedness (z-Scored Within Language)",
+    y      = "Acceptability Rating",
+    colour = "Sentence Type",
+    fill   = "Sentence Type"
   ) +
   guides(colour = guide_legend(title.position = "top"),
          fill   = guide_legend(title.position = "top")) +

@@ -73,7 +73,7 @@ Bridge sampling is **not** the primary route because the Savage–Dickey ratio i
 
 | Regime | Status | Literature basis |
 |--------|--------|------------------|
-| `proposal` | Primary | @gelmanJakulinPittauSu2008; @gelmanSimpsonBetancourt2017; @burknerVuorre2019 |
+| `primary` | Primary | @gelmanJakulinPittauSu2008; @gelmanSimpsonBetancourt2017; @burknerVuorre2019 |
 | `weak` | Sensitivity | @schadNicenboimBurknerBetancourtVasishth2023 |
 | `literature_centred` | Sensitivity-only (not used for primary BF) | Pooled prior means from @ambridgeArnonBekman2023; @aryawibawaAmbridge2018; @darmasetiyawanAmbridge2022; @liuAmbridge2021 |
 | `heavy_tailed` | Robustness | @gelmanJakulinPittauSu2008 |
@@ -125,13 +125,13 @@ They are **never included** in the confirmatory analysis dataset. The `split_pil
 
 **Secondary**: $P(BF_{10} > 3)$.
 
-**Sensitivity requirement**: The above probabilities must be robust across the `proposal`, `weak`, and `heavy_tailed` prior regimes (no regime reversal of the BF category) following the sensitivity workflow of @schadNicenboimBurknerBetancourtVasishth2023.
+**Sensitivity requirement**: The above probabilities must be robust across the `primary`, `weak`, and `heavy_tailed` prior regimes (no regime reversal of the BF category) following the sensitivity workflow of @schadNicenboimBurknerBetancourtVasishth2023.
 
 **Literature basis**: @albersLakens2018 caution against design analyses driven by single point estimates from small pilots; the prespecified four-regime sensitivity grid mitigates this risk.
 
 **Locked**: Yes (specific probability threshold to be agreed with statistical lead before confirmatory run).
 
-**Amendment (2026-06-09):** the design analysis is now run as a Monte-Carlo *power* analysis with `n_simulations_per_cell = 200` independently seeded replicates per single-language and gender design point (and 50 per cross-language point), replacing the earlier single-seed feasibility run in which $P(BF_{10} > 10)$ could only be a 0/1 indicator. With $B = 200$ the Monte-Carlo standard error of an exceedance proportion near 0.8 is $\approx 0.028$. Per-language power curves are estimated over $N \in \{30, 40, 50, 60\}$ participants at the maximal model under the `proposal` prior, with prior-sensitivity replicates (`weak`, `literature_centred`, `heavy_tailed`) at $N = 50$, and the gender variation over the full $N$ sweep. The cross-language (pooled) analysis runs at reduced replication ($B = 50$) on the **L4 cross-uncorrelated** model, which converges far more reliably than the L5 cross-maximal model and costs ~3–5 h rather than 8–12 h per fit; the L5 cross-maximal convergence/feasibility is documented by the one-off heavy run (§9). *Implementation:* `scripts/generate_design_grid.R` expands each condition into seeded replicates (`config/design_grid_{single,gender,cross}.csv`); one SLURM array task per replicate.
+**Amendment (2026-06-09):** the design analysis is now run as a Monte-Carlo *power* analysis with `n_simulations_per_cell = 200` independently seeded replicates per single-language and gender design point (and 50 per cross-language point), replacing the earlier single-seed feasibility run in which $P(BF_{10} > 10)$ could only be a 0/1 indicator. With $B = 200$ the Monte-Carlo standard error of an exceedance proportion near 0.8 is $\approx 0.028$. Per-language power curves are estimated over $N \in \{30, 40, 50, 60\}$ participants at the maximal model under the `primary` prior, with prior-sensitivity replicates (`weak`, `literature_centred`, `heavy_tailed`) at $N = 50$, and the gender variation over the full $N$ sweep. The cross-language (pooled) analysis runs at reduced replication ($B = 50$) on the **L4 cross-uncorrelated** model, which converges far more reliably than the L5 cross-maximal model and costs ~3–5 h rather than 8–12 h per fit; the L5 cross-maximal convergence/feasibility is documented by the one-off heavy run (§9). *Implementation:* `scripts/generate_design_grid.R` expands each condition into seeded replicates (`config/design_grid_{single,gender,cross}.csv`); one SLURM array task per replicate.
 
 ---
 

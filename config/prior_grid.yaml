@@ -10,7 +10,7 @@
 
 prior_regimes:
 
-  proposal:
+  primary:
     role: primary
     description: >
       Weakly-to-moderately informative, zero-centred Gaussian priors on
@@ -36,7 +36,7 @@ prior_regimes:
     role: sensitivity
     description: >
       Weakly informative priors. Sensitivity check that conclusions are
-      not driven by the more concentrated proposal priors.
+      not driven by the more concentrated primary priors.
     citations:
       - "@schadNicenboimBurknerBetancourtVasishth2023"
     priors:
@@ -115,8 +115,8 @@ threshold_modes:
 
 # Full sensitivity grid (8 combinations)
 grid:
-  - { regime: proposal,           threshold: broad }
-  - { regime: proposal,           threshold: ceiling_calibrated }
+  - { regime: primary,           threshold: broad }
+  - { regime: primary,           threshold: ceiling_calibrated }
   - { regime: weak,               threshold: broad }
   - { regime: weak,               threshold: ceiling_calibrated }
   - { regime: literature_centred, threshold: broad }

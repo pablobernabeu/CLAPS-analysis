@@ -2,7 +2,7 @@
 # scripts/02_fit_pilot_models.R
 # Fit pilot data models across the model ladder for a given language and prior.
 # This is a CALIBRATION-ONLY analysis. Pilot data must never enter confirmatory inference.
-# Usage: Rscript scripts/02_fit_pilot_models.R --language English --prior proposal \
+# Usage: Rscript scripts/02_fit_pilot_models.R --language English --prior primary \
 #                --threshold broad [--start_level L5_correlated_maximal] [--overwrite]
 
 suppressPackageStartupMessages({
@@ -22,7 +22,7 @@ source("R/09_model_ladder.R")
 
 option_list <- list(
   optparse::make_option("--language",    default = "English"),
-  optparse::make_option("--prior",       default = "proposal"),
+  optparse::make_option("--prior",       default = "primary"),
   optparse::make_option("--threshold",   default = "broad"),
   optparse::make_option("--start_level", default = "L5_correlated_maximal"),
   optparse::make_option("--include_gender", action = "store_true", default = FALSE,

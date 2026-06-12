@@ -26,7 +26,7 @@ test_that("build_brms_prior with ceiling_calibrated uses threshold_params", {
     threshold_means = c(-2.5, -1.0, 0.0, 1.0, 2.0, 3.0),
     threshold_sds   = rep(0.8, 6)
   )
-  p <- build_brms_prior("proposal", "ceiling_calibrated", threshold_params = tp)
+  p <- build_brms_prior("primary", "ceiling_calibrated", threshold_params = tp)
   expect_s3_class(p, "brmsprior")
   # Should contain Intercept class priors
   expect_true(any(p$class == "Intercept"))

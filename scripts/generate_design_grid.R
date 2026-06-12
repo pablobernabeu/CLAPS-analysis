@@ -113,7 +113,7 @@ mk_conditions <- function(df) {
 # === Study A: single-language baseline power curves + prior sensitivity ======
 power_curves <- langs |>
   tidyr::crossing(n_participants = N_SWEEP) |>
-  dplyr::mutate(model_level = "L5_correlated_maximal", prior_regime = "proposal",
+  dplyr::mutate(model_level = "L5_correlated_maximal", prior_regime = "primary",
                 threshold_mode = "broad", include_gender = FALSE, beta_gender = 0) |>
   mk_conditions()
 
@@ -131,7 +131,7 @@ grid_single <- dplyr::bind_rows(
 # === Study B: gender-variation power curves ==================================
 gender_curves <- langs |>
   tidyr::crossing(n_participants = N_SWEEP) |>
-  dplyr::mutate(model_level = "L5_correlated_maximal", prior_regime = "proposal",
+  dplyr::mutate(model_level = "L5_correlated_maximal", prior_regime = "primary",
                 threshold_mode = "broad", include_gender = TRUE, beta_gender = BGENDER) |>
   mk_conditions()
 
@@ -142,7 +142,7 @@ grid_gender <- expand_reps(gender_curves, B, seed_base = 300000L)
 # cross-maximal convergence/feasibility is documented by the earlier heavy run.
 cross_curves <- tibble::tibble(
   language = "AllLanguages", model_level = "L4_cross_uncorrelated",
-  prior_regime = "proposal", threshold_mode = "broad",
+  prior_regime = "primary", threshold_mode = "broad",
   n_participants = N_SWEEP, has_pseudo_passive = TRUE, beta_pseudo = BPSEUDO,
   include_gender = FALSE, beta_gender = 0
 ) |>
@@ -153,11 +153,11 @@ grid_cross <- expand_reps(cross_curves, B_cross, seed_base = 900000L)
 # === Study D: extended single-language N-sweep (70-100) =====================
 # The 30-60 sweep showed the H1b Active x affectedness interaction does not reach
 # 80% power by N=60 in any language; this extension locates the required sample
-# size per language. Baseline (non-gender), proposal prior, maximal model.
+# size per language. Baseline (non-gender), primary prior, maximal model.
 N_EXTEND <- c(70L, 80L, 90L, 100L)
 power_curves_ext <- langs |>
   tidyr::crossing(n_participants = N_EXTEND) |>
-  dplyr::mutate(model_level = "L5_correlated_maximal", prior_regime = "proposal",
+  dplyr::mutate(model_level = "L5_correlated_maximal", prior_regime = "primary",
                 threshold_mode = "broad", include_gender = FALSE, beta_gender = 0) |>
   mk_conditions()
 grid_extend <- expand_reps(power_curves_ext, B, seed_base = 400000L)
