@@ -26,7 +26,8 @@ reports.
 
 At the assumed effect the recommended per-language sample size is **N = 80**
 (English, Norwegian and Turkish); a pooled cross-language analysis reaches the 80%
-target at roughly N = 60 per language. See `reports/claps_report.pdf`.
+target at roughly N = 60 per language. See the date-stamped report in `reports/`
+(`CLAPS_design_analysis_<date>.pdf`).
 
 ## Repository structure
 
@@ -48,6 +49,8 @@ The full report renders from the committed summary tables, with no participant d
 ```bash
 quarto render reports/claps_report.qmd --to pdf
 ```
+
+The committed report PDF is date-stamped, `CLAPS_design_analysis_<date>.pdf`.
 
 The report's one pilot-data figure (the gender robustness check) is included as a
 pre-rendered aggregate image (`outputs/figures/raw_gender_comparison.png`); the

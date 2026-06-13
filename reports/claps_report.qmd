@@ -123,6 +123,11 @@ ratings are modelled with a Bayesian cumulative-ordinal mixed-effects model, giv
 the prior specifications that make the Bayes factors well defined and describes the
 simulation framework behind the power analysis.
 
+The analysis code, configuration and this report are openly available at
+<https://github.com/pablobernabeu/CLAPS-analysis>. The report rebuilds from the
+committed summary tables, so it needs no raw data, which are held private to CLAPS
+until the project reaches a more advanced stage.
+
 ## Background and Theoretical Motivation
 
 The CLAPS question is whether acceptability of passive and related sentence types
@@ -464,8 +469,8 @@ focal conclusions, as the four-regime comparison in Part III confirms.
 
 This part reports the design analysis itself: the simulation framework and focal
 hypotheses, the feasibility of the planned models, the Bayes-factor power curves
-across sample size, their sensitivity to the prior and the resulting per-language
-sample-size recommendation.
+across sample size, their sensitivity to the prior, the resulting per-language
+sample-size recommendation and the refinements planned before the design is finalised.
 
 ## Design Analysis Framework
 
@@ -774,6 +779,34 @@ requirement from *N* = `r rec_n_single` towards *N* = `r 2 * rec_n_single` or be
 as a floor rather than a target, and where feasible the design should plan against a
 deliberately conservative ('safeguard') effect size rather than the literature point
 estimate [@perugini2014].
+
+## Planned Refinements
+
+The analysis reported here is an early, decision-relevant pass, and several refinements
+are planned before the design is finalised. The most consequential concerns the number
+of simulated datasets per design point. Bayes-factor design analysis is conventionally
+run with on the order of 10,000 Monte-Carlo replicates per point
+[@schonbrodtWagenmakers2018], against the `r n_sims_single` used here for the
+single-language and gender conditions and the `r n_sims_cross` for the cross-language
+conditions. Near a power of 0.80, that increase would tighten the Monte-Carlo standard
+error of each estimate from approximately `r sprintf("%.3f", mc_se)` to approximately
+`r sprintf("%.3f", sqrt(0.8 * 0.2 / 10000))`. The single-language and gender designs use
+comparatively light fits and can approach this standard directly. The cross-language
+design, at 8 to 12 hours per fit, cannot, and would instead be raised towards 1,000
+replicates as the compute budget allows.
+
+Three further refinements are planned. The pooled model would be re-run at the
+correlated-maximal random-effects structure used for the single languages rather than
+the uncorrelated structure adopted here for feasibility, placing every language on the
+same modelling footing. The data-generating effect sizes would be varied across a
+plausible range, from the literature anchor down to the conservative 'safeguard' value
+noted above, so that the recommendation is reported as a range rather than a single
+point. The design grid would also be made denser, with finer sample-size spacing,
+several cross-language sample sizes in place of the single point used here, participants
+and items varied jointly, and the prior-sensitivity regimes carried across the full
+sample-size range rather than the single anchor. None of these is expected to overturn
+the headline recommendation. They would sharpen the precision of the estimates and test
+the robustness of the recommendation.
 
 # Appendices {.unnumbered}
 
