@@ -69,6 +69,8 @@ prior_lines <- c(
   "",
   "@tbl-priorregimes gives the four prior regimes by parameter.",
   "",
+  "```{=latex}", "\\begingroup\\footnotesize", "```",
+  "",
   "| Regime | default | semantics | active | pseudo | Intercept | sd | cor |",
   "|---|---|---|---|---|---|---|---|"
 )
@@ -87,6 +89,8 @@ for (r in prior_rows) {
 }
 prior_lines <- c(prior_lines, "",
                  ": Prior Regimes by Parameter {#tbl-priorregimes}",
+                 "",
+                 "```{=latex}", "\\endgroup", "```",
                  "",
                  "```{=latex}", "\\vspace{-0.9em}", "```",
                  "",

@@ -487,9 +487,9 @@ weight. In languages with a pseudo-passive, a secondary hypothesis (H2) concerns
 $\beta_{\text{S\_TypePseudo\_Passive:Semantics}}$, whose direction is reported both
 ways.
 
-The primary success metric is $BF_{10} > `r BF_THRESHOLD_PRIMARY`$ (strong evidence,
-after @jeffreys1961) and the secondary metric is
-$BF_{10} > `r BF_THRESHOLD_SECONDARY`$ (moderate evidence). Bayes factors are
+The primary success metric is $BF_{10} > `r BF_THRESHOLD_PRIMARY`$ (strong evidence)
+and the secondary metric is $BF_{10} > `r BF_THRESHOLD_SECONDARY`$ (moderate evidence),
+grades that follow @jeffreys1961. Bayes factors are
 computed via the Savage–Dickey directional density ratio from `brms` models with
 `sample_prior = "yes"` [@wagenmakersLodewyckxKuriyalGrasman2010;
 @schadNicenboimBurknerBetancourtVasishth2023], with bridge sampling as a calibration
@@ -815,7 +815,7 @@ formulas exactly as they are defined in the analysis scripts. Each begins on a n
 page.
 
 ```{=latex}
-\begingroup\footnotesize\setlength{\tabcolsep}{3pt}
+\begingroup\setlength{\tabcolsep}{3pt}
 ```
 
 {{< pagebreak >}}

@@ -19,6 +19,10 @@ priors.
 
 @tbl-priorregimes gives the four prior regimes by parameter.
 
+```{=latex}
+\begingroup\footnotesize
+```
+
 | Regime | default | semantics | active | pseudo | Intercept | sd | cor |
 |---|---|---|---|---|---|---|---|
 | primary | N(0, 1.5) | N(0, 0.5) | N(0, 0.5) | N(0, 0.6) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |
@@ -27,6 +31,10 @@ priors.
 | heavy_tailed | t(3, 0, 1.5) | t(3, 0, 0.5) | t(3, 0, 0.5) | t(3, 0, 0.6) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |
 
 : Prior Regimes by Parameter {#tbl-priorregimes}
+
+```{=latex}
+\endgroup
+```
 
 ```{=latex}
 \vspace{-0.9em}
