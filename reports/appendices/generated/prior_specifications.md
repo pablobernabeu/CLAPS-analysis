@@ -1,4 +1,5 @@
-The following empirical anchors are sourced from R/03_define_priors.R:
+@tbl-anchors lists the empirical effect-size anchors that calibrate the focal-slope
+priors.
 
 | Anchor | Value |
 |---|---:|
@@ -8,12 +9,27 @@ The following empirical anchors are sourced from R/03_define_priors.R:
 | `semantics_min` | 0.27 |
 | `semantics_max` | 0.8 |
 
-Prior regimes are sourced from R/03_define_priors.R, where N denotes a normal prior
-and t a Student-t prior:
+: Empirical Effect-Size Anchors for the Focal-Slope Priors {#tbl-anchors}
+
+```{=latex}
+\vspace{-0.9em}
+```
+
+*Note.* Anchors are sourced from R/03_define_priors.R.
+
+@tbl-priorregimes gives the four prior regimes by parameter.
 
 | Regime | default | semantics | active | pseudo | Intercept | sd | cor |
 |---|---|---|---|---|---|---|---|
 | primary | N(0, 1.5) | N(0, 0.5) | N(0, 0.5) | N(0, 0.6) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |
 | weak | N(0, 2) | N(0, 1) | N(0, 1) | N(0, 1) | t(3, 0, 2.5) | t(3, 0, 2) | lkj(1) |
-| literature_centred | N(0, 1.5) | N(0.47, 0.35) | N(-0.31, 0.4) | N(-0.36, 0.5) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |
+| LC | N(0, 1.5) | N(0.47, 0.35) | N(-0.31, 0.4) | N(-0.36, 0.5) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |
 | heavy_tailed | t(3, 0, 1.5) | t(3, 0, 0.5) | t(3, 0, 0.5) | t(3, 0, 0.6) | t(3, 0, 2.5) | t(3, 0, 1) | lkj(2) |
+
+: Prior Regimes by Parameter {#tbl-priorregimes}
+
+```{=latex}
+\vspace{-0.9em}
+```
+
+*Note.* N denotes a normal prior, t a Student-t prior and LC the literature-centred regime. The regimes are sourced from R/03_define_priors.R.

@@ -31,7 +31,7 @@
 #
 # Four prior regimes are defined:
 #
-#   1. primary             - primary, weakly-to-moderately informative,
+#   1. primary             - prespecified, weakly-to-moderately informative,
 #                              focal slopes zero-centred but scaled to
 #                              previously observed magnitudes
 #   2. weak                  - weak-prior sensitivity check

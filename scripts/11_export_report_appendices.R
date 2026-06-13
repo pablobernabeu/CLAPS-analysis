@@ -28,7 +28,8 @@ anchors <- load_env$EMPIRICAL_ANCHORS
 regimes <- load_env$PRIOR_REGIMES
 
 anchor_lines <- c(
-  "The following empirical anchors are sourced from R/03_define_priors.R:",
+  "@tbl-anchors lists the empirical effect-size anchors that calibrate the focal-slope",
+  "priors.",
   "",
   "| Anchor | Value |",
   "|---|---:|"
@@ -36,6 +37,12 @@ anchor_lines <- c(
 for (nm in names(anchors)) {
   anchor_lines <- c(anchor_lines, paste0("| `", nm, "` | ", anchors[[nm]], " |"))
 }
+anchor_lines <- c(anchor_lines, "",
+                  ": Empirical Effect-Size Anchors for the Focal-Slope Priors {#tbl-anchors}",
+                  "",
+                  "```{=latex}", "\\vspace{-0.9em}", "```",
+                  "",
+                  "*Note.* Anchors are sourced from R/03_define_priors.R.")
 
 prior_rows <- lapply(names(regimes), function(reg_name) {
   list(
@@ -60,24 +67,30 @@ compact_prior <- function(x) {
 
 prior_lines <- c(
   "",
-  "Prior regimes are sourced from R/03_define_priors.R, where N denotes a normal prior",
-  "and t a Student-t prior:",
+  "@tbl-priorregimes gives the four prior regimes by parameter.",
   "",
   "| Regime | default | semantics | active | pseudo | Intercept | sd | cor |",
   "|---|---|---|---|---|---|---|---|"
 )
 
 for (r in prior_rows) {
+  reg_label <- if (identical(r$regime, "literature_centred")) "LC" else r$regime
   prior_lines <- c(
     prior_lines,
     paste0(
-      "| ", r$regime, " | ", compact_prior(r$b_default), " | ",
+      "| ", reg_label, " | ", compact_prior(r$b_default), " | ",
       compact_prior(r$b_semantics), " | ", compact_prior(r$b_active_int), " | ",
       compact_prior(r$b_pseudo_int), " | ", compact_prior(r$Intercept), " | ",
       compact_prior(r$sd), " | ", compact_prior(r$cor), " |"
     )
   )
 }
+prior_lines <- c(prior_lines, "",
+                 ": Prior Regimes by Parameter {#tbl-priorregimes}",
+                 "",
+                 "```{=latex}", "\\vspace{-0.9em}", "```",
+                 "",
+                 "*Note.* N denotes a normal prior, t a Student-t prior and LC the literature-centred regime. The regimes are sourced from R/03_define_priors.R.")
 
 write_lines(
   file.path(out_dir, "prior_specifications.md"),

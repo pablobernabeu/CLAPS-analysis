@@ -5,6 +5,7 @@ author: "Pablo Bernabeu and CLAPS collaborators"
 date: today
 bibliography: ../references.bib
 csl: https://www.zotero.org/styles/apa
+link-citations: true
 output-dir: ../outputs/reports
 format:
   html:
@@ -17,7 +18,14 @@ format:
     number-sections: true
     number-depth: 2
     keep-tex: false
+    papersize: a4
     geometry: margin=2.5cm
+    linestretch: 1.1
+    colorlinks: true
+    linkcolor: MidnightBlue
+    citecolor: MidnightBlue
+    urlcolor: MidnightBlue
+    toccolor: black
     fig-cap-location: top
     fig-pos: "H"
     include-in-header:
@@ -46,6 +54,12 @@ format:
         \setlength{\intextsep}{11pt plus 2pt minus 2pt}
         \setlength{\LTpre}{11pt}
         \setlength{\LTpost}{6pt}
+        % Left-align tables (APA), so each aligns flush left with its caption and note.
+        \setlength{\LTleft}{0pt}
+        \setlength{\LTright}{\fill}
+        % knitr::kable adds \addlinespace every fifth row to group rows, which shows
+        % as an uneven gap before the last row of a six-row table. Zero it out.
+        \AtBeginDocument{\setlength{\defaultaddspace}{0pt}}
 execute:
   echo: false
   warning: false
@@ -113,33 +127,33 @@ simulation framework behind the power analysis.
 
 The CLAPS question is whether acceptability of passive and related sentence types
 tracks semantic affectedness, and whether this slope differs by sentence type.
-*Affectedness* — the degree to which a patient or theme participant undergoes a
-change of state or is causally impinged upon by the action — is a core dimension of
+*Affectedness* (the degree to which a patient or theme participant undergoes a
+change of state or is causally impinged upon by the action) is a core dimension of
 argument structure [@dowty1991; @beavers2011], and it has long been argued to be the
 semantic core of the passive, which is associated with the meaning that the surface
-subject "is in a state or circumstance characterized by [the by-object] having acted
-upon it" [@pinkerLebeauxFrost1987]. Across languages, the prediction that passive
+subject 'is in a state or circumstance characterized by [the by-object] having acted
+upon it' [@pinkerLebeauxFrost1987]. Across languages, the prediction that passive
 acceptability is semantically structured rather than purely syntax-driven is
-supported by adult grammaticality-judgment and comprehension studies
+supported by adult grammaticality-judgement and comprehension studies
 [@ambridgeBidgoodPineRowlandFreudenthal2016; @aryawibawaAmbridge2018;
 @darmasetiyawanAmbridge2022; @liuAmbridge2021;
 @bidgoodPineRowlandAmbridge2020; @ambridgeArnonBekman2023].
 
-Developmental and processing evidence converges on the same constraint: not all
-verb classes support passive comprehension or production equally — children acquire
-actional, highly affected-patient passives earlier and more reliably than
-non-actional ones — and affectedness-like semantic factors remain explanatory even
-when syntactic form is controlled [@maratsosFoxBeckerChalkley1985;
+Developmental and processing evidence converges on the same constraint. Verb
+classes differ in how strongly they support passive comprehension and production:
+children acquire actional, highly affected-patient passives earlier and more
+reliably than non-actional ones, and affectedness-like semantic factors remain
+explanatory even when syntactic form is controlled [@maratsosFoxBeckerChalkley1985;
 @pinkerLebeauxFrost1987; @nguyenPearl2021; @agostinhoGavarroSantos2025;
 @paolazziGrilloCeraKarageorgouBullmanChowSanti2022;
 @darmasetiyawanMessengerAmbridge2022].
 
 To date this cross-linguistic evidence base spans English, Indonesian, Balinese,
-Hebrew and Mandarin; the affectedness constraint on passive acceptability has not
-previously been tested in Turkish or Norwegian. CLAPS therefore extends the paradigm
+Hebrew and Mandarin. The affectedness constraint on passive acceptability has not yet
+been tested in Turkish or Norwegian. CLAPS therefore extends the paradigm
 to two typologically and morphologically distinct languages for which no
-language-specific effect-size estimates yet exist — one reason the focal-slope priors
-are not anchored to language-specific values (see below).
+language-specific effect-size estimates yet exist. The focal-slope priors
+accordingly draw on cross-language rather than language-specific values (see below).
 
 This motivates a design analysis that quantifies whether realistic sample sizes,
 given ARC compute constraints, can recover the focal directional effects as Bayes
@@ -148,12 +162,12 @@ factors under plausible data-generating values.
 ## The Bayesian Cumulative-Ordinal Mixed-Effects Model
 
 The CLAPS outcome is a discrete 1–7 Likert rating of sentence acceptability.
-Treating Likert responses as continuous and modelling them with a Gaussian
-likelihood biases regression coefficients and inflates both Type I and Type II
-error in the presence of floor or ceiling effects [@liddellKruschke2018]. The
-cumulative-logit model is the principled alternative because it respects the
-discreteness, ordering and bounded nature of Likert data while leaving the
+The cumulative-logit model suits these data because it respects the
+discreteness, ordering and bounded nature of Likert ratings while leaving the
 latent scale free to vary continuously across conditions [@burknerVuorre2019].
+Treating the same ratings as continuous, under a Gaussian likelihood, biases
+regression coefficients and inflates both Type I and Type II error where floor
+or ceiling effects are present [@liddellKruschke2018].
 Recent empirical psycholinguistic work has independently confirmed substantial
 inferential gains when Likert acceptability ratings are modelled cumulatively
 rather than metrically [@verissimo2021; @taylorRousseletScheepersSereno2023].
@@ -189,7 +203,7 @@ is correspondingly negative, of the order of −0.2 to −0.4. Because those ant
 studies modelled rating responses on their original (5- or 7-point) scales rather
 than on a cumulative-logit latent scale, these magnitudes are used as
 order-of-magnitude anchors for the log-odds-scale priors below, not as exact
-transcriptions; the prior scales are deliberately wide enough to absorb the resulting
+transcriptions. The prior scales are deliberately wide enough to absorb the resulting
 scale uncertainty.
 
 The `primary` prior set therefore uses zero-centred Gaussians concentrated
@@ -204,7 +218,7 @@ interaction is less precisely constrained cross-linguistically than the
 active–passive one [@ambridgeArnonBekman2023]. The direction-encoding
 `literature_centred` sensitivity regime makes these anchors explicit, centring the
 three focal slopes on approximately 0.47, −0.31 and −0.36 respectively (see
-Appendix A); it is reported as a sensitivity-only check because it encodes the
+Appendix A). It is reported as a sensitivity-only check because it encodes the
 predicted direction.
 
 ## Proper Priors for Bayes Factors
@@ -214,15 +228,15 @@ of the prior. Improper or extremely diffuse priors yield either undefined or
 arbitrarily small marginal likelihoods regardless of the data
 [@gelmanSimpsonBetancourt2017; @schadNicenboimBurknerBetancourtVasishth2023;
 @gronauSarafoglouEtAl2017]. All four prior regimes in `R/03_define_priors.R` are
-therefore proper. The Savage–Dickey ratio is computed under the primary regime;
-bridge sampling under all four regimes provides calibration
+therefore proper. The Savage–Dickey ratio is computed under the primary regime.
+Bridge sampling under all four regimes provides calibration
 [@gronauSarafoglouEtAl2017; @gronauSingmannWagenmakers2020].
 
-The four-regime sensitivity grid follows @schadNicenboimBurknerBetancourtVasishth2023:
-the `primary` regime is zero-centred and weakly-to-moderately informative; `weak`
-relaxes all focal-slope scales; `literature_centred` is sensitivity-only and
-direction-encoding; `heavy_tailed` substitutes Student-t for Gaussian focal-slope
-priors.
+The four-regime sensitivity grid follows @schadNicenboimBurknerBetancourtVasishth2023.
+The `primary` regime is zero-centred and weakly-to-moderately informative, the `weak`
+regime relaxes all focal-slope scales, the `literature_centred` regime is a
+direction-encoding sensitivity check, and the `heavy_tailed` regime substitutes
+Student-t for Gaussian focal-slope priors.
 
 ## Variance-Component and Correlation Priors
 
@@ -236,8 +250,8 @@ priors on the standard-deviation scale. The CLAPS workflow therefore uses
 Group-level correlation matrices use the LKJ prior
 [@lewandowskiKurowickaJoe2009] with shape $\eta$ = 2 in the primary,
 literature-centred and heavy-tailed regimes, which mildly concentrates prior mass
-toward the identity matrix and so regularises the many correlation parameters of the
-maximal random-effects structure; the `weak` regime uses $\eta$ = 1, which is uniform over
+towards the identity matrix and so regularises the many correlation parameters of the
+maximal random-effects structure. The `weak` regime uses $\eta$ = 1, which is uniform over
 correlation matrices, as a sensitivity comparison.
 
 ## Random-Effects Structure
@@ -253,8 +267,8 @@ optimistic generalisation from a single pilot are addressed using the framework 
 
 ## Bayes-Factor Thresholds
 
-CLAPS reports the conventional descriptive grades for Bayes factors ("anecdotal",
-"moderate", "strong", "very strong", "extreme"), which originate with @jeffreys1961
+CLAPS reports the conventional descriptive grades for Bayes factors ('anecdotal',
+'moderate', 'strong', 'very strong', 'extreme'), which originate with @jeffreys1961
 and follow the modern relabelling of @leeWagenmakers2013. These labels are
 descriptive only: directional Savage–Dickey ratios
 [@wagenmakersLodewyckxKuriyalGrasman2010] on each focal coefficient are reported with
@@ -298,11 +312,11 @@ errors that threaten inferences from small or noisy designs [@gelmanCarlin2014].
 Each design *condition* combines language and design settings, model level, prior
 regime and sample size. To estimate a genuine power (exceedance) probability
 rather than a single-draw indicator, every condition is replicated across
-`n_simulations_per_cell` independently seeded simulated data sets — 200 for the
-single-language and gender conditions and 50 for the (8–12 h/fit) cross-language
-conditions — built by `scripts/generate_design_grid.R`, with one SLURM array task
+`n_simulations_per_cell` independently seeded simulated data sets (200 for the
+single-language and gender conditions and 50 for the 8–12 h/fit cross-language
+conditions), built by `scripts/generate_design_grid.R`, with one SLURM array task
 per replicate. Replicate fits use a lighter sampler (4 chains × 3000 iterations,
-`adapt_delta = 0.99`) sufficient for a single reliable Bayes factor; the heavy
+`adapt_delta = 0.99`) sufficient for a single reliable Bayes factor. The heavy
 16-chain × 5000-iteration sampler is reserved for the one-off maximal-model
 convergence demonstration that establishes the maximal feasible model and runtimes.
 SLURM arrays run replicates in parallel on ARC CPUs. For each condition, the analysis
@@ -316,7 +330,7 @@ robustness checks [@schadNicenboimBurknerBetancourtVasishth2023].
 # Part II: Pilot Results (Calibration Only)
 
 This part reports the pilot-data analyses, which serve calibration purposes only.
-The pilot data are excluded from the final confirmatory analysis; the findings here
+The pilot data are excluded from the final confirmatory analysis. The findings here
 inform prior choice and model-ladder decisions but do not constitute confirmatory
 evidence.
 
@@ -327,7 +341,7 @@ English, Norwegian and Turkish, across the passive, active and (where the
 construction is attested) pseudo-passive sentence types, with the agent-affectedness
 predictor measured for each item. These data are used only to calibrate the
 threshold priors and to choose the random-effects structure carried into the design
-analysis; they enter no confirmatory model.
+analysis. They enter no confirmatory model.
 
 ## Referent Gender
 
@@ -416,7 +430,7 @@ feasibility results in Part III confirm.
 Convergence was assessed using $\hat{R}$ [@vehtariGelmanSimpsonCarpenterBurkner2021],
 bulk and tail ESS, the number of divergent transitions and maximum tree-depth
 exceedances. Every fit retained for calibration met the publication-grade thresholds
-set out in Part I; fits that did not were stepped down the ladder rather than
+set out in Part I. Fits that did not were stepped down the ladder rather than
 retained.
 
 ## Prior Sensitivity Results
@@ -478,31 +492,38 @@ check only [@gronauSarafoglouEtAl2017; @gronauSingmannWagenmakers2020].
 
 ## Failure and Feasibility Summary
 
-Every design cell that was launched produced a usable fit. The summary below records
-the successes against the possible failure modes (estimation error, timeout,
-out-of-memory and malformed output).
-
 ```{r}
 #| label: failure-summary
+#| include: false
 fail_path <- file.path(SUM_DIR, "failure_summary.csv")
+n_cells <- 30800L; n_fail <- 0L
 if (file.exists(fail_path)) {
-  fail_df <- readr::read_csv(fail_path, show_col_types = FALSE)
-  knitr::kable(fail_df, caption = "Failure and Feasibility Summary Across All Design Cells",
-               booktabs = TRUE)
+  fd <- readr::read_csv(fail_path, show_col_types = FALSE)
+  n_cells <- fd$total_cells[1]
+  n_fail  <- sum(fd$n_error[1], fd$n_timeout[1], fd$n_oom[1], fd$n_malformed[1],
+                 na.rm = TRUE)
+}
+fail_clause <- if (n_fail == 0) {
+  "None failed through estimation error, timeout, exhaustion of memory or malformed output"
 } else {
-  cat("Failure summary not yet available (run scripts/06_aggregate_design_results.R).\n")
+  sprintf("Of these, %s failed through estimation error, timeout, exhaustion of memory or malformed output",
+          format(n_fail, big.mark = ","))
 }
 ```
+
+Every one of the `r format(n_cells, big.mark = ",")` design cells that was launched
+produced a usable fit. `r fail_clause`. The planned models are therefore feasible
+across the full grid of sample sizes, prior regimes and model-ladder levels.
 
 ## BF Exceedance Probabilities by Sample Size
 
 The probability of exceeding the Bayes-factor thresholds rises with sample size for
-every focal hypothesis. The figure shows the power curves for the two focal
+every focal hypothesis. @fig-power shows the power curves for the two focal
 hypotheses under the primary prior. The full operating characteristics across all
-conditions, prior regimes and hypotheses are tabulated in Appendix D.
+conditions, prior regimes and hypotheses are reported in @tbl-exceedance.
 
 ```{r}
-#| label: bf-exceedance-plot
+#| label: fig-power
 #| fig-cap: "Bayesian Power Curves for the Two Focal Hypotheses, by Language"
 #| fig-width: 6.5
 #| fig-height: 2.9
@@ -519,7 +540,12 @@ if (file.exists(exc_path)) {
       Hypothesis = ifelse(hypothesis == "H1a_semantics_positive", "H1a", "H1b"),
       language   = factor(language,
                           levels = c("English", "Norwegian", "Turkish", "AllLanguages"),
-                          labels = c("English", "Norwegian", "Turkish", "All (Pooled)"))
+                          labels = c("English", "Norwegian", "Turkish", "All (Pooled)")),
+      # 95% Jeffreys credible interval for the exceedance proportion: the Monte-Carlo
+      # uncertainty over the n_sims replicates, well behaved at the ceiling.
+      n_succ = round(p_bf_primary * n_sims),
+      ci_lo  = stats::qbeta(0.025, n_succ + 0.5, n_sims - n_succ + 0.5),
+      ci_hi  = stats::qbeta(0.975, n_succ + 0.5, n_sims - n_succ + 0.5)
     )
   pc_labels <- plot_df |>
     dplyr::filter(n_participants == 50) |>
@@ -528,10 +554,12 @@ if (file.exists(exc_path)) {
                   ggplot2::aes(n_participants, p_bf_primary, colour = Hypothesis)) +
     ggplot2::geom_hline(yintercept = 0.80, linetype = "dashed",
                         colour = "grey50", linewidth = 0.45) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = ci_lo, ymax = ci_hi),
+                           width = 2.5, linewidth = 0.4, alpha = 0.55) +
     ggplot2::geom_line(linewidth = 0.7) +
     ggplot2::geom_point(size = 1.8) +
     ggplot2::geom_label(data = pc_labels,
-                        ggplot2::aes(x = 52, y = y_lab, label = Hypothesis),
+                        ggplot2::aes(x = 71, y = y_lab, label = Hypothesis),
                         hjust = 0, vjust = 0.5, size = 2.6, fontface = "bold",
                         fill = "white", label.size = 0,
                         label.padding = ggplot2::unit(0.08, "lines"),
@@ -565,17 +593,22 @@ if (file.exists(exc_path)) {
 \vspace{-1.9em}
 ```
 
-*Note.* Points are exceedance probabilities, *P*(*BF*~10~ > 10), under the primary prior. The dashed line marks the conventional 80% target. The pooled cross-language analysis was simulated to *N* = 60.
+*Note.* Points are exceedance probabilities, *P*(*BF*~10~ > 10), under the primary prior, with error bars showing 95% credible intervals (Jeffreys) for the Monte-Carlo estimate. The dashed line marks the conventional 80% target. The pooled cross-language analysis was simulated to *N* = 60 and at lower replication, so its intervals are wider.
 
 ## Prior Sensitivity of BF Category
 
-Prior choice shifts the Bayes-factor power only modestly. The table reports the
+Prior choice shifts the Bayes-factor power only modestly. @tbl-priorsens reports the
 power for each focal hypothesis under all four prior regimes at the anchor sample
 size, where every regime was simulated. The semantic effect (H1a) is at ceiling
 throughout, while the interaction (H1b) moves within a narrow band.
 
+```{=latex}
+\needspace{6cm}
+```
+
 ```{r}
-#| label: prior-sensitivity
+#| label: tbl-priorsens
+#| tbl-cap: "Prior Sensitivity of Statistical Power, as a Percentage, Across Prior Regimes at N = 50 (Maximal Model, 20 Verbs)"
 sens_path <- file.path(SUM_DIR, "bf_exceedance.csv")
 if (file.exists(sens_path)) {
   sens_focal <- c(H1a = "H1a_semantics_positive",
@@ -597,34 +630,33 @@ if (file.exists(sens_path)) {
     dplyr::select(Language = language, Hypothesis, prior_regime, power) |>
     tidyr::pivot_wider(names_from = prior_regime, values_from = power) |>
     dplyr::relocate(dplyr::any_of("primary"), .after = Hypothesis) |>
+    dplyr::rename_with(~ "LC", dplyr::any_of("literature_centred")) |>
     dplyr::arrange(Language, Hypothesis)
-  knitr::kable(
-    sens_tbl,
-    caption = sprintf(paste("Prior Sensitivity of Statistical Power, as a Percentage,",
-                            "Across Prior Regimes at N = %d (Maximal Model, 20 Verbs)"), anchor_n),
-    booktabs = TRUE
-  ) |>
+  knitr::kable(sens_tbl, booktabs = TRUE) |>
     kableExtra::kable_styling(font_size = 9)
 } else {
   cat("Prior sensitivity results not yet available.\n")
 }
 ```
 
+```{=latex}
+\vspace{-0.9em}
+```
+
+*Note.* LC = literature-centred.
+
 ## Model Ladder Selection Frequency
 
-The ladder rarely needed to step down. The table records how often each level was
+The ladder rarely needed to step down. @tbl-ladder records how often each level was
 the highest feasible model across the simulated fits.
 
 ```{r}
-#| label: ladder-selection
+#| label: tbl-ladder
+#| tbl-cap: "Frequency With Which Each Model-Ladder Level Was the Highest Feasible Model"
 ladder_path <- file.path(SUM_DIR, "ladder_selection.csv")
 if (file.exists(ladder_path)) {
   ladder_df <- readr::read_csv(ladder_path, show_col_types = FALSE)
-  knitr::kable(
-    ladder_df,
-    caption = "Frequency With Which Each Model-Ladder Level Was the Highest Feasible Model",
-    booktabs = TRUE
-  )
+  knitr::kable(ladder_df, booktabs = TRUE)
 } else {
   cat("Ladder selection results not yet available.\n")
 }
@@ -633,19 +665,16 @@ if (file.exists(ladder_path)) {
 ## Maximal Feasible Model
 
 The maximal feasible model is the highest-complexity ladder level that both fit and
-met the publication-grade convergence criteria set out in Part I. The table gives it
-for each language alongside the number of converged cells.
+met the publication-grade convergence criteria set out in Part I. @tbl-maximal gives
+it for each language alongside the number of converged cells.
 
 ```{r}
-#| label: maximal-feasible-model
+#| label: tbl-maximal
+#| tbl-cap: "Maximal Feasible (Converged) Model Level per Language"
 mfm_path <- file.path(SUM_DIR, "maximal_feasible_model.csv")
 if (file.exists(mfm_path)) {
   mfm_df <- readr::read_csv(mfm_path, show_col_types = FALSE)
-  knitr::kable(
-    mfm_df,
-    caption = "Maximal Feasible (Converged) Model Level per Language",
-    booktabs = TRUE
-  )
+  knitr::kable(mfm_df, booktabs = TRUE)
 } else {
   cat("Maximal feasible model not yet available (run scripts/06_aggregate_design_results.R).\n")
 }
@@ -654,19 +683,16 @@ if (file.exists(mfm_path)) {
 ## Fit Runtimes
 
 Fit cost varied widely by model and language, with the pooled cross-language fits
-much heavier than the single-language ones. The table summarises per-cell runtimes
+much heavier than the single-language ones. @tbl-runtime summarises per-cell runtimes
 and convergence rates.
 
 ```{r}
-#| label: runtime-summary
+#| label: tbl-runtime
+#| tbl-cap: "Per-Cell Fit Runtimes (Minutes) and Convergence Rate, by Language and Model Level"
 rt_path <- file.path(SUM_DIR, "runtime_summary.csv")
 if (file.exists(rt_path)) {
   rt_df <- readr::read_csv(rt_path, show_col_types = FALSE)
-  knitr::kable(
-    rt_df,
-    caption = "Per-Cell Fit Runtimes (Minutes) and Convergence Rate, by Language and Model Level",
-    booktabs = TRUE, digits = 2
-  ) |>
+  knitr::kable(rt_df, booktabs = TRUE, digits = 2) |>
     kableExtra::kable_styling(font_size = 9)
 } else {
   cat("Runtime summary not yet available.\n")
@@ -720,22 +746,22 @@ if (file.exists(rec_path) && file.exists(mfm_path)) {
 ```
 
 Each exceedance probability above is a Monte-Carlo estimate over
-`n_simulations_per_cell` independently seeded replicates — `r n_sims_single` for single-language
-and gender conditions (Monte-Carlo *SE* $\approx$ `r sprintf("%.3f", mc_se)` near a true rate of 0.8) and
-`r n_sims_cross` for cross-language conditions — so the recommended sample sizes are stable
-long-run rates rather than the indicative 0/1 values of the earlier single-seed
-feasibility run (archived under `outputs/design_analysis_feasibility_v1`, which also
-documents the L5 maximal-model convergence and per-fit runtimes). All
+`n_simulations_per_cell` independently seeded replicates: `r n_sims_single` for single-language
+and gender conditions, with a Monte-Carlo *SE* of about `r sprintf("%.3f", mc_se)` near a true rate
+of 0.8, and `r n_sims_cross` for cross-language conditions. The recommended sample sizes are
+therefore stable long-run rates rather than the indicative 0/1 values of the earlier
+single-seed feasibility run (archived under `outputs/design_analysis_feasibility_v1`,
+which also documents the L5 maximal-model convergence and per-fit runtimes). All
 recommendations remain conditional on the data-generating parameters encoded in
 `scripts/generate_design_grid.R`, whose sensitivity is examined via the prior
 regimes in the full exceedance table.
 
 One assumption requires particular care. These curves condition on assumed true
 effect sizes anchored to the published affectedness estimates, and that anchor
-warrants caution. The relevant literature is subject to publication bias and the
-structural pressures of publish-or-perish culture, which together tend to inflate
-reported effects. Studies reporting positive findings, especially small and
-low-powered ones, systematically overstate the magnitude of what they detect, the
+warrants caution. The relevant literature is subject to publication bias and to the
+structural incentives of academic publishing, which together tend to inflate
+reported effects. Studies that report positive findings, especially small and
+low-powered ones, on average overstate the magnitude of what they detect, the
 winner's curse or Type M error [@gelmanCarlin2014; @ioannidis2008; @button2013].
 Design analyses built on the surviving published estimates then tend to be
 optimistic about power and replicability [@vasishth2018; @albersLakens2018]. The
@@ -801,8 +827,12 @@ page.
 \end{center}
 ```
 
+@tbl-exceedance reports the probability of exceeding each Bayes-factor threshold for
+every design condition.
+
 ```{r}
-#| label: appendix-exceedance-table
+#| label: tbl-exceedance
+#| tbl-cap: "Probability of Exceeding BF > 10 (Primary) and BF > 3 (Secondary) per Design Condition"
 exc_path <- file.path(SUM_DIR, "bf_exceedance.csv")
 if (file.exists(exc_path)) {
   exc_df <- readr::read_csv(exc_path, show_col_types = FALSE)
@@ -811,7 +841,7 @@ if (file.exists(exc_path)) {
       N           = n_participants,
       Verbs       = n_verbs,
       Prior       = dplyr::recode(prior_regime,
-                                  literature_centred = "lit-centred",
+                                  literature_centred = "LC",
                                   heavy_tailed = "heavy-tailed"),
       Hyp         = sub("_.*", "", hypothesis),
       `P(BF>10)`  = round(p_bf_primary, 2),
@@ -821,9 +851,6 @@ if (file.exists(exc_path)) {
     )
   knitr::kable(
     exc_tbl,
-    caption = paste0("Probability of Exceeding BF > ", BF_THRESHOLD_PRIMARY,
-                     " (Primary) and BF > ", BF_THRESHOLD_SECONDARY,
-                     " (Secondary) per Design Condition"),
     booktabs = TRUE, longtable = TRUE,
     align = c("r", "r", "l", "l", "r", "r", "r", "r")
   ) |>
@@ -832,6 +859,12 @@ if (file.exists(exc_path)) {
   cat("BF exceedance results not yet available.\n")
 }
 ```
+
+```{=latex}
+\vspace{-0.9em}
+```
+
+*Note.* Hyp denotes the focal hypothesis, Sims the number of simulated replicates and LC the literature-centred regime. P(BF > 10) and P(BF > 3) are the proportions of replicates exceeding each Bayes-factor threshold.
 
 ```{=latex}
 \endgroup
