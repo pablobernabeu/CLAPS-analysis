@@ -56,6 +56,7 @@ simulate_claps_data <- function(
   has_pseudo_passive       = TRUE,
   include_gender           = FALSE,
   beta_gender              = 0.3,
+  beta_gender_sem_passive  = 0.15,
   seed                     = 1L
 ) {
   set.seed(seed)
@@ -90,7 +91,17 @@ simulate_claps_data <- function(
         # only when include_gender is TRUE, so the baseline RNG stream — and
         # therefore every previously simulated cell — is left unchanged.
         g        <- if (include_gender) sample(c("Man", "Woman"), size = 1) else NA_character_
-        b_gender <- if (include_gender) beta_gender * as.numeric(g == "Woman") else 0
+        # Centred gender code (Man = +0.5, Woman = -0.5): mean-zero so the gender
+        # contribution does not shift the gender-averaged S_Type/Semantics effects
+        # (mirrors contr.sum at fit time; note contr.sum uses +/-1 so recovered
+        # gender coefs are 2x these DGP values - immaterial, gender is a nuisance).
+        gcode    <- if (include_gender) (if (identical(g, "Man")) 0.5 else -0.5) else 0
+        b_gender <- if (include_gender) beta_gender * gcode else 0
+        # Small 3-way: Gender x Semantics, strongest in the PASSIVE (the reference
+        # S_Type, which foregrounds the patient's affectedness). No new RNG draws.
+        b_g3     <- if (include_gender && identical(st, "Passive")) {
+                      beta_gender_sem_passive * gcode * sem
+                    } else 0
 
         # Linear predictor
         b_st   <- if (st == "Active") 0 else if (st == "Pseudo_Passive") 0 else 0  # S_Type main effect = 0 for now
@@ -98,7 +109,7 @@ simulate_claps_data <- function(
                   else if (st == "Pseudo_Passive") beta_pseudo_interaction * sem
                   else 0
         eta <- part_intercepts[pid] + part_slopes[pid] * sem +
-               verb_intercepts[vid] + beta_semantics * sem + b_int + b_gender
+               verb_intercepts[vid] + beta_semantics * sem + b_int + b_gender + b_g3
 
         # Ordinal probabilities from cumulative logit
         cum_probs <- plogis(thresholds - eta)
@@ -131,6 +142,11 @@ simulate_claps_data <- function(
   # alphabetically (reference = "Active") and the interaction priors fail to
   # correspond to any model parameter.
   rows$S_Type <- factor(rows$S_Type, levels = s_types)
+  if (include_gender && "Gender" %in% names(rows)) {
+    # Sum/deviation contrast so the focal S_Type/Semantics terms stay gender-averaged.
+    rows$Gender <- factor(rows$Gender, levels = c("Man", "Woman"))
+    stats::contrasts(rows$Gender) <- stats::contr.sum(2)
+  }
   rows
 }
 
@@ -167,6 +183,7 @@ simulate_claps_data_multilanguage <- function(
   has_pseudo_passive       = TRUE,
   include_gender           = FALSE,
   beta_gender              = 0.3,
+  beta_gender_sem_passive  = 0.15,
   seed                     = 1L
 ) {
   set.seed(seed)
@@ -202,12 +219,17 @@ simulate_claps_data_multilanguage <- function(
         sem_sample  <- sample(semantics_vals, size = n_verbs, replace = TRUE)
         purrr::map2_dfr(verb_sample, sem_sample, function(vid, sem) {
           g        <- if (include_gender) sample(c("Man", "Woman"), size = 1) else NA_character_
-          b_gender <- if (include_gender) beta_gender * as.numeric(g == "Woman") else 0
+          gcode    <- if (include_gender) (if (identical(g, "Man")) 0.5 else -0.5) else 0
+          b_gender <- if (include_gender) beta_gender * gcode else 0
+          b_g3     <- if (include_gender && identical(st, "Passive")) {
+                        beta_gender_sem_passive * gcode * sem
+                      } else 0
           b_int    <- if (st == "Active") beta_active_interaction * sem
                       else if (st == "Pseudo_Passive") beta_pseudo_interaction * sem
                       else 0
           eta <- lang_int[lang] + part_int[pid] + verb_int[vid] +
-                 (beta_semantics + lang_slp[lang] + part_slp[pid]) * sem + b_int + b_gender
+                 (beta_semantics + lang_slp[lang] + part_slp[pid]) * sem +
+                 b_int + b_gender + b_g3
 
           cum_probs <- plogis(thresholds - eta)
           probs     <- diff(c(0, cum_probs, 1))
@@ -228,6 +250,10 @@ simulate_claps_data_multilanguage <- function(
 
   rows$S_Type   <- factor(rows$S_Type,   levels = s_types)
   rows$Language <- factor(rows$Language, levels = languages)
+  if (include_gender && "Gender" %in% names(rows)) {
+    rows$Gender <- factor(rows$Gender, levels = c("Man", "Woman"))
+    stats::contrasts(rows$Gender) <- stats::contr.sum(2)
+  }
   rows
 }
 
@@ -246,6 +272,19 @@ run_design_cell <- function(cell, out_dir = "outputs/design_analysis", overwrite
     cell$n_participants, cell$n_verbs, cell$seed,
     sep = "_"
   )
+  # Disambiguate cells that share the fields above but differ in gender spec or
+  # simulated language count, so they never overwrite one another's .rds. Baseline
+  # cells (no gender, no n_languages column) keep their original cell_id, leaving
+  # all existing outputs untouched. "_gender" = main effect (legacy), "_genderX" =
+  # the 3-way interaction spec.
+  .gs <- if (!is.null(cell$gender_spec) && !is.na(cell$gender_spec)) {
+    as.character(cell$gender_spec)
+  } else if (isTRUE(cell$include_gender)) "main" else "none"
+  if (.gs == "main")        cell_id <- paste0(cell_id, "_gender")
+  if (.gs == "interaction") cell_id <- paste0(cell_id, "_genderX")
+  if (!is.null(cell$n_languages) && !is.na(cell$n_languages)) {
+    cell_id <- paste0(cell_id, "_", as.integer(cell$n_languages), "lang")
+  }
   out_file <- file.path(out_dir, paste0(cell_id, ".rds"))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -259,28 +298,46 @@ run_design_cell <- function(cell, out_dir = "outputs/design_analysis", overwrite
 
   has_pp <- isTRUE(cell$has_pseudo_passive)
 
-  # Optional gender model variation (referent-gender covariate). Defaults to
-  # FALSE so existing grid cells are unaffected.
-  include_gender <- isTRUE(cell$include_gender)
+  # Gender model variation. New cells carry gender_spec in {none, main, interaction};
+  # legacy cells carry include_gender (TRUE -> "main"). Resolve to a single value.
+  gender_spec <- if (!is.null(cell$gender_spec) && !is.na(cell$gender_spec)) {
+    as.character(cell$gender_spec)
+  } else if (isTRUE(cell$include_gender)) {
+    "main"
+  } else {
+    "none"
+  }
+  include_gender <- gender_spec != "none"          # simulator RNG branches key on this
   beta_gender    <- cell$beta_gender %||% 0.3
+  beta_gender_sem_passive <- cell$beta_gender_sem_passive %||% 0.15
 
   # Cross-language cells (language "AllLanguages" / "*_cross_*" levels) use the
   # multilanguage simulator + ladder; everything else uses the single-language path.
   is_cross <- identical(cell$language, "AllLanguages") || grepl("_cross", cell$model_level)
 
   if (is_cross) {
+    # Number of simulated languages is a cell parameter; when absent (the existing
+    # cross grids) it defaults to the three real CLAPS languages, preserving prior
+    # behaviour exactly. The feasibility curve sets n_languages to e.g. 3, 10, 20.
+    languages <- if (!is.null(cell$n_languages) && !is.na(cell$n_languages)) {
+      paste0("Lang", seq_len(as.integer(cell$n_languages)))
+    } else {
+      c("English", "Turkish", "Norwegian")
+    }
     sim_data <- simulate_claps_data_multilanguage(
       n_participants          = cell$n_participants,
       n_verbs                 = cell$n_verbs,
       beta_semantics          = cell$beta_semantics,
       beta_active_interaction = cell$beta_active_interaction,
       beta_pseudo_interaction = if (has_pp) cell$beta_pseudo_interaction else 0,
+      languages               = languages,
       has_pseudo_passive      = has_pp,
       include_gender          = include_gender,
       beta_gender             = beta_gender,
+      beta_gender_sem_passive = beta_gender_sem_passive,
       seed                    = cell$seed
     )
-    ladder <- build_multilanguage_ladder(include_gender = include_gender)
+    ladder <- build_multilanguage_ladder(gender_spec = gender_spec)
   } else {
     sim_data <- simulate_claps_data(
       n_participants          = cell$n_participants,
@@ -291,10 +348,11 @@ run_design_cell <- function(cell, out_dir = "outputs/design_analysis", overwrite
       has_pseudo_passive      = has_pp,
       include_gender          = include_gender,
       beta_gender             = beta_gender,
+      beta_gender_sem_passive = beta_gender_sem_passive,
       seed                    = cell$seed
     )
     ladder <- build_model_ladder(has_pseudo_passive = has_pp,
-                                 include_gender = include_gender)
+                                 gender_spec = gender_spec)
   }
   formula <- ladder[[cell$model_level]]
   if (is.null(formula)) {

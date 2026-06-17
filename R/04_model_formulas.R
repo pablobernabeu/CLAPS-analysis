@@ -20,7 +20,16 @@ suppressPackageStartupMessages({
 build_model_ladder <- function(has_pseudo_passive = TRUE,
                                 response_var  = "Response",
                                 semantics_var = "Semantics_scaled",
-                                include_gender = FALSE) {
+                                gender_spec   = c("none", "main", "interaction"),
+                                include_gender = NULL) {
+
+  # Back-compat shim: legacy callers (R/09_model_ladder.R, pilot scripts, tests)
+  # pass include_gender = TRUE/FALSE; translate to gender_spec. New callers pass
+  # gender_spec directly.
+  if (!is.null(include_gender)) {
+    gender_spec <- if (isTRUE(include_gender)) "main" else "none"
+  }
+  gender_spec <- match.arg(gender_spec)
 
   r <- response_var
   s <- semantics_var
@@ -38,8 +47,21 @@ build_model_ladder <- function(has_pseudo_passive = TRUE,
   # Participant:Verb random effect is introduced: a random Gender slope would add
   # many parameters (overfitting), and an Item-level random effect would be
   # collinear with Gender. This is the "keep the random effects crossed" case.
-  fe <- paste0(r, " ~ S_Type * ", s)
-  if (isTRUE(include_gender)) fe <- paste0(fe, " + Gender")
+  #
+  # Gender enters the FIXED effects only (never a random slope, at any level):
+  #   none        -> Response ~ S_Type * Semantics
+  #   main        -> ... + Gender                          (legacy main-effect covariate)
+  #   interaction -> Response ~ S_Type * Semantics * Gender (full 3-way; Gender must be
+  #                  sum/deviation-coded upstream so the focal S_Type/Semantics terms
+  #                  stay gender-averaged). The 3-way adds only fixed coefficients, so
+  #                  the cost-driving by-group random covariance is unchanged.
+  fe <- if (gender_spec == "interaction") {
+    paste0(r, " ~ S_Type * ", s, " * Gender")
+  } else if (gender_spec == "main") {
+    paste0(r, " ~ S_Type * ", s, " + Gender")
+  } else {
+    paste0(r, " ~ S_Type * ", s)
+  }
 
   ladder <- list(
 
@@ -105,7 +127,8 @@ build_model_ladder <- function(has_pseudo_passive = TRUE,
   attr(ladder, "has_pseudo_passive") <- has_pseudo_passive
   attr(ladder, "semantics_var")      <- semantics_var
   attr(ladder, "response_var")       <- response_var
-  attr(ladder, "include_gender")     <- include_gender
+  attr(ladder, "gender_spec")        <- gender_spec
+  attr(ladder, "include_gender")     <- (gender_spec != "none")
 
   ladder
 }
@@ -162,19 +185,68 @@ production_control <- function(adapt_delta = 0.99, max_treedepth = 12) {
 #' @return Named list of brmsformula objects, in order L5_cross … L0_cross.
 build_multilanguage_ladder <- function(response_var  = "Response",
                                         semantics_var = "Semantics_scaled",
-                                        include_gender = FALSE) {
+                                        gender_spec   = c("none", "main", "interaction"),
+                                        include_gender = NULL) {
+  if (!is.null(include_gender)) {
+    gender_spec <- if (isTRUE(include_gender)) "main" else "none"
+  }
+  gender_spec <- match.arg(gender_spec)
   r <- response_var
   s <- semantics_var
 
   # Fixed effects are the same across all ladder levels. Gender (when included)
   # is a fixed-effect-only covariate — see build_model_ladder() for the crossed
   # random-effects rationale (no Gender random slope; no Item-level term).
-  fe <- paste0(r, " ~ S_Type * ", s)
-  if (isTRUE(include_gender)) fe <- paste0(fe, " + Gender")
+  #   none/main/interaction exactly as in build_model_ladder; "interaction" builds
+  #   the full 3-way S_Type * Semantics * Gender in the fixed effects only.
+  fe <- if (gender_spec == "interaction") {
+    paste0(r, " ~ S_Type * ", s, " * Gender")
+  } else if (gender_spec == "main") {
+    paste0(r, " ~ S_Type * ", s, " + Gender")
+  } else {
+    paste0(r, " ~ S_Type * ", s)
+  }
+
+  # Random-slope term for the maximal rungs (L6/L7). The truly-maximal model puts
+  # the FULL fixed structure into every random-slope term (Barr et al. 2013); with
+  # the 3-way gender model that includes gender. These rungs are hypothesised NOT to
+  # converge (an over-parameterised by-Language covariance from few language groups);
+  # the feasibility run verifies the failure. Without gender they reduce to the
+  # existing S_Type*Semantics maximal.
+  rs_full  <- if (gender_spec == "interaction") paste0("S_Type * ", s, " * Gender") else paste0("S_Type * ", s)
+  rs_gmain <- if (gender_spec == "interaction") paste0("S_Type * ", s, " + Gender") else paste0("S_Type * ", s)
 
   # The Language grouping factor appears in all levels; complexity of
   # by-Language slopes decreases as we descend the ladder.
   ladder <- list(
+
+    # L7: TRULY MAXIMAL — the full fixed structure as correlated random slopes on
+    # all three grouping factors (Barr et al. 2013, "keep it maximal"). With the
+    # 3-way gender model this is a 12-term by-group covariance; the by-Language
+    # block, estimated from only 3-20 language groups, is hypothesised to be
+    # unidentifiable, so the model should NOT converge. Run to verify the failure.
+    L7_cross_truly_maximal = brms::bf(
+      as.formula(paste0(
+        fe,
+        " + (1 + ", rs_full, " | Participant)",
+        " + (1 + ", rs_full, " | Verb)",
+        " + (1 + ", rs_full, " | Language)"
+      )),
+      family = brms::cumulative(link = "logit", threshold = "flexible")
+    ),
+
+    # L6: maximal + gender random MAIN effect only — the cleanly-nested step
+    # between L5 (no gender random term) and L7 (full gender interaction). Locates
+    # where on the complexity gradient convergence breaks.
+    L6_cross_gender_maximal = brms::bf(
+      as.formula(paste0(
+        fe,
+        " + (1 + ", rs_gmain, " | Participant)",
+        " + (1 + ", rs_gmain, " | Verb)",
+        " + (1 + ", rs_gmain, " | Language)"
+      )),
+      family = brms::cumulative(link = "logit", threshold = "flexible")
+    ),
 
     # L5: OSF reference model — maximal correlated random effects for all
     # three grouping factors (Participant, Verb, Language).
@@ -247,7 +319,8 @@ build_multilanguage_ladder <- function(response_var  = "Response",
   attr(ladder, "model_type")   <- "cross_language"
   attr(ladder, "semantics_var") <- semantics_var
   attr(ladder, "response_var")  <- response_var
-  attr(ladder, "include_gender") <- include_gender
+  attr(ladder, "gender_spec")    <- gender_spec
+  attr(ladder, "include_gender") <- (gender_spec != "none")
 
   ladder
 }
@@ -255,6 +328,8 @@ build_multilanguage_ladder <- function(response_var  = "Response",
 #' Return the names of the cross-language ladder in descending complexity order.
 multilanguage_ladder_names <- function() {
   c(
+    "L7_cross_truly_maximal",
+    "L6_cross_gender_maximal",
     "L5_cross_maximal",
     "L4_cross_uncorrelated",
     "L3_cross_no_participant_interaction",

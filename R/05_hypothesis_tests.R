@@ -113,9 +113,26 @@ compute_all_bf <- function(fit, has_pseudo_passive = TRUE,
   ia_active_param  <- paste0("b_S_TypeActive:", semantics_var)
   # Fix: brms uses '.' or ':' — check actual posterior names
   post_names <- names(brms::as_draws_df(fit))
-  ia_active_param  <- grep(paste0("S_TypeActive.*", semantics_var), post_names, value = TRUE)[1]
+  # Match the gender-AVERAGED focal interactions ONLY. The end-anchor ($) excludes
+  # the higher-order gender terms (e.g. b_S_TypeActive:Semantics_scaled:Gender1) that
+  # gender_spec = "interaction" adds; the old unanchored ".*" pattern also matched
+  # those and [1] returned an order-dependent wrong term. The length()==1 guard turns
+  # any future coefficient-naming drift into a loud failure instead of a silent one.
+  ia_active_hits   <- grep(paste0("^b_S_TypeActive[:.]", semantics_var, "$"),
+                           post_names, value = TRUE)
+  if (length(ia_active_hits) != 1L) {
+    stop("[BF] expected exactly one Active:Semantics coefficient, found ",
+         length(ia_active_hits), ": ", paste(ia_active_hits, collapse = ", "))
+  }
+  ia_active_param  <- ia_active_hits[1]
   ia_pseudo_param  <- if (has_pseudo_passive) {
-    grep(paste0("S_TypePseudo_Passive.*", semantics_var), post_names, value = TRUE)[1]
+    ia_pseudo_hits <- grep(paste0("^b_S_TypePseudo_Passive[:.]", semantics_var, "$"),
+                           post_names, value = TRUE)
+    if (length(ia_pseudo_hits) != 1L) {
+      stop("[BF] expected exactly one Pseudo_Passive:Semantics coefficient, found ",
+           length(ia_pseudo_hits), ": ", paste(ia_pseudo_hits, collapse = ", "))
+    }
+    ia_pseudo_hits[1]
   } else NA_character_
 
   results <- list()
