@@ -1,6 +1,6 @@
 # Preregistration Decisions — CLAPS Bayesian Ordinal Workflow
 
-This document records every major analysis decision made before data collection and before any confirmatory analysis. Each decision is justified by reference to published methodological or substantive literature; full bibliographic details are in `references.bib`. The companion report `reports/claps_report.qmd` develops the rationale in narrative form.
+This document records every major analysis decision made before data collection and before any confirmatory analysis. Each decision is justified by reference to published methodological or substantive literature; full bibliographic details are in `references.bib`. The companion report under `reports/` develops the rationale in narrative form.
 
 All decisions below are **locked**. Changes require explicit justification, a version-controlled commit, and documentation in this file.
 

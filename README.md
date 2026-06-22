@@ -26,13 +26,18 @@ design (power) analysis and the resulting reports.
 
 ## Headline result
 
-At the assumed effect, the recommended per-language sample size is **_N_ = 80** for
-English, Norwegian and Turkish. The binding constraint is the active × affectedness
-interaction (H1b), because the affectedness slope itself (H1a) is already at ceiling.
-A pooled cross-language analysis, which borrows strength across the three languages,
-reaches the 80% target at roughly *N* = 60 per language. The full operating
-characteristics are in the date-stamped report under `reports/`
-(`CLAPS_design_analysis_<date>.pdf`).
+Power is governed mainly by the number of verbs in the materials, not by the number of
+participants. At the design's real verb count, a modest per-language sample of at most
+about 50 participants is sufficient, with both focal predictions reaching a detection
+probability of about 0.96 to 0.98 at 50 participants. At fewer verbs the design is
+borderline (40 verbs) or insufficient (12 to 20 verbs). The primary prediction (the
+active × affectedness interaction, H1b) is tested one-tailed, supported by the affectedness
+slope itself (H1a). The recommendation rests primarily on a data-grounded analysis that
+simulates from each language's fitted pilot, currently running on the cluster, with a
+literature-anchored analysis as a cross-check. An earlier figure of *N* = 80 was
+conditional on a smaller, fixed verb count and is superseded. Full operating
+characteristics are in the current report under `reports/`
+(`CLAPS_preliminary_sample_size_analysis_<date>.pdf`).
 
 ## Repository structure
 
@@ -41,26 +46,24 @@ R/         Analysis modules (model formulas, priors, hypothesis tests, ...)
 scripts/   Runnable pipeline scripts (grid generation, fitting, aggregation, ...)
 hpc/       SLURM batch and array scripts (University of Oxford ARC)
 config/    YAML and CSV configuration, including the design grids
-reports/   Quarto report sources, rendered PDFs and generated appendices
+reports/   Rendered report PDF and citation style (apa.csl)
 outputs/   Aggregated design-analysis result tables (CSV)
 docs/      Pipeline, submission and preregistration documentation
 references.bib, renv.lock, targets.R
 ```
 
-## Reproducing the reports
+## The report
 
-The full report renders from the committed summary tables, with no participant data:
+The current report is provided pre-rendered as
+`reports/CLAPS_preliminary_sample_size_analysis_<date>.pdf`. It draws on the private pilot
+data for its descriptive figure and sample-composition appendix, so it cannot be
+regenerated from this public repository. The aggregated result tables it summarises are
+committed under `outputs/`.
 
-```bash
-quarto render reports/claps_report.qmd --to pdf
-```
-
-The committed report PDF is date-stamped, `CLAPS_design_analysis_<date>.pdf`.
-
-The report's one pilot-data figure (the gender robustness check) is included as a
-pre-rendered aggregate image (`outputs/figures/raw_gender_comparison.png`). The script
-that builds it from the raw pilot data is included for transparency but, like the
-other pilot-data scripts, cannot be run without the withheld data.
+The report's pilot-data figure (a gender robustness check) is also provided separately as a
+pre-rendered image (`outputs/figures/raw_gender_comparison.png`). The script that builds it
+from the raw pilot data is included for transparency but cannot be run without the withheld
+data.
 
 ## Focal hypotheses
 

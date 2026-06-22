@@ -108,15 +108,10 @@ list(
   tar_target(
     manifest,
     write_manifest("outputs/manifest.csv")
-  ),
-
-  # ---------------------------------------------------------------------------
-  # 6. Reports (depend on reference audit passing)
-  # ---------------------------------------------------------------------------
-  tar_quarto(
-    claps_report,
-    "reports/claps_report.qmd",
-    depends_on = list(reference_audit, design_summary)
   )
+
+  # The report is produced outside this pipeline. The current report draws on the
+  # private pilot data, so it is rendered locally (reports/render_report.sh) and
+  # committed as a PDF rather than built here.
 
 )
