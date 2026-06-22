@@ -79,14 +79,22 @@ simulate_claps_data <- function(
   verb_intercepts <- rnorm(n_verbs, 0, sd_verb_intercept)
   names(verb_intercepts) <- verb_ids
 
-  # Semantics values (continuous, ~ uniform)
-  semantics_vals <- seq(-0.5, 0.5, length.out = 10)
+  # Affectedness is a VERB-LEVEL property: draw ONE fixed Semantics value per verb,
+  # once, before expanding, so every Verb_ID carries the SAME affectedness across all
+  # participants and sentence types (as in the real design, where each verb has a
+  # single affectedness score). Previously Semantics was resampled per
+  # participant x S_Type cell, which misspecified this level-2 predictor as a
+  # trial-level one and inflated the effective sample size for the affectedness
+  # effects. Drawn continuously on [-0.5, 0.5] so n_verbs governs the affectedness
+  # resolution (now a genuine, sweepable design lever).
+  verb_semantics <- stats::runif(n_verbs, min = -0.5, max = 0.5)
+  names(verb_semantics) <- verb_ids
 
   rows <- purrr::map_dfr(part_ids, function(pid) {
     purrr::map_dfr(s_types, function(st) {
       verb_sample <- sample(verb_ids, size = n_verbs, replace = FALSE)
-      sem_sample  <- sample(semantics_vals, size = n_verbs, replace = TRUE)
-      purrr::map2_dfr(verb_sample, sem_sample, function(vid, sem) {
+      purrr::map_dfr(verb_sample, function(vid) {
+        sem <- verb_semantics[[vid]]   # fixed per verb (verb-level affectedness)
         # Optional referent-gender covariate (Man/Woman). The draw is made
         # only when include_gender is TRUE, so the baseline RNG stream — and
         # therefore every previously simulated cell — is left unchanged.
@@ -200,8 +208,9 @@ simulate_claps_data_multilanguage <- function(
   names(lang_int) <- languages
   names(lang_slp) <- languages
 
-  semantics_vals <- seq(-0.5, 0.5, length.out = 10)
-
+  # Verb-level affectedness, fixed per verb (see simulate_claps_data for rationale):
+  # one Semantics value per verb id, drawn once per language before expanding, so a
+  # verb's affectedness is constant across participants and sentence types.
   rows <- purrr::map_dfr(languages, function(lang) {
     part_ids <- paste0(lang, "_P", seq_len(n_participants))
     part_int <- rnorm(n_participants, 0, sd_participant_intercept)
@@ -212,12 +221,14 @@ simulate_claps_data_multilanguage <- function(
     verb_ids <- paste0(lang, "_V", seq_len(n_verbs))
     verb_int <- rnorm(n_verbs, 0, sd_verb_intercept)
     names(verb_int) <- verb_ids
+    verb_semantics <- stats::runif(n_verbs, min = -0.5, max = 0.5)
+    names(verb_semantics) <- verb_ids
 
     purrr::map_dfr(part_ids, function(pid) {
       purrr::map_dfr(s_types, function(st) {
         verb_sample <- sample(verb_ids, size = n_verbs, replace = FALSE)
-        sem_sample  <- sample(semantics_vals, size = n_verbs, replace = TRUE)
-        purrr::map2_dfr(verb_sample, sem_sample, function(vid, sem) {
+        purrr::map_dfr(verb_sample, function(vid) {
+          sem <- verb_semantics[[vid]]   # fixed per verb
           g        <- if (include_gender) sample(c("Man", "Woman"), size = 1) else NA_character_
           gcode    <- if (include_gender) (if (identical(g, "Man")) 0.5 else -0.5) else 0
           b_gender <- if (include_gender) beta_gender * gcode else 0

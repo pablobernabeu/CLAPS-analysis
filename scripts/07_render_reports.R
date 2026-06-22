@@ -2,7 +2,7 @@
 # scripts/07_render_reports.R
 # Render all QMD reports after reference audit and aggregation are complete.
 # Fails immediately if the reference audit has not been run or has failed.
-# Usage: Rscript scripts/07_render_reports.R [--report all|claps]
+# Usage: Rscript scripts/07_render_reports.R [--report all|preliminary]
 
 suppressPackageStartupMessages({
   library(quarto)
@@ -11,7 +11,7 @@ suppressPackageStartupMessages({
 
 option_list <- list(
   optparse::make_option("--report", default = "all",
-    help = "Which report to render: all, claps")
+    help = "Which report to render: all, preliminary")
 )
 opt <- optparse::parse_args(optparse::OptionParser(option_list = option_list))
 
@@ -28,7 +28,7 @@ if (n_errors > 0) {
 }
 
 reports <- list(
-  claps = "reports/claps_report.qmd"
+  preliminary = "reports/preliminary_sample_size_analysis.qmd"
 )
 
 to_render <- if (opt$report == "all") names(reports) else opt$report

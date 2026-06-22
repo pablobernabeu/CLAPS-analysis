@@ -1,4 +1,0 @@
-language,model_level,n_cells,median_runtime_min,max_runtime_min,p_converged
-English,L5_correlated_maximal,8800,17.91,64.79,1
-Norwegian,L5_correlated_maximal,4400,9.15,31.55,0.99
-Turkish,L5_correlated_maximal,8800,17.89,66.85,0.99
