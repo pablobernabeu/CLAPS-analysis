@@ -41,9 +41,16 @@ source("R/10_simulate_from_pilot.R")
                   "S_TypePseudo_Passive:Semantics_scaled")
 
 #' Extract a DGP spec that ALSO carries posterior draws (for assurance) and a
-#' lower credible bound on the focal slopes (for safeguard).
+#' conservative credible bound on the focal slopes (for safeguard).
 #' @inheritParams extract_dgp_params
-#' @param lwr_q numeric in (0,1); lower-tail quantile for the safeguard effect.
+#' @param lwr_q numeric in (0,1); tail probability for the safeguard effect. The
+#'   conservative bound is whichever of the lwr_q and (1 - lwr_q) quantiles is
+#'   smaller in magnitude, so it shrinks the effect toward zero regardless of the
+#'   term's sign. A flat lower-tail quantile (the original implementation) is only
+#'   conservative for a positive-signed term; for a negative-signed term (e.g. the
+#'   active-by-affectedness interaction, which this design expects to be negative)
+#'   the lower tail is the MORE extreme, stronger-effect side, so it silently
+#'   inflated rather than discounted that term.
 extract_dgp_params_v2 <- function(fit, verb_affectedness, s_types, n_cats = 7L, lwr_q = 0.10) {
   dgp <- extract_dgp_params(fit, verb_affectedness, s_types, n_cats)
 
@@ -64,7 +71,10 @@ extract_dgp_params_v2 <- function(fit, verb_affectedness, s_types, n_cats = 7L, 
   thr_draws <- thr_draws[, order(thr_idx), drop = FALSE]
 
   focal     <- intersect(.FOCAL_TERMS, colnames(pop_draws))
-  focal_lwr <- vapply(focal, function(f) as.numeric(stats::quantile(pop_draws[, f], probs = lwr_q)), numeric(1))
+  focal_lwr <- vapply(focal, function(f) {
+    q <- stats::quantile(pop_draws[, f], probs = c(lwr_q, 1 - lwr_q))
+    q[[which.min(abs(q))]]
+  }, numeric(1))
   names(focal_lwr) <- focal
 
   c(dgp, list(
