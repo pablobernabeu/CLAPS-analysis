@@ -23,6 +23,12 @@
 #
 #   sbatch --clusters=htc --account=PROJECT_GROUP --array=1-75%20  hpc/submit_pooled_v2_array.sh
 #   sbatch --clusters=htc --account=PROJECT_GROUP    --array=76-150%20 hpc/submit_pooled_v2_array.sh
+#
+# Smoke test (isolated grid AND output dir, short partition):
+#   GRID=config/design_grid_pooled_v2_TEST.csv \
+#   OUTPUT_DIR=$DATA/PROJECT_GROUP/outputs/design_pooled_test \
+#   sbatch --clusters=htc --account=PROJECT_GROUP --partition=short --time=2:00:00 \
+#     --export=ALL,GRID,OUTPUT_DIR --array=1 hpc/submit_pooled_v2_array.sh
 
 set -euo pipefail
 SUBMIT_DIR="$HOME/design_analysis"; cd "$SUBMIT_DIR"
@@ -52,7 +58,7 @@ N_ROWS=$(tail -n +2 "$GRID" | wc -l)
 if [[ "$ROW" -gt "$N_ROWS" ]]; then
   echo "[pooled2] task $ROW exceeds grid size $N_ROWS; exiting cleanly."; exit 0
 fi
-echo "Grid row $ROW / $N_ROWS | $(awk -F',' -v r="$((ROW+1))" 'NR==r{print "N/lang="$1,"mode="$3}' "$GRID")"
+echo "Grid row $ROW / $N_ROWS | $(awk -F',' -v r="$((ROW+1))" 'NR==r{print "N/lang="$1,"mode="$2}' "$GRID")"
 
 Rscript scripts/07_pooled_cell_v2.R \
   --row_index "$ROW" \

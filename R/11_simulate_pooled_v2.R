@@ -54,8 +54,13 @@ simulate_pooled_from_pilots <- function(dgps, n_per_language, mode = "assurance"
     sim  <- simulate_from_pilot_v2(dgps[[lang]], n_per_language, mode = mode,
                                    draw_index = as.integer(draw_indices[[lang]]),
                                    seed = as.integer(seed) + (i - 1L))
-    sim$Participant <- paste(lang, sim$Participant, sep = "_")
-    sim$Verb        <- paste(lang, sim$Verb,        sep = "_")
+    # Prefix IDs by language unless already prefixed (Verb_ID in the harmonised
+    # pilot, and hence the DGP verb names, already carry the language prefix).
+    pfx <- paste0(lang, "_")
+    sim$Participant <- ifelse(startsWith(sim$Participant, pfx),
+                              sim$Participant, paste0(pfx, sim$Participant))
+    sim$Verb        <- ifelse(startsWith(sim$Verb, pfx),
+                              sim$Verb, paste0(pfx, sim$Verb))
     sim$S_Type      <- as.character(sim$S_Type)
     sim$Language    <- lang
     sim
@@ -99,7 +104,10 @@ run_pooled_cell_v2 <- function(cell, dgps, out_dir, overwrite = FALSE) {
                                           seed = as.integer(cell$seed))
 
   # Pooled data always contains pseudo-passive rows (from English + Turkish),
-  # so the pseudo interaction prior and hypothesis apply.
+  # so the pseudo interaction prior and hypothesis apply. NB the pooled H2
+  # (pseudo-by-affectedness) coefficient is identified from English and Turkish
+  # only, since Norwegian has no pseudo-passive; despite the "AllLanguages"
+  # label it is a two-language estimand, mirroring the real planned analysis.
   formula   <- build_multilanguage_ladder()[[cell$model_level]]
   prior_obj <- align_prior_to_model(
     build_brms_prior(regime_name = cell$prior_regime, threshold_mode = cell$threshold_mode,

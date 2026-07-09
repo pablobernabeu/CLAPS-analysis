@@ -37,14 +37,16 @@ d <- readr::read_csv(opt$pilot, show_col_types = FALSE) |>
   scale_semantics(centre_by = "Language")
 # Language-prefixed IDs prevent accidental sharing of a Participant or Verb
 # level across languages (verb inventories and participant pools are disjoint).
+# Verb_ID is already language-prefixed in the harmonised pilot; Participant is not.
 d$Participant <- paste(d$Language, d$Participant, sep = "_")
-d$Verb        <- paste(d$Language, d$Verb_ID,     sep = "_")
+d$Verb        <- d$Verb_ID
 d$S_Type      <- factor(d$S_Type, levels = KEEP)
 d$Language    <- factor(d$Language, levels = LANGS)
 d$Response    <- as.integer(d$Response)
 
 formula   <- build_multilanguage_ladder()[["L5_cross_maximal"]]
-prior_obj <- align_prior_to_model(build_brms_prior(opt$regime, "broad", TRUE), formula, d)
+prior_obj <- align_prior_to_model(
+  build_brms_prior(opt$regime, "broad", has_pseudo_passive = TRUE), formula, d)
 samp      <- production_sampling(iter = opt$iter, warmup = opt$warmup, chains = opt$chains, seed = 2026)
 
 cat("[pooled pilot fit] obs", nrow(d), "| ppts", dplyr::n_distinct(d$Participant),
