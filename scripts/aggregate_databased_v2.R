@@ -53,13 +53,27 @@ for (i in seq_along(files)) {
   if (length(h1a) != 1 || length(h1b) != 1 || is.na(h1a) || is.na(h1b)) next
   rows[[i]] <- data.frame(language = s$language, mode = s$mode,
                           n_participants = as.integer(s$n_participants),
-                          h1a = h1a >= 10, h1b = h1b >= 10)
+                          bf_h1a = h1a, bf_h1b = h1b)
 }
 cells <- dplyr::bind_rows(rows)
+# The continuous Bayes factors are stored per cell, so detection rates at any
+# threshold are a re-scoring, not a re-run. BF >= 10 keeps the original
+# column names (the report reads them); 6 and 3 quantify the criterion
+# relaxations under discussion with the collaborators.
 joint <- cells |>
   dplyr::group_by(language, mode, n_participants) |>
-  dplyr::summarise(reps = dplyr::n(), p_h1a = mean(h1a), p_h1b = mean(h1b),
-                   p_joint = mean(h1a & h1b), .groups = "drop") |>
+  dplyr::summarise(
+    reps         = dplyr::n(),
+    p_h1a        = mean(bf_h1a >= 10),
+    p_h1b        = mean(bf_h1b >= 10),
+    p_joint      = mean(bf_h1a >= 10 & bf_h1b >= 10),
+    p_h1a_bf6    = mean(bf_h1a >= 6),
+    p_h1b_bf6    = mean(bf_h1b >= 6),
+    p_joint_bf6  = mean(bf_h1a >= 6 & bf_h1b >= 6),
+    p_h1a_bf3    = mean(bf_h1a >= 3),
+    p_h1b_bf3    = mean(bf_h1b >= 3),
+    p_joint_bf3  = mean(bf_h1a >= 3 & bf_h1b >= 3),
+    .groups = "drop") |>
   dplyr::arrange(mode, language, n_participants)
 readr::write_csv(joint, file.path(opt$outdir, "joint_power_databased_v2.csv"))
 message(sprintf("[aggregate v2] %d usable cells -> joint_power_databased_v2.csv (%d rows)",

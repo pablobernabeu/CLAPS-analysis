@@ -35,7 +35,11 @@ export CMDSTAN="$(ls -d "${PROJECT_DATA}/cmdstan/cmdstan-"* 2>/dev/null | sort -
 if [[ -z "${CMDSTAN}" || ! -x "${CMDSTAN}/bin/stanc" ]]; then
   echo "ERROR: CmdStan not found under ${PROJECT_DATA}/cmdstan." >&2; exit 1
 fi
-OUTPUT_DIR="${PROJECT_DATA}/outputs/design_databased_v2"
+# Overridable for side arms, e.g. the decision arm at the collaborator cap:
+#   GRID=config/design_grid_databased_v2_decision.csv \
+#   OUTPUT_DIR=$DATA/PROJECT_GROUP/outputs/design_databased_v2_decision \
+#   sbatch --clusters=htc --account=<acct> --export=ALL,GRID,OUTPUT_DIR --array=... $0
+OUTPUT_DIR="${OUTPUT_DIR:-${PROJECT_DATA}/outputs/design_databased_v2}"
 DGP_DIR="${PROJECT_DATA}/outputs/pilot_models"
 mkdir -p "$OUTPUT_DIR" "$CMDSTANR_OUTPUT_DIR" outputs/logs
 
