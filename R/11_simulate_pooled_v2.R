@@ -146,7 +146,9 @@ run_pooled_cell_v2 <- function(cell, dgps, out_dir, overwrite = FALSE) {
                                       iter = samp$iter, warmup = samp$warmup, chains = samp$chains)),
       bf_results  = tryCatch(compute_all_bf(fitres$fit, has_pseudo_passive = TRUE),
                              error = function(e) tibble::tibble(error = conditionMessage(e))),
-      diagnostics = extract_convergence_diagnostics(fitres$fit))
+      # Protected like the fit and BF steps (see run_databased_cell_v2).
+      diagnostics = tryCatch(extract_convergence_diagnostics(fitres$fit),
+                             error = function(e) tibble::tibble(error = conditionMessage(e))))
   }
   tmp <- paste0(out_file, ".tmp"); saveRDS(result, tmp); file.rename(tmp, out_file)
   message("[pooled2] done ", cell_id, " (", round(rt, 1), "s)")

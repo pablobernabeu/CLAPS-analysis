@@ -206,7 +206,12 @@ run_databased_cell_v2 <- function(cell, dgp, out_dir, overwrite = FALSE) {
                                       iter = samp$iter, warmup = samp$warmup, chains = samp$chains)),
       bf_results  = tryCatch(compute_all_bf(fitres$fit, has_pseudo_passive = has_pp),
                              error = function(e) tibble::tibble(error = conditionMessage(e))),
-      diagnostics = extract_convergence_diagnostics(fitres$fit))
+      # Protected like the fit and BF steps: a diagnostics failure must never
+      # discard an otherwise successful (and expensive) fit. No such failure
+      # has been observed (brms exposes a stanfit-compatible object under the
+      # cmdstanr backend), but the asymmetry was a latent risk.
+      diagnostics = tryCatch(extract_convergence_diagnostics(fitres$fit),
+                             error = function(e) tibble::tibble(error = conditionMessage(e))))
   }
   tmp <- paste0(out_file, ".tmp"); saveRDS(result, tmp); file.rename(tmp, out_file)
   message("[databased2] done ", cell_id, " (", round(rt, 1), "s)")
