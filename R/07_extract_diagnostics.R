@@ -10,9 +10,19 @@ suppressPackageStartupMessages({
 })
 
 #' Extract convergence diagnostics from a brmsfit object.
+#'
+#' Works under both the rstan and cmdstanr backends: brms exposes an
+#' rstan-compatible stanfit at `fit$fit` in either case, so the slot accesses
+#' below are valid for cmdstanr-backed fits too.
+#'
 #' @param fit A brmsfit object.
-#' @return A tibble with diagnostic summaries.
-extract_convergence_diagnostics <- function(fit) {
+#' @param max_treedepth Tree-depth ceiling the sampler was run with, used to
+#'   count saturating transitions. Only consulted when the value cannot be read
+#'   back off the fit itself. The default tracks `production_control()` in
+#'   R/04_model_formulas.R; passing the wrong value here does not corrupt any
+#'   estimate, but it does mis-count `n_max_treedepth`, so keep the two in step.
+#' @return A one-row tibble of diagnostic summaries.
+extract_convergence_diagnostics <- function(fit, max_treedepth = 12L) {
   stopifnot(inherits(fit, "brmsfit"))
 
   draws <- posterior::as_draws_array(fit)
@@ -21,15 +31,26 @@ extract_convergence_diagnostics <- function(fit) {
     posterior::default_convergence_measures()
   )
 
-  # Focal fixed-effect parameters only
+  # Population-level coefficients, group-level SDs and correlations. Deliberately
+  # broader than the two focal terms: a fit whose variance components have not
+  # mixed cannot be trusted for the focal Bayes factors either.
   focal <- summ |>
     dplyr::filter(grepl("^b_|^sd_|^cor_|^Intercept", variable))
 
   # Sampler diagnostics
   np <- brms::nuts_params(fit)
 
+  # Prefer the ceiling actually used by this fit; fall back to the argument when
+  # the slot is absent, which it can be depending on backend and brms version.
+  depth_limit <- fit$fit@sim$max_depth %||% max_treedepth
+
+  # A divergence anywhere signals a posterior geometry the sampler could not
+  # follow, so these are counted as transitions, not as chains.
   n_divergent   <- sum(np$Value[np$Parameter == "divergent__"] > 0, na.rm = TRUE)
-  n_max_treedepth <- sum(np$Value[np$Parameter == "treedepth__"] >= fit$fit@sim$max_depth %||% 12,
+  # Saturating the tree depth is an efficiency failure rather than a validity
+  # one, but it inflates Monte-Carlo error in the Savage-Dickey density ratio
+  # and so is tracked with the same weight here.
+  n_max_treedepth <- sum(np$Value[np$Parameter == "treedepth__"] >= depth_limit,
                          na.rm = TRUE)
 
   # Rhat threshold checks
@@ -37,6 +58,11 @@ extract_convergence_diagnostics <- function(fit) {
   min_ess_b  <- min(focal$ess_bulk, na.rm = TRUE)
   min_ess_t  <- min(focal$ess_tail, na.rm = TRUE)
 
+  # Publication-grade criteria of Vehtari et al. (2021, doi:10.1214/20-BA1221):
+  # R-hat below 1.01, and both bulk and tail ESS at or above 400, which is the
+  # point at which their Monte-Carlo error estimates become dependable. This is
+  # a strict flag by design, and is recorded rather than used to discard fits;
+  # see the aggregation scripts, which report power with and without it.
   convergence_ok <- max_rhat < 1.01 & min_ess_b >= 400 & min_ess_t >= 400 &
                     n_divergent == 0 & n_max_treedepth == 0
 
