@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
-# scripts/aggregate_databased_v2.R
+# scripts/aggregate_pilot.R
 # ---------------------------------------------------------------------------
 # Aggregate the pilot-grounded (v2) design analysis into tidy summary CSVs.
 # The report (reports/preliminary_sample_size_analysis.qmd) reads these files,
 # so no simulation result needs to be hard-coded in the report source.
 #
 # Outputs (to --outdir):
-#   joint_power_databased_v2.csv   One row per language x mode x N: replicate
+#   joint_power_pilot.csv   One row per language x mode x N: replicate
 #     count, marginal detection rates for H1a and H1b, and the joint rate
 #     (both focal predictions clear BF >= 10 in the same simulated study).
 #   pilot_params_ceilings.csv      One row per language: fitted pilot
@@ -25,17 +25,17 @@
 # the detection rate at that floor, averaged over the pilot posterior draws.
 #
 # Run on the cluster, next to the per-cell outputs and pilot DGP files:
-#   Rscript scripts/aggregate_databased_v2.R \
+#   Rscript scripts/aggregate_pilot.R \
 #     --cells  <data>/outputs/design_databased_v2 \
 #     --dgpdir <data>/outputs/pilot_models \
-#     --outdir <data>/outputs/design_summary_databased_v2
+#     --outdir <data>/outputs/design_summary_pilot
 # ---------------------------------------------------------------------------
 suppressPackageStartupMessages({ library(optparse); library(dplyr); library(readr) })
 
 opt <- optparse::parse_args(optparse::OptionParser(option_list = list(
   optparse::make_option("--cells",  default = "outputs/design_databased_v2"),
   optparse::make_option("--dgpdir", default = "outputs/pilot_models"),
-  optparse::make_option("--outdir", default = "outputs/design_summary_databased_v2")
+  optparse::make_option("--outdir", default = "outputs/design_summary_pilot")
 )))
 dir.create(opt$outdir, recursive = TRUE, showWarnings = FALSE)
 
@@ -88,11 +88,11 @@ for (i in seq_along(files)) {
 cells <- dplyr::bind_rows(rows)
 
 if (sum(skipped) > 0) {
-  message(sprintf("[aggregate v2] skipped %d of %d files (%s)", sum(skipped), length(files),
+  message(sprintf("[aggregate pilot] skipped %d of %d files (%s)", sum(skipped), length(files),
                   paste(sprintf("%s=%d", names(skipped)[skipped > 0], skipped[skipped > 0]),
                         collapse = ", ")))
 }
-if (nrow(cells) == 0) stop("[aggregate v2] no usable cells in ", opt$cells)
+if (nrow(cells) == 0) stop("[aggregate pilot] no usable cells in ", opt$cells)
 # The continuous Bayes factors are stored per cell, so detection rates at any
 # threshold are a re-scoring, not a re-run. BF >= 10 keeps the original
 # column names (the report reads them); 6 and 3 quantify the criterion
@@ -121,8 +121,8 @@ joint <- cells |>
     } else NA_real_,
     .groups = "drop") |>
   dplyr::arrange(mode, language, n_participants)
-readr::write_csv(joint, file.path(opt$outdir, "joint_power_databased_v2.csv"))
-message(sprintf("[aggregate v2] %d usable cells -> joint_power_databased_v2.csv (%d rows)",
+readr::write_csv(joint, file.path(opt$outdir, "joint_power_pilot.csv"))
+message(sprintf("[aggregate pilot] %d usable cells -> joint_power_pilot.csv (%d rows)",
                 nrow(cells), nrow(joint)))
 
 # A cell holding only a handful of replicates yields a power estimate that can
@@ -130,7 +130,7 @@ message(sprintf("[aggregate v2] %d usable cells -> joint_power_databased_v2.csv 
 # minimum-replicate guard, but the CSV is also read directly, so name them here.
 thin <- dplyr::filter(joint, reps < 10L)
 if (nrow(thin) > 0) {
-  message(sprintf("[aggregate v2] %d cell(s) below 10 replicates, treat as provisional: %s",
+  message(sprintf("[aggregate pilot] %d cell(s) below 10 replicates, treat as provisional: %s",
                   nrow(thin), paste(sprintf("%s/%s N=%d (%d)", thin$language, thin$mode,
                                             thin$n_participants, thin$reps), collapse = "; ")))
 }
@@ -204,4 +204,4 @@ params <- dplyr::bind_rows(lapply(LANGS, function(L) {
   )
 }))
 readr::write_csv(params, file.path(opt$outdir, "pilot_params_ceilings.csv"))
-message("[aggregate v2] pilot_params_ceilings.csv written")
+message("[aggregate pilot] pilot_params_ceilings.csv written")

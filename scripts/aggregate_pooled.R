@@ -1,27 +1,27 @@
 #!/usr/bin/env Rscript
-# scripts/aggregate_pooled_v2.R
+# scripts/aggregate_pooled.R
 # ---------------------------------------------------------------------------
 # Aggregate the pooled cross-language design analysis (design_pooled_v2) into
-# a tidy summary CSV the report can read, mirroring aggregate_databased_v2.R.
+# a tidy summary CSV the report can read, mirroring aggregate_pilot.R.
 # One row per per-language sample size, with detection rates for the two focal
 # predictions and their joint at Bayes-factor thresholds 10, 6 and 3. The
 # language label on every cell is "AllLanguages"; n_participants is per
 # language (total sample is three times that).
 #
-#   Rscript scripts/aggregate_pooled_v2.R \
+#   Rscript scripts/aggregate_pooled.R \
 #     --cells  <data>/outputs/design_pooled_v2 \
-#     --outdir <data>/outputs/design_summary_databased_v2
+#     --outdir <data>/outputs/design_summary_pilot
 # ---------------------------------------------------------------------------
 suppressPackageStartupMessages({ library(optparse); library(dplyr); library(readr) })
 
 opt <- optparse::parse_args(optparse::OptionParser(option_list = list(
   optparse::make_option("--cells",  default = "outputs/design_pooled_v2"),
-  optparse::make_option("--outdir", default = "outputs/design_summary_databased_v2")
+  optparse::make_option("--outdir", default = "outputs/design_summary_pilot")
 )))
 dir.create(opt$outdir, recursive = TRUE, showWarnings = FALSE)
 
 # Unusable cells are counted by reason rather than dropped silently; see the
-# equivalent block in aggregate_databased_v2.R for why (a failed fit still exits
+# equivalent block in aggregate_pilot.R for why (a failed fit still exits
 # 0 at the scheduler level, so this tally is the first place a cluster-wide
 # fault becomes visible). Pooled cells are the expensive ones, at roughly one to
 # four days each, so losing them unnoticed is correspondingly costlier.
@@ -66,7 +66,7 @@ pooled <- cells |>
     p_joint_bf6    = mean(bf_h1a >= 6  & bf_h1b >= 6),
     p_joint_bf3    = mean(bf_h1a >= 3  & bf_h1b >= 3),
     median_bf_h1a  = median(bf_h1a),  median_bf_h1b = median(bf_h1b),
-    # Reported, not applied: see aggregate_databased_v2.R. Filtering the pooled
+    # Reported, not applied: see aggregate_pilot.R. Filtering the pooled
     # cells on convergence moves the headline rate by only a few points, so the
     # low joint power at BF >= 10 is a property of the design rather than an
     # artefact of imperfect sampling.
@@ -79,6 +79,6 @@ pooled <- cells |>
     mcse_p_joint      = sqrt(p_joint * (1 - p_joint) / dplyr::n()),
     .groups = "drop") |>
   dplyr::arrange(n_participants)
-readr::write_csv(pooled, file.path(opt$outdir, "pooled_power_databased_v2.csv"))
-message(sprintf("[aggregate pooled] %d usable cells -> pooled_power_databased_v2.csv (%d N rows)",
+readr::write_csv(pooled, file.path(opt$outdir, "pooled_power_pilot.csv"))
+message(sprintf("[aggregate pooled] %d usable cells -> pooled_power_pilot.csv (%d N rows)",
                 nrow(cells), nrow(pooled)))
