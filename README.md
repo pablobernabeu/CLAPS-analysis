@@ -27,16 +27,15 @@ design (power) analysis and the resulting reports.
 ## Headline result
 
 Power is governed mainly by the number of verbs in the materials, not by the number of
-participants. At the design's real verb count, a modest per-language sample of at most
-about 50 participants is sufficient, with both focal predictions reaching a detection
-probability of about 0.96 to 0.98 at 50 participants. At fewer verbs the design is
-borderline (40 verbs) or insufficient (12 to 20 verbs). The primary prediction (the
-active × affectedness interaction, H1b) is tested one-tailed, supported by the affectedness
-slope itself (H1a). The recommendation rests primarily on a data-grounded analysis that
-simulates from each language's fitted pilot, currently running on the cluster, with a
-literature-anchored analysis as a cross-check. An earlier figure of *N* = 80 was
-conditional on a smaller, fixed verb count and is superseded. Full operating
-characteristics are in the current report under `reports/`
+participants. In the data-grounded analysis at the current verb counts, Norwegian reaches
+the conventional 80% joint-power target at about 100 participants, while English and
+Turkish plateau below it as participants are added. A pooled cross-linguistic analysis is
+therefore the preferred feasible design. Its first cell, at 50 participants per language,
+has 96% joint power at the moderate Bayes-factor threshold of 3 but 36% at the
+strong-evidence threshold of 10; larger pooled cells are still awaited. The independent
+literature-anchored cross-check is more optimistic, reaching target at or below 50
+participants with the full verb set. Full operating characteristics and the remaining
+design choices are in the current report under `reports/`
 (`CLAPS_preliminary_sample_size_analysis_<date>.pdf`).
 
 ## Repository structure
@@ -46,7 +45,7 @@ R/         Analysis modules (model formulas, priors, hypothesis tests, ...)
 scripts/   Runnable pipeline scripts (grid generation, fitting, aggregation, ...)
 hpc/       SLURM batch and array scripts (University of Oxford ARC)
 config/    YAML and CSV configuration, including the design grids
-reports/   Rendered report PDF and citation style (apa.csl)
+reports/   Reproducible public QMD, rendered report PDF and citation style
 outputs/   Aggregated design-analysis result tables (CSV)
 docs/      Pipeline, submission and preregistration documentation
 references.bib, renv.lock, targets.R
@@ -54,16 +53,37 @@ references.bib, renv.lock, targets.R
 
 ## The report
 
-The current report is provided pre-rendered as
-`reports/CLAPS_preliminary_sample_size_analysis_<date>.pdf`. It draws on the private pilot
-data for its descriptive figure and sample-composition appendix, so it cannot be
-regenerated from this public repository. The aggregated result tables it summarises are
-committed under `outputs/`.
+The current report is provided as both
+`reports/preliminary_sample_size_analysis.qmd` and the pre-rendered
+`reports/CLAPS_preliminary_sample_size_analysis_<date>.pdf`. The public QMD retains the
+report's text, figures, tables and appendices, while remaining independent of
+participant-level pilot data. It reads the simulation summaries committed under
+`outputs/`, embeds the disclosure-reviewed report figure at
+`outputs/figures/pilot_acceptability_by_gender_report.png`, and reads aggregate
+sample-composition counts from
+`outputs/design_summary_pilot/pilot_sample_composition.csv`.
 
 The report's pilot-data figure (a gender robustness check) is also provided separately as a
 pre-rendered image (`outputs/figures/raw_gender_comparison.png`). The script that builds it
 from the raw pilot data is included for transparency but cannot be run without the withheld
-data.
+data. The private report source continues to generate that figure and the sample counts
+directly from the pilot data; the public source uses only these committed derivatives.
+
+### Rebuilding the public report
+
+With R, Quarto and a LaTeX distribution installed, restore the locked R environment and
+render from the repository root:
+
+```sh
+Rscript -e "renv::restore(prompt = FALSE)"
+quarto render reports/preliminary_sample_size_analysis.qmd
+```
+
+The rebuild requires no participant-level data. It should produce the same 28-page report
+content, tables and pagination. It is not expected to be byte-identical to the published
+PDF: the source uses the render date, TeX records creation metadata, and the public build
+embeds a disclosure-reviewed raster of Figure 1 where the private build generates that
+figure directly from pilot rows.
 
 ## Focal hypotheses
 
