@@ -921,11 +921,14 @@ missingness, the third option, if the 72-verb limit permits. Turkish contributes
 the pooled result and is reported as estimation, since no per-language criterion brings it
 to target.
 
-Should the collaborators prefer a stricter confirmatory bar, a Bayes factor of 6 is the
-realistic alternative, and the remaining pooled cells will show whether it reaches target at
-the cap. A Bayes factor of 10 would require either a per-language sample well beyond the cap
-or a larger verb pool, and the analysis cannot make that trade for them. The per-language figures at 70, 80 and 100 participants are still being computed and will
-follow.
+A stricter confirmatory bar was the obvious alternative to consider, and the pooled samples
+now available answer it. A Bayes factor of 6 reaches
+`r pooled_pct("p_joint_bf6")` at 50 participants per language and does not reach the
+conventional target at any sample size run, so it is not a viable confirmatory threshold
+within the cap. A Bayes factor of 10 would require either a per-language sample well beyond
+the cap or a larger verb pool, and the analysis cannot make that trade for the
+collaborators. Of the three thresholds, only a Bayes factor of 3 supports the confirmatory
+claim on the evidence available.
 
 ## What Is Settled and What Is Still Open
 
@@ -938,14 +941,15 @@ target on both focal predictions at any feasible per-language sample, whereas No
 does. Pooling the three languages multiplies the verb-level information the estimate rests
 on and is the only remedy that stays inside the agreed cap without changing the materials.
 
-What remains open is set out in @tbl-choices. Each row is a choice still open to the collaborators, with what the evidence says about it
-now and what would settle it.
+The choices that follow from this are set out in @tbl-choices. Each row is a decision for the
+collaborators, with what the evidence says about it and what, if anything, is still
+outstanding.
 
 `\vspace{-8pt}`{=latex}
 
 | Choice | Options | What the results say now | What would settle it |
 |:----------|:------------------|:---------------------------------|:--------------------------|
-| Evidence threshold | Bayes factor of 10, 6 or 3 | At the cap, 3 reaches target pooled and in English and Norwegian, while 10 reaches it nowhere | The pooled cells at 70 to 100, now running |
+| Evidence threshold | Bayes factor of 10, 6 or 3 | At the cap, 3 reaches target pooled and in English and Norwegian, while neither 6 nor 10 reaches it anywhere | Settled by the pooled samples now in |
 | Adequacy rule | Both focal predictions jointly, or the interaction alone | The joint gate is what English fails. The interaction alone is met from about `r h1b_cross("English")` participants | Settled by the data. What remains is which claim the project wants to make |
 | Turkish | Confirmatory, or estimation only | On its own it reaches no threshold at any feasible sample | Settled. Further cells will not change it |
 | Verb pool | Keep `r ppv("English", "n_verbs")` verbs, or enlarge under planned missingness | Enlarging lifts every ceiling, with English reaching a 90% ceiling at about `r ppv("English", "verbs_for_90")` verbs | Whether the verb limit constrains the session or the whole pool, which is a project decision |
@@ -955,9 +959,9 @@ now and what would settle it.
 
 `\vspace{12pt}`{=latex}
 
-Only the first row depends on results not yet in hand, and it is the one that most affects
-what the project can claim. If a Bayes factor of 6 does reach target at the cap, the confirmatory tier can be set
-there rather than at 3. The other rows are decisions about what to claim and what to ask of volunteers,
+None of these now waits on further computation. The threshold, which most affects what the
+project can claim, is answered: only a Bayes factor of 3 supports the confirmatory claim
+within the cap. The other rows are decisions about what to claim and what to ask of volunteers,
 on which the simulations have already said everything they can.
 
 ## The Pooled Analysis: Rationale and Expectations

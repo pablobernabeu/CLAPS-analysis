@@ -93,10 +93,10 @@ or from `failure_summary.csv` after aggregation. `.out` logs are block-buffered
   which resolves to a non-writable SLURM spool copy) and export
   `R_LIBS_USER`/`RENV_PATHS_CACHE` to the `$DATA` tree.
 - Cross-language fits need more memory (`--mem=64G`); single-language run fine at 16G.
-- **Quarto** is not an ARC module. A standalone build is installed at
+- Quarto is not an ARC module. A standalone build is installed at
   `$DATA/PROJECT_GROUP/quarto-1.9.38/` and linked to `~/bin/quarto` (on PATH). Its
-  bundled `deno` **SIGTRAPs on the login node** (hardened environment) but renders
-  fine on **compute nodes**, so report rendering only works inside a SLURM job
-  (or `srun`), never via a bare login-node `quarto render`. `submit_render_reports.sh`
+  bundled `deno` hits a SIGTRAP on the hardened login node but renders fine on
+  compute nodes, so report rendering only works inside a SLURM job
+  (or `srun`) and never from a bare login-node `quarto render`. `submit_render_reports.sh`
   puts `~/bin` on PATH and sets `QUARTO_PATH`/`TMPDIR` accordingly. To render
-  ad hoc: `srun --partition=devel --time=00:09:00 --mem=8G bash -lc '… quarto render …'`.
+  ad hoc, use `srun --partition=devel --time=00:09:00 --mem=8G bash -lc '… quarto render …'`.
