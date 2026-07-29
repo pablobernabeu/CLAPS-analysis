@@ -1,11 +1,19 @@
 #!/usr/bin/env Rscript
 # scripts/12_plot_raw_gender_comparison.R
-# Raw-data visualisation complementing the gender model variation.
-# Shows the study's core comparison — acceptability as a function of the
-# agent/gender-specific semantic affectedness, by sentence type — with referent
-# gender (Man/Woman) side by side and one row per language.
-# Uses affectedness_scores_agent (the predictor the gender models use), z-scored
-# within language so panels are comparable. Pilot data = calibration only.
+# Raw-data visualisation complementing the gender model variation. Shows the
+# study's core comparison, acceptability as a function of the agent/gender-specific
+# semantic affectedness by sentence type, with referent gender (Man/Woman) side by
+# side and one row per language. Uses affectedness_scores_agent (the predictor the
+# gender models use), z-scored within language so panels are comparable. Pilot data
+# = calibration only.
+#
+# Superseded for reporting purposes. Its output,
+# outputs/figures/raw_gender_comparison.png, is now read only by the retired
+# reports/archive/claps_report.qmd. The current report builds an equivalent figure
+# inline in its fig-pilot chunk, and scripts/13_export_public_report_inputs.R
+# derives the public mirror's copy. This script is kept as a standalone way to
+# regenerate the figure outside a report render, so an edit made here reaches
+# neither report.
 
 suppressPackageStartupMessages({
   library(readr); library(dplyr); library(ggplot2)
