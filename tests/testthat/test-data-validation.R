@@ -14,6 +14,9 @@ make_valid_df <- function(has_pp = TRUE) {
     Participant    = rep(paste0("P", seq_len(5)), each = length(s_types)),
     Language       = "English",
     Verb           = paste0("V", seq_len(n)),
+    # Verb_ID is the language-prefixed verb key; the harmonised pilot carries
+    # both it and Verb, and validate_raw_data requires both.
+    Verb_ID        = paste0("English_V", seq_len(n)),
     Item           = seq_len(n),
     S_Type         = rep(s_types, 5),
     Semantics      = runif(n, -0.5, 0.5),
@@ -99,12 +102,14 @@ test_that("scale_semantics produces Semantics_scaled column", {
   expect_true("Semantics_scaled" %in% names(result))
 })
 
-test_that("scale_semantics produces near-zero mean and ~0.25 SD", {
+test_that("scale_semantics produces near-zero mean and ~0.5 SD", {
   df <- make_valid_df()
   result <- scale_semantics(df, centre_by = "Language")
   expect_lt(abs(mean(result$Semantics_scaled)), 0.05)
-  # Gelman scaling: SD ≈ 0.25 (= 0.5 / 2)
-  expect_lt(abs(sd(result$Semantics_scaled) - 0.25), 0.1)
+  # Gelman scaling divides the centred predictor by twice its standard
+  # deviation, so the rescaled predictor has an SD of 0.5, not 0.25. The
+  # analysis priors are set on this scale, so the constant is load-bearing.
+  expect_lt(abs(sd(result$Semantics_scaled) - 0.5), 0.1)
 })
 
 # ---------------------------------------------------------------------------
