@@ -67,9 +67,9 @@ library(knitr)
 library(kableExtra)
 library(ggplot2)
 
-# Tidy per-cell Bayes-factor exceedance pulled from the in-progress corrected
-# literature-anchored run on ARC (one row per available language x N x n_verbs
-# x hypothesis). p_bf_primary is the proportion of replicates with BF10 >= 10
+# Tidy per-cell Bayes-factor exceedance from the literature-anchored run,
+# aggregated by scripts/aggregate_literature.R (one row per language x N x
+# n_verbs x hypothesis). p_bf_primary is the proportion of replicates with BF10 >= 10
 # (the preregistered detection threshold). Prose about which languages and
 # sample sizes this covers is derived below rather than written by hand, since
 # an earlier summary was aggregated before one language had finished and the
@@ -1256,7 +1256,7 @@ are meant to run, together with the matching submitters in `hpc/`.
 | Location | What it holds |
 |:------------------|:-----------------------------------------------------------|
 | `R/` | The building blocks: data validation and preprocessing (`01`, `02`), priors and model formulas (`03`, `04`), the Bayes factor (`05`), the two simulation engines (`06`, `10`, `11`), convergence diagnostics (`07`) and summarising (`08`) |
-| `scripts/` | Runnable steps, numbered in running order, from harmonising the pilot (`00`) through fitting the pilot models, generating a design grid, running one cell, to aggregating results (`aggregate_pilot.R`, `aggregate_pooled.R`) |
+| `scripts/` | Runnable steps, numbered in running order, from harmonising the pilot (`00`) through fitting the pilot models, generating a design grid, running one cell, to aggregating results (`aggregate_pilot.R`, `aggregate_pooled.R`, `aggregate_literature.R`) |
 | `hpc/` | One SLURM submitter per arm. Each takes a grid file and an output directory, and runs one grid row per array task |
 | `config/` | The design grids, one row per simulated condition, plus the model and prior configuration |
 | `outputs/` | The aggregated summaries this report reads, and the figure it displays |
