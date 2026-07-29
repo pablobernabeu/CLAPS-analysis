@@ -98,7 +98,7 @@ Set `ARC_R_MODULE` in your environment or update `config/arc_modules.yaml`.
 ## Restart logic
 
 All output scripts:
-- Check for existing `.qs` / `.rds` output and skip unless `OVERWRITE=1`
+- Check for existing `.rds` output and skip unless `OVERWRITE=1`
 - Write to `.tmp` first, rename on success (atomic write)
 - Log job ID, array task ID, Git SHA, seed, cell metadata, and runtime
 

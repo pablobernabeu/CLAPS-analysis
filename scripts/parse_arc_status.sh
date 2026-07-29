@@ -45,7 +45,7 @@ awk '/^--- Recent Job Accounting/,/^$/ {if ($3 ~ /FAILED|TIMEOUT|CANCELLED|OUT_O
 # Local output count
 echo ""
 echo "--- Local Outputs ---"
-LOCAL_COUNT=$(find outputs/design_analysis -name "*.qs" -type f 2>/dev/null | wc -l | tr -d ' ')
+LOCAL_COUNT=$(find outputs/design_analysis -name "*.rds" -type f 2>/dev/null | wc -l | tr -d ' ')
 echo "Completed analysis outputs: $LOCAL_COUNT"
 
 echo ""

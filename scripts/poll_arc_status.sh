@@ -23,7 +23,7 @@ mkdir -p "$(dirname "$OUTPUT_FILE")"
   
   echo ""
   echo "--- Completed Design Analysis Outputs ---"
-  find outputs/design_analysis -name "*.qs" -type f -printf "%f\n" 2>/dev/null | wc -l || echo "0"
+  find outputs/design_analysis -name "*.rds" -type f -printf "%f\n" 2>/dev/null | wc -l || echo "0"
   echo " outputs found locally"
   
 } > "$OUTPUT_FILE" 2>&1

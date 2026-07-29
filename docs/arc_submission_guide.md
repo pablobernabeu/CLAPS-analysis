@@ -194,7 +194,7 @@ OVERWRITE=1 sbatch hpc/submit_design_analysis_array.sh
 
 ```bash
 # Count completed design cells
-ls outputs/design_analysis/*.qs | wc -l
+ls outputs/design_analysis/*.rds | wc -l
 
 # Compare against expected grid size
 tail -n +2 config/design_grid.csv | wc -l

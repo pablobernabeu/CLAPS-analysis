@@ -143,4 +143,6 @@ targets:
   store: "_targets"
 
 serialization:
-  format: "qs"   # Compact binary; alternatives: rds, qs2
+  # Records the format the cell runners actually use, which is saveRDS. Nothing
+  # reads this key at present, so changing it will not change what is written.
+  format: "rds"

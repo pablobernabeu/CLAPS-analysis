@@ -12,7 +12,10 @@ suppressPackageStartupMessages({
 
 #' List completed design-analysis output files and extract cell metadata from filenames.
 list_completed_cells <- function(out_dir = "outputs/design_analysis") {
-  files <- list.files(out_dir, pattern = "\\.qs$", full.names = FALSE)
+  # Cells are written with saveRDS (see R/06_simulate_design.R), so the
+  # extension is .rds. This globbed .qs until 2026-07, which silently matched
+  # nothing and reported every run as having produced no cells.
+  files <- list.files(out_dir, pattern = "\\.rds$", full.names = FALSE)
   if (length(files) == 0) {
     message("[status] No completed cells in ", out_dir)
     return(tibble::tibble())
