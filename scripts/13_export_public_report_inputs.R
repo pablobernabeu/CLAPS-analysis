@@ -123,16 +123,23 @@ figure <- ggplot(
     fill = "Sentence type"
   ) +
   theme_bw(base_size = 10) +
+  # Kept deliberately identical to the fig-pilot chunk in
+  # reports/preliminary_sample_size_analysis.qmd, so the raster published for
+  # the public report matches the figure the private report draws. Change both
+  # together or the two reports will show different figures.
   theme(
     legend.position = "top",
     panel.grid.minor = element_blank(),
-    strip.text = element_text(face = "bold")
+    strip.text = element_text(face = "bold", size = 8.5),
+    strip.text.y = element_text(margin = margin(l = 3, r = 3)),
+    axis.text.y = element_text(size = 8),
+    panel.spacing.y = grid::unit(5, "pt")
   )
 
 # geom_jitter draws its offsets when the plot is built. Fixing the RNG state
 # first makes repeated private-to-public scrubs produce the same raster.
 set.seed(20260727)
-ggsave(figure_path, figure, width = 6.5, height = 2.9, dpi = 200)
+ggsave(figure_path, figure, width = 6.5, height = 4.4, dpi = 200)
 
 message("[public report inputs] figure: ", figure_path)
 message("[public report inputs] aggregate composition: ", composition_path)
