@@ -1221,3 +1221,60 @@ summary contains no Norwegian cells; its available data-grounded joint results a
 in the main results instead.
 
 `\vspace{12pt}`{=latex}
+
+{{< pagebreak >}}
+
+```{=latex}
+\begin{center}
+{\large\bfseries Appendix D}\\[3pt]
+{\bfseries Guide to the Analysis Code}
+\end{center}
+```
+
+Appendix D is a map of the analysis code, which is openly available at
+<https://github.com/pablobernabeu/CLAPS-analysis>. It is meant to make the repository
+navigable for a reader who wants to check how a number in this report was produced, or to
+reuse part of the machinery. The raw pilot data are not published, since they are
+participant-level records held privately until the project is further advanced, so the
+repository ships the simulation and analysis code together with the aggregated summaries
+the report reads.
+
+Three entry points cover most purposes. A reader checking a reported number wants
+`outputs/`, which holds the aggregated summaries and is where every figure in this report
+comes from. A reader checking how a simulated study is built and analysed wants
+`R/06_simulate_design.R` for the literature-anchored generator, `R/10_simulate_from_pilot_v2.R`
+for the pilot-grounded one, and `R/05_hypothesis_tests.R` for the Bayes factor. A reader
+intending to rerun the analysis wants `scripts/`, whose files are numbered in the order they
+are meant to run, together with the matching submitters in `hpc/`.
+
+`\vspace{-8pt}`{=latex}
+
+| Location | What it holds |
+|:------------------|:-----------------------------------------------------------|
+| `R/` | The building blocks: data validation and preprocessing (`01`, `02`), priors and model formulas (`03`, `04`), the Bayes factor (`05`), the two simulation engines (`06`, `10`, `11`), convergence diagnostics (`07`) and summarising (`08`) |
+| `scripts/` | Runnable steps, numbered in running order, from harmonising the pilot (`00`) through fitting the pilot models, generating a design grid, running one cell, to aggregating results (`aggregate_pilot.R`, `aggregate_pooled.R`) |
+| `hpc/` | One SLURM submitter per arm. Each takes a grid file and an output directory, and runs one grid row per array task |
+| `config/` | The design grids, one row per simulated condition, plus the model and prior configuration |
+| `outputs/` | The aggregated summaries this report reads, and the figure it displays |
+| `tests/` | Unit tests for the validation, prior, diagnostic and Bayes-factor logic |
+| `reports/` | This report, its bibliography and citation style |
+
+: Layout of the public analysis repository. {#tbl-repo}
+
+`\vspace{12pt}`{=latex}
+
+The unit of work is the cell, meaning one simulated condition: a language, a participant
+count, a verb count and a replicate index. A grid file in `config/` lists the cells, an
+array task runs one row, and each cell is saved as a single `.rds` file holding its
+summary, its Bayes factors and its convergence diagnostics. The aggregation scripts read a
+directory of those files and reduce them to the tables in `outputs/`. Reading one saved
+cell is therefore the quickest way to see exactly what the pipeline computes per simulated
+study.
+
+Two conventions are worth knowing before reading the code. Names carrying `pilot` refer to
+the data-grounded analysis that conditions on the fitted pilot models and forms the primary
+basis of this report, while names carrying `literature` refer to the cross-check that
+conditions on the published effect sizes. Separately, the suffix `_v2` on a simulation
+engine marks the extended version rather than a correction: `R/10_simulate_from_pilot_v2.R`
+loads `R/10_simulate_from_pilot.R` and adds the assurance and safeguard variants on top of
+it, so both files are live and the pair should be read together.

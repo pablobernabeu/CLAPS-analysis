@@ -63,11 +63,12 @@ participant-level pilot data. It reads the simulation summaries committed under
 sample-composition counts from
 `outputs/design_summary_pilot/pilot_sample_composition.csv`.
 
-The report's pilot-data figure (a gender robustness check) is also provided separately as a
-pre-rendered image (`outputs/figures/raw_gender_comparison.png`). The script that builds it
-from the raw pilot data is included for transparency but cannot be run without the withheld
-data. The private report source continues to generate that figure and the sample counts
-directly from the pilot data; the public source uses only these committed derivatives.
+A second and separate image, `outputs/figures/raw_gender_comparison.png`, is the standalone
+gender robustness check produced by `scripts/12_plot_raw_gender_comparison.R`. It does not
+appear in the report. The scripts that build both images from the raw pilot data are
+included for transparency but cannot be run without the withheld data. The private report
+source generates the report figure and the sample counts directly from the pilot data,
+whereas the public source uses only the committed derivatives.
 
 ### Rebuilding the public report
 
@@ -79,11 +80,11 @@ Rscript -e "renv::restore(prompt = FALSE)"
 quarto render reports/preliminary_sample_size_analysis.qmd
 ```
 
-The rebuild requires no participant-level data. It should produce the same 28-page report
-content, tables and pagination. It is not expected to be byte-identical to the published
-PDF: the source uses the render date, TeX records creation metadata, and the public build
-embeds a disclosure-reviewed raster of Figure 1 where the private build generates that
-figure directly from pilot rows.
+The rebuild requires no participant-level data. It should reproduce the content, tables and
+pagination of the committed PDF alongside it, which is the reference to compare against. It
+is not expected to be byte-identical. The source carries the render date, TeX records
+creation metadata, and the public build embeds a disclosure-reviewed raster of Figure 1
+where the private build generates that figure directly from pilot rows.
 
 ## Focal hypotheses
 
