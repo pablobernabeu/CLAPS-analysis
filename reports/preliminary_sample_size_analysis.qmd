@@ -70,13 +70,19 @@ library(ggplot2)
 # Tidy per-cell Bayes-factor exceedance pulled from the in-progress corrected
 # literature-anchored run on ARC (one row per available language x N x n_verbs
 # x hypothesis). p_bf_primary is the proportion of replicates with BF10 >= 10
-# (the preregistered detection threshold). The saved corrected summary currently
-# contains English and Turkish cells, but no Norwegian cells.
+# (the preregistered detection threshold). Prose about which languages and
+# sample sizes this covers is derived below rather than written by hand, since
+# an earlier summary was aggregated before one language had finished and the
+# report went on asserting that gap after the cells had landed.
 exc <- read_csv("../outputs/design_summary_literature/bf_exceedance_literature.csv",
                 show_col_types = FALSE) |>
   filter(n_verbs %in% c(40, 72))   # 12 and 20 verbs are well below the design's count
 lit_languages <- sort(unique(exc$language))
-lit_language_text <- paste(lit_languages, collapse = " and ")
+lit_language_text <- if (length(lit_languages) > 2) {
+  paste(paste(head(lit_languages, -1), collapse = ", "), "and", tail(lit_languages, 1))
+} else paste(lit_languages, collapse = " and ")
+lit_n_min <- min(exc$n_participants)
+lit_n_max <- max(exc$n_participants)
 
 focal <- c(H1a = "H1a_semantics_positive",
            H1b = "H1b_active_interaction_negative")
@@ -430,11 +436,10 @@ of 5,000 iterations after 2,000 warm-up iterations. The shorter chains add Monte
 factor rather than shifting it systematically, so the power figures below are, if anything,
 mildly conservative.
 
-The literature-anchored grid was configured to cross the three languages with participant
-counts from 50 to 120. The corrected output available for this report contains English cells
-through 90 participants and Turkish cells through 60, at verb counts of 40 and 72; it contains
-no Norwegian cells. Each completed cell holds 50 replicates. This gives a Monte-Carlo standard
-error of about five to six percentage
+The literature-anchored grid crosses the three languages with participant counts from 50 to
+120. The output read here covers `r lit_language_text` from `r lit_n_min` to `r lit_n_max`
+participants at verb counts of 40 and 72. Each completed cell holds 50 replicates, which
+gives a Monte-Carlo standard error of about five to six percentage
 points near a power of 80%, so estimates close to the threshold are not perfectly ordered
 across adjacent sample sizes. The central code for the data-generating process, the model
 and the Bayes factor is reproduced in Appendix B.
@@ -606,9 +611,11 @@ number of participants.
 #| fig-width: 7.0
 #| fig-height: 2.5
 
+# Languages and sample sizes are taken from the data rather than listed here,
+# so the panel follows whatever the aggregation covers.
 grid_df <- tidyr::crossing(
-  language = c("English", "Turkish"),
-  n_participants = c(50, 60, 70, 80, 90),
+  language = sort(unique(foc_full$language)),
+  n_participants = sort(unique(foc_full$n_participants)),
   n_verbs = c(40, 72)
 ) |>
   left_join(select(foc_full, language, n_participants, n_verbs, binding),
@@ -704,12 +711,10 @@ target. Points are dodged so the two predictions do not overlap.
 
 `\vspace{12pt}`{=latex}
 
-In the corrected literature-anchored output available for English and Turkish, the binding
+In the literature-anchored output, which covers `r lit_language_text`, the binding
 focal power at the full 72-verb set is already between
 `r pct0(min(lit50$binding))` and `r pct0(max(lit50$binding))` at 50 participants, the
-smallest sample simulated, in both languages included in this cross-check. Norwegian's
-66-verb design is represented in the separate data-grounded analysis, but no corrected
-Norwegian literature-anchored cells are present in the saved output. On the
+smallest sample simulated, in every language included in this cross-check. On the
 literature effects, the adequate per-language sample is therefore at most 50 participants at
 the full verb set. This is the optimistic reading. The data-grounded results above, which
 condition on the weaker pilot effects, do not reach the target for English or Turkish at any
@@ -1216,9 +1221,8 @@ the Bayes factor reached the primary threshold of 10 and the secondary threshold
 Median BF is the median Bayes factor across those studies, to two significant figures.
 Convergence is the proportion of fits meeting the convergence criteria, and Reps is the
 number of simulated studies in the cell. Cells with fewer than ten replicates are omitted as
-still accumulating. Norwegian is absent because the saved corrected literature-anchored
-summary contains no Norwegian cells; its available data-grounded joint results are reported
-in the main results instead.
+still accumulating. Norwegian carries two focal predictions rather than four, having no
+pseudo-passive, so it contributes half as many rows as the other two languages.
 
 `\vspace{12pt}`{=latex}
 
