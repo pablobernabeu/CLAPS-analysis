@@ -4,7 +4,7 @@
 #   R/04_model_formulas.R:     build_model_ladder(include_gender = TRUE)
 
 library(testthat)
-source("R/02_preprocess_factors.R")
+source(here::here("R", "02_preprocess_factors.R"))
 
 mk_df <- function() {
   tibble::tibble(
@@ -58,7 +58,7 @@ test_that("preprocess_data default is unchanged (no Gender, Semantics kept)", {
 
 test_that("build_model_ladder includes a Gender term only when requested", {
   skip_if_not_installed("brms")
-  source("R/04_model_formulas.R")
+  source(here::here("R", "04_model_formulas.R"))
   base <- build_model_ladder(has_pseudo_passive = TRUE, include_gender = FALSE)
   gend <- build_model_ladder(has_pseudo_passive = TRUE, include_gender = TRUE)
   base_chr <- paste(deparse(base[["L5_correlated_maximal"]]$formula), collapse = " ")

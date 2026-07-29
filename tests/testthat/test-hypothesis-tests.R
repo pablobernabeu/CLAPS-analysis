@@ -2,7 +2,7 @@
 # Unit tests for Savage-Dickey BF implementation (R/05_hypothesis_tests.R).
 
 library(testthat)
-source("R/05_hypothesis_tests.R")
+source(here::here("R", "05_hypothesis_tests.R"))
 
 # ---------------------------------------------------------------------------
 # classify_bf

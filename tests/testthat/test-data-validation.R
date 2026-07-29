@@ -3,8 +3,8 @@
 # and factor coding (R/02_preprocess_factors.R).
 
 library(testthat)
-source("R/01_read_validate_data.R")
-source("R/02_preprocess_factors.R")
+source(here::here("R", "01_read_validate_data.R"))
+source(here::here("R", "02_preprocess_factors.R"))
 
 # Helper: build a minimal valid CLAPS data frame
 make_valid_df <- function(has_pp = TRUE) {

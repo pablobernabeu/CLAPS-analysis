@@ -4,7 +4,7 @@
 # ESS >= 400, zero divergences and zero max-treedepth saturations.
 
 library(testthat)
-source("R/07_extract_diagnostics.R")
+source(here::here("R", "07_extract_diagnostics.R"))
 
 # Field names match the tibble returned by extract_convergence_diagnostics().
 make_diag <- function(max_rhat = 1.00, min_ess_bulk = 2000, min_ess_tail = 1800,

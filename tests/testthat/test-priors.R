@@ -3,7 +3,7 @@
 
 library(testthat)
 library(brms)
-source("R/03_define_priors.R")
+source(here::here("R", "03_define_priors.R"))
 
 # ---------------------------------------------------------------------------
 # build_brms_prior
