@@ -37,6 +37,40 @@ suppressPackageStartupMessages({
 #' @param param Character; Stan parameter name (e.g. "b_Semantics_scaled").
 #' @param direction "positive" or "negative"; the direction of H1.
 #' @return Tibble with BF_10, BF_01, posterior_prob, prior_prob, log_BF10.
+#' Directional Savage-Dickey Bayes factor from draws.
+#'
+#' The arithmetic core of savage_dickey_directional_bf(), split out so it can be
+#' exercised on plain numeric vectors without fitting a model. Given posterior
+#' and prior draws of one coefficient, it compares the probability that the
+#' coefficient has the predicted sign under the posterior with the same
+#' probability under the prior, as an odds ratio.
+#'
+#' @param post_vals,prior_vals Numeric draws of the coefficient.
+#' @param direction "positive" or "negative"; the sign the hypothesis predicts.
+#' @return List with posterior_prob, prior_prob, bf_10 and log_bf.
+directional_bf_from_draws <- function(post_vals, prior_vals,
+                                      direction = "positive") {
+  stopifnot(direction %in% c("positive", "negative"))
+
+  if (direction == "positive") {
+    post_prob  <- mean(post_vals  > 0)
+    prior_prob <- mean(prior_vals > 0)
+  } else {
+    post_prob  <- mean(post_vals  < 0)
+    prior_prob <- mean(prior_vals < 0)
+  }
+
+  # Clamp away from 0 and 1, where the odds ratio would be infinite. With the
+  # draw counts used here the clamp binds only when every draw falls on one
+  # side, which is itself a signal that the sample is too small to resolve.
+  post_prob  <- pmin(pmax(post_prob,  1e-6), 1 - 1e-6)
+  prior_prob <- pmin(pmax(prior_prob, 1e-6), 1 - 1e-6)
+
+  bf_10 <- (post_prob / (1 - post_prob)) / (prior_prob / (1 - prior_prob))
+  list(posterior_prob = post_prob, prior_prob = prior_prob,
+       bf_10 = bf_10, log_bf = log(bf_10))
+}
+
 savage_dickey_directional_bf <- function(fit, param, direction = "positive") {
   stopifnot(direction %in% c("positive", "negative"))
 
@@ -56,30 +90,17 @@ savage_dickey_directional_bf <- function(fit, param, direction = "positive") {
   post_vals  <- post_draws[[param]]
   prior_vals <- prior_draws[[prior_param]]
 
-  if (direction == "positive") {
-    post_prob  <- mean(post_vals  > 0)
-    prior_prob <- mean(prior_vals > 0)
-  } else {
-    post_prob  <- mean(post_vals  < 0)
-    prior_prob <- mean(prior_vals < 0)
-  }
-
-  # Avoid 0/1 probabilities that would give infinite BF
-  post_prob  <- pmin(pmax(post_prob,  1e-6), 1 - 1e-6)
-  prior_prob <- pmin(pmax(prior_prob, 1e-6), 1 - 1e-6)
-
-  bf_10  <- (post_prob / (1 - post_prob)) / (prior_prob / (1 - prior_prob))
-  log_bf <- log(bf_10)
+  bf <- directional_bf_from_draws(post_vals, prior_vals, direction)
 
   tibble::tibble(
     param          = param,
     direction      = direction,
-    posterior_prob = post_prob,
-    prior_prob     = prior_prob,
-    BF_10          = bf_10,
-    BF_01          = 1 / bf_10,
-    log_BF10       = log_bf,
-    bf_category    = classify_bf(bf_10),
+    posterior_prob = bf$posterior_prob,
+    prior_prob     = bf$prior_prob,
+    BF_10          = bf$bf_10,
+    BF_01          = 1 / bf$bf_10,
+    log_BF10       = bf$log_bf,
+    bf_category    = classify_bf(bf$bf_10),
     method         = "savage_dickey_directional"
   )
 }
@@ -88,6 +109,9 @@ savage_dickey_directional_bf <- function(fit, param, direction = "positive") {
 #' Primary threshold: BF > 10 (strong evidence for H1).
 #' Secondary threshold: BF > 3 (moderate evidence).
 classify_bf <- function(bf_10) {
+  # Conventional evidence bands (Lee & Wagenmakers, 2013). A Bayes factor of
+  # exactly 1 is no evidence either way; the >= ordering below places that
+  # boundary case on the H1 side, so the bands are half-open upwards.
   dplyr::case_when(
     bf_10 >= 100  ~ "extreme_H1",
     bf_10 >= 30   ~ "very_strong_H1",
