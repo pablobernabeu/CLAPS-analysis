@@ -610,6 +610,7 @@ number of participants.
 #| fig-cap: "Binding Focal Power by Participant Count and Verb Count, for Each Language"
 #| fig-width: 7.0
 #| fig-height: 2.5
+#| fig-pos: "H"
 
 # Languages and sample sizes are taken from the data rather than listed here,
 # so the panel follows whatever the aggregation covers.
@@ -673,6 +674,7 @@ target as the sample grows, at each verb count.
 #| fig-cap: "Detection Probability for the Focal Predictions, with Wilson 95% Intervals, by Verb Count and Language"
 #| fig-width: 6.8
 #| fig-height: 2.8
+#| fig-pos: "H"
 
 z <- 1.96
 curve_df <- foc_full |>
@@ -950,7 +952,7 @@ The choices that follow from this are set out in @tbl-choices. Each row is a dec
 collaborators, with what the evidence says about it and what, if anything, is still
 outstanding.
 
-`\vspace{-8pt}`{=latex}
+`\vspace{10pt}`{=latex}
 
 | Choice | Options | What the results say now | What would settle it |
 |:----------|:------------------|:---------------------------------|:--------------------------|
@@ -1251,7 +1253,7 @@ for the pilot-grounded one, and `R/05_hypothesis_tests.R` for the Bayes factor. 
 intending to rerun the analysis wants `scripts/`, whose files are numbered in the order they
 are meant to run, together with the matching submitters in `hpc/`.
 
-`\vspace{-8pt}`{=latex}
+`\vspace{10pt}`{=latex}
 
 | Location | What it holds |
 |:------------------|:-----------------------------------------------------------|
