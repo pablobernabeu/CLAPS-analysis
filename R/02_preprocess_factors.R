@@ -121,14 +121,14 @@ scale_semantics <- function(df, centre_by = "Language") {
       dplyr::group_by(dplyr::across(dplyr::all_of(centre_by))) |>
       dplyr::mutate(
         Semantics_scaled = (Semantics - mean(Semantics, na.rm = TRUE)) /
-                           (2 * sd(Semantics, na.rm = TRUE))
+          (2 * sd(Semantics, na.rm = TRUE))
       ) |>
       dplyr::ungroup()
   } else {
     df <- dplyr::mutate(
       df,
       Semantics_scaled = (Semantics - mean(Semantics, na.rm = TRUE)) /
-                         (2 * sd(Semantics, na.rm = TRUE))
+        (2 * sd(Semantics, na.rm = TRUE))
     )
   }
   df

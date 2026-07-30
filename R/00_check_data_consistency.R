@@ -81,9 +81,11 @@ LANGUAGES_EXCLUDE_SYNTHETIC  <- c("Norwegian")
 }
 
 .check_response_range <- function(df, lang) {
-  bad <- df$Response[!is.na(df$Response) &
-                     (df$Response < RESPONSE_RANGE[1] |
-                      df$Response > RESPONSE_RANGE[2])]
+  bad <- df$Response[
+    !is.na(df$Response) &
+      (df$Response < RESPONSE_RANGE[1] |
+         df$Response > RESPONSE_RANGE[2])
+  ]
   if (length(bad) > 0) {
     stop("[consistency:", lang, "] Response out of [",
          RESPONSE_RANGE[1], ",", RESPONSE_RANGE[2], "]: ",
@@ -107,13 +109,13 @@ LANGUAGES_EXCLUDE_SYNTHETIC  <- c("Norwegian")
   }
   # Norwegian must not have Synthetic_Passive (preregistered exclusion)
   if (lang %in% LANGUAGES_EXCLUDE_SYNTHETIC &&
-      "Synthetic_Passive" %in% observed) {
+        "Synthetic_Passive" %in% observed) {
     stop("[consistency:", lang, "] Synthetic_Passive rows found; ",
          "these must be excluded upstream via exclude_norwegian_synthetic_passive().")
   }
   # Languages without pseudo-passive should not have Pseudo_Passive rows
   if (!lang %in% LANGUAGES_WITH_PSEUDO_PASSIVE &&
-      "Pseudo_Passive" %in% observed) {
+        "Pseudo_Passive" %in% observed) {
     message("[consistency:", lang, "] WARNING: Pseudo_Passive rows present ",
             "but this language is not listed in LANGUAGES_WITH_PSEUDO_PASSIVE. ",
             "Update that constant or check the data.")

@@ -41,7 +41,12 @@
 # ---------------------------------------------------------------------------
 
 suppressPackageStartupMessages({
-  library(brms); library(posterior); library(MASS); library(dplyr); library(tibble); library(purrr)
+  library(brms)
+  library(posterior)
+  library(MASS)
+  library(dplyr)
+  library(tibble)
+  library(purrr)
 })
 
 # Base engine: .term_columns(), extract_dgp_params(), simulate_from_pilot(),
@@ -143,7 +148,9 @@ simulate_from_pilot_v2 <- function(dgp, n_participants, mode = "assurance",
     ff  <- dgp$fixef
     thr <- dgp$thresholds
     for (f in names(dgp$focal_lwr)) ff[f] <- dgp$focal_lwr[[f]]
-  } else stop("[v2] unknown mode: ", mode)
+  } else {
+    stop("[v2] unknown mode: ", mode)
+  }
 
   grid <- expand.grid(pi = seq_len(n_participants), Verb = verbs, S_Type = s_types,
                       KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
@@ -172,7 +179,10 @@ simulate_from_pilot_v2 <- function(dgp, n_participants, mode = "assurance",
   # pmax guards against a tiny negative probability from floating-point error in
   # the differencing, which sample.int() would reject; renormalising keeps the
   # vector a valid distribution afterwards.
-  resp  <- apply(probs, 1, function(p) { p <- pmax(p, 0); sample.int(n_cats, 1, prob = p / sum(p)) })
+  resp  <- apply(probs, 1, function(p) {
+    p <- pmax(p, 0)
+    sample.int(n_cats, 1, prob = p / sum(p))
+  })
 
   tibble::tibble(
     Participant      = paste0("P", grid$pi),
@@ -208,7 +218,9 @@ run_databased_cell_v2 <- function(cell, dgp, out_dir, overwrite = FALSE) {
   # Sourced inside the function rather than at file scope because each SLURM array
   # task runs one cell in a fresh R session, and this keeps the cell runner
   # self-contained.
-  source("R/03_define_priors.R");  source("R/04_model_formulas.R");  source("R/05_hypothesis_tests.R")
+  source("R/03_define_priors.R")
+  source("R/04_model_formulas.R")
+  source("R/05_hypothesis_tests.R")
   source("R/07_extract_diagnostics.R")
   mode <- as.character(cell$mode %||% "assurance")
   psrc <- as.character(cell$prior_source %||% "pilot")
@@ -217,7 +229,10 @@ run_databased_cell_v2 <- function(cell, dgp, out_dir, overwrite = FALSE) {
                    cell$seed, sep = "_")
   out_file <- file.path(out_dir, paste0(cell_id, ".rds"))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  if (file.exists(out_file) && !overwrite) { message("[databased2] skip ", cell_id); return(invisible(readRDS(out_file))) }
+  if (file.exists(out_file) && !overwrite) {
+    message("[databased2] skip ", cell_id)
+    return(invisible(readRDS(out_file)))
+  }
 
   has_pp <- isTRUE(cell$has_pseudo_passive)
   t0 <- proc.time()[["elapsed"]]
@@ -227,8 +242,12 @@ run_databased_cell_v2 <- function(cell, dgp, out_dir, overwrite = FALSE) {
                                      seed = as.integer(cell$seed))
   formula   <- build_model_ladder(has_pseudo_passive = has_pp)[[cell$model_level]]
   prior_obj <- align_prior_to_model(
-    build_brms_prior(regime_name = cell$prior_regime, threshold_mode = cell$threshold_mode,
-                     has_pseudo_passive = has_pp), formula, sim_data)
+    build_brms_prior(
+      regime_name = cell$prior_regime, threshold_mode = cell$threshold_mode,
+      has_pseudo_passive = has_pp
+    ),
+    formula, sim_data
+  )
   samp <- production_sampling(iter = as.integer(cell$iter %||% 3000),
                               warmup = as.integer(cell$warmup %||% 1000),
                               chains = as.integer(cell$chains %||% 4), seed = as.integer(cell$seed))
@@ -243,20 +262,29 @@ run_databased_cell_v2 <- function(cell, dgp, out_dir, overwrite = FALSE) {
   }, error = function(e) list(fit = NULL, error = conditionMessage(e)))
   rt <- proc.time()[["elapsed"]] - t0
 
-  base_cols <- tibble::tibble(cell_id = cell_id, language = cell$language,
-                  n_participants = cell$n_participants, mode = mode, prior_source = psrc,
-                  draw_index = as.integer(cell$draw_index %||% 1L),
-                  n_verbs = length(dgp$verb_affectedness), prior_regime = cell$prior_regime,
-                  seed = cell$seed, runtime_sec = rt)
+  base_cols <- tibble::tibble(
+    cell_id = cell_id, language = cell$language,
+    n_participants = cell$n_participants, mode = mode, prior_source = psrc,
+    draw_index = as.integer(cell$draw_index %||% 1L),
+    n_verbs = length(dgp$verb_affectedness), prior_regime = cell$prior_regime,
+    seed = cell$seed, runtime_sec = rt
+  )
   if (!is.null(fitres$error)) {
-    result <- list(summary = dplyr::bind_cols(tibble::tibble(status = "error",
-                   error_message = fitres$error), base_cols))
+    result <- list(
+      summary = dplyr::bind_cols(
+        tibble::tibble(status = "error", error_message = fitres$error), base_cols
+      )
+    )
   } else {
     result <- list(
-      summary     = dplyr::bind_cols(tibble::tibble(status = "success"), base_cols,
-                       tibble::tibble(model_level = cell$model_level,
-                                      threshold_mode = cell$threshold_mode,
-                                      iter = samp$iter, warmup = samp$warmup, chains = samp$chains)),
+      summary     = dplyr::bind_cols(
+        tibble::tibble(status = "success"), base_cols,
+        tibble::tibble(
+          model_level = cell$model_level,
+          threshold_mode = cell$threshold_mode,
+          iter = samp$iter, warmup = samp$warmup, chains = samp$chains
+        )
+      ),
       bf_results  = tryCatch(compute_all_bf(fitres$fit, has_pseudo_passive = has_pp),
                              error = function(e) tibble::tibble(error = conditionMessage(e))),
       # Protected like the fit and BF steps: a diagnostics failure must never
@@ -264,9 +292,12 @@ run_databased_cell_v2 <- function(cell, dgp, out_dir, overwrite = FALSE) {
       # has been observed (brms exposes a stanfit-compatible object under the
       # cmdstanr backend), but the asymmetry was a latent risk.
       diagnostics = tryCatch(extract_convergence_diagnostics(fitres$fit),
-                             error = function(e) tibble::tibble(error = conditionMessage(e))))
+                             error = function(e) tibble::tibble(error = conditionMessage(e)))
+    )
   }
-  tmp <- paste0(out_file, ".tmp"); saveRDS(result, tmp); file.rename(tmp, out_file)
+  tmp <- paste0(out_file, ".tmp")
+  saveRDS(result, tmp)
+  file.rename(tmp, out_file)
   message("[databased2] done ", cell_id, " (", round(rt, 1), "s)")
   result
 }

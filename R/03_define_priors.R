@@ -348,8 +348,10 @@ align_prior_to_model <- function(prior_obj, formula, data) {
   # ARC's brms may be older than the local one.
   valid <- tryCatch(
     brms::default_prior(formula, data = data),
-    error = function(e) tryCatch(brms::get_prior(formula, data = data),
-                                 error = function(e2) NULL)
+    error = function(e) {
+      tryCatch(brms::get_prior(formula, data = data),
+               error = function(e2) NULL)
+    }
   )
   # If brms could not be asked at all, pass the prior through untouched rather than
   # filtering against an empty table, which would discard every prior and silently
@@ -365,9 +367,9 @@ align_prior_to_model <- function(prior_obj, formula, data) {
     p <- prior_obj[i, , drop = FALSE]
     # Keep the row if at least one real parameter of the model matches it.
     any(valid$class == p$class &
-        (blank(p$coef)  | valid$coef  == p$coef) &
-        (blank(p$group) | valid$group == p$group) &
-        (blank(p$dpar)  | valid$dpar  == p$dpar))
+          (blank(p$coef)  | valid$coef  == p$coef) &
+          (blank(p$group) | valid$group == p$group) &
+          (blank(p$dpar)  | valid$dpar  == p$dpar))
   }, logical(1))
 
   dropped <- prior_obj[!keep, , drop = FALSE]

@@ -38,7 +38,11 @@
 # ---------------------------------------------------------------------------
 
 suppressPackageStartupMessages({
-  library(brms); library(MASS); library(dplyr); library(tibble); library(purrr)
+  library(brms)
+  library(MASS)
+  library(dplyr)
+  library(tibble)
+  library(purrr)
 })
 
 `%||%` <- function(a, b) if (!is.null(a)) a else b
@@ -162,7 +166,10 @@ simulate_from_pilot <- function(dgp, n_participants, effect_mult = 1.0, seed = 1
   cum   <- vapply(dgp$thresholds, function(tk) plogis(tk - eta), numeric(length(eta)))
   cum   <- cbind(0, cum, 1)
   probs <- t(apply(cum, 1, diff))
-  resp  <- apply(probs, 1, function(p) { p <- pmax(p, 0); sample.int(n_cats, 1, prob = p / sum(p)) })
+  resp  <- apply(probs, 1, function(p) {
+    p <- pmax(p, 0)
+    sample.int(n_cats, 1, prob = p / sum(p))
+  })
 
   tibble::tibble(
     Participant      = paste0("P", grid$pi),
@@ -195,13 +202,18 @@ simulate_from_pilot <- function(dgp, n_participants, effect_mult = 1.0, seed = 1
 #'   tryCatch for exactly this reason. No such failure has been observed, but a
 #'   cell lost this way would be recorded as absent rather than as failed.
 run_databased_cell <- function(cell, dgp, out_dir, overwrite = FALSE) {
-  source("R/03_define_priors.R");  source("R/04_model_formulas.R");  source("R/05_hypothesis_tests.R")
+  source("R/03_define_priors.R")
+  source("R/04_model_formulas.R")
+  source("R/05_hypothesis_tests.R")
   source("R/07_extract_diagnostics.R")
   cell_id <- paste("databased", cell$language, sprintf("N%03d", as.integer(cell$n_participants)),
                    sprintf("mult%03d", as.integer(round(100 * cell$effect_mult))), cell$seed, sep = "_")
   out_file <- file.path(out_dir, paste0(cell_id, ".rds"))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  if (file.exists(out_file) && !overwrite) { message("[databased] skip ", cell_id); return(invisible(readRDS(out_file))) }
+  if (file.exists(out_file) && !overwrite) {
+    message("[databased] skip ", cell_id)
+    return(invisible(readRDS(out_file)))
+  }
 
   has_pp <- isTRUE(cell$has_pseudo_passive)
   t0 <- proc.time()[["elapsed"]]
@@ -210,7 +222,9 @@ run_databased_cell <- function(cell, dgp, out_dir, overwrite = FALSE) {
   formula   <- build_model_ladder(has_pseudo_passive = has_pp)[[cell$model_level]]
   prior_obj <- align_prior_to_model(
     build_brms_prior(regime_name = cell$prior_regime, threshold_mode = cell$threshold_mode,
-                     has_pseudo_passive = has_pp), formula, sim_data)
+                     has_pseudo_passive = has_pp),
+    formula, sim_data
+  )
   samp <- production_sampling(iter = as.integer(cell$iter %||% 3000),
                               warmup = as.integer(cell$warmup %||% 1000),
                               chains = as.integer(cell$chains %||% 4), seed = as.integer(cell$seed))
@@ -227,23 +241,26 @@ run_databased_cell <- function(cell, dgp, out_dir, overwrite = FALSE) {
 
   if (!is.null(fitres$error)) {
     result <- list(summary = tibble::tibble(cell_id = cell_id, status = "error",
-                   error_message = fitres$error, runtime_sec = rt,
-                   language = cell$language, n_participants = cell$n_participants,
-                   n_verbs = length(dgp$verb_affectedness), effect_mult = cell$effect_mult,
-                   prior_regime = cell$prior_regime, seed = cell$seed))
+                                            error_message = fitres$error, runtime_sec = rt,
+                                            language = cell$language, n_participants = cell$n_participants,
+                                            n_verbs = length(dgp$verb_affectedness), effect_mult = cell$effect_mult,
+                                            prior_regime = cell$prior_regime, seed = cell$seed))
   } else {
     result <- list(
       summary = tibble::tibble(cell_id = cell_id, status = "success", runtime_sec = rt,
-                   language = cell$language, n_participants = cell$n_participants,
-                   n_verbs = length(dgp$verb_affectedness), effect_mult = cell$effect_mult,
-                   model_level = cell$model_level, prior_regime = cell$prior_regime,
-                   threshold_mode = cell$threshold_mode, seed = cell$seed,
-                   iter = samp$iter, warmup = samp$warmup, chains = samp$chains),
+                               language = cell$language, n_participants = cell$n_participants,
+                               n_verbs = length(dgp$verb_affectedness), effect_mult = cell$effect_mult,
+                               model_level = cell$model_level, prior_regime = cell$prior_regime,
+                               threshold_mode = cell$threshold_mode, seed = cell$seed,
+                               iter = samp$iter, warmup = samp$warmup, chains = samp$chains),
       bf_results  = tryCatch(compute_all_bf(fitres$fit, has_pseudo_passive = has_pp),
                              error = function(e) tibble::tibble(error = conditionMessage(e))),
-      diagnostics = extract_convergence_diagnostics(fitres$fit))
+      diagnostics = extract_convergence_diagnostics(fitres$fit)
+    )
   }
-  tmp <- paste0(out_file, ".tmp"); saveRDS(result, tmp); file.rename(tmp, out_file)
+  tmp <- paste0(out_file, ".tmp")
+  saveRDS(result, tmp)
+  file.rename(tmp, out_file)
   message("[databased] done ", cell_id, " (", round(rt, 1), "s)")
   result
 }

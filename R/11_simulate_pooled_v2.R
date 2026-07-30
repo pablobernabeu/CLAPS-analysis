@@ -82,8 +82,10 @@ simulate_pooled_from_pilots <- function(dgps, n_per_language, mode = "assurance"
 #'   draw_index_norwegian, prior_source, model_level, prior_regime,
 #'   threshold_mode, iter, warmup, chains, seed.
 run_pooled_cell_v2 <- function(cell, dgps, out_dir, overwrite = FALSE) {
-  source("R/03_define_priors.R");  source("R/04_model_formulas.R")
-  source("R/05_hypothesis_tests.R"); source("R/07_extract_diagnostics.R")
+  source("R/03_define_priors.R")
+  source("R/04_model_formulas.R")
+  source("R/05_hypothesis_tests.R")
+  source("R/07_extract_diagnostics.R")
   mode <- as.character(cell$mode %||% "assurance")
   psrc <- as.character(cell$prior_source %||% "pilot")
   cell_id <- paste("pooled2", psrc, mode,
@@ -91,7 +93,10 @@ run_pooled_cell_v2 <- function(cell, dgps, out_dir, overwrite = FALSE) {
                    cell$seed, sep = "_")
   out_file <- file.path(out_dir, paste0(cell_id, ".rds"))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  if (file.exists(out_file) && !overwrite) { message("[pooled2] skip ", cell_id); return(invisible(readRDS(out_file))) }
+  if (file.exists(out_file) && !overwrite) {
+    message("[pooled2] skip ", cell_id)
+    return(invisible(readRDS(out_file)))
+  }
 
   draw_idx <- c(English   = as.integer(cell$draw_index_english   %||% 1L),
                 Turkish   = as.integer(cell$draw_index_turkish   %||% 1L),
@@ -110,8 +115,13 @@ run_pooled_cell_v2 <- function(cell, dgps, out_dir, overwrite = FALSE) {
   # label it is a two-language estimand, mirroring the real planned analysis.
   formula   <- build_multilanguage_ladder()[[cell$model_level]]
   prior_obj <- align_prior_to_model(
-    build_brms_prior(regime_name = cell$prior_regime, threshold_mode = cell$threshold_mode,
-                     has_pseudo_passive = TRUE), formula, sim_data)
+    build_brms_prior(
+      regime_name = cell$prior_regime,
+      threshold_mode = cell$threshold_mode,
+      has_pseudo_passive = TRUE
+    ),
+    formula, sim_data
+  )
   samp <- production_sampling(iter = as.integer(cell$iter %||% 3000),
                               warmup = as.integer(cell$warmup %||% 1000),
                               chains = as.integer(cell$chains %||% 4), seed = as.integer(cell$seed))
@@ -127,30 +137,41 @@ run_pooled_cell_v2 <- function(cell, dgps, out_dir, overwrite = FALSE) {
   rt <- proc.time()[["elapsed"]] - t0
 
   base_cols <- tibble::tibble(cell_id = cell_id, language = "AllLanguages",
-                  n_participants = cell$n_participants,
-                  n_total = as.integer(cell$n_participants) * length(dgps),
-                  mode = mode, prior_source = psrc,
-                  draw_index_english = draw_idx[["English"]],
-                  draw_index_turkish = draw_idx[["Turkish"]],
-                  draw_index_norwegian = draw_idx[["Norwegian"]],
-                  n_verbs = sum(vapply(dgps, function(d) length(d$verb_affectedness), integer(1))),
-                  prior_regime = cell$prior_regime, seed = cell$seed, runtime_sec = rt)
+                              n_participants = cell$n_participants,
+                              n_total = as.integer(cell$n_participants) * length(dgps),
+                              mode = mode, prior_source = psrc,
+                              draw_index_english = draw_idx[["English"]],
+                              draw_index_turkish = draw_idx[["Turkish"]],
+                              draw_index_norwegian = draw_idx[["Norwegian"]],
+                              n_verbs = sum(vapply(dgps, function(d) length(d$verb_affectedness), integer(1))),
+                              prior_regime = cell$prior_regime, seed = cell$seed, runtime_sec = rt)
   if (!is.null(fitres$error)) {
     result <- list(summary = dplyr::bind_cols(tibble::tibble(status = "error",
-                   error_message = fitres$error), base_cols))
+                                                             error_message = fitres$error), base_cols))
   } else {
     result <- list(
-      summary     = dplyr::bind_cols(tibble::tibble(status = "success"), base_cols,
-                       tibble::tibble(model_level = cell$model_level,
-                                      threshold_mode = cell$threshold_mode,
-                                      iter = samp$iter, warmup = samp$warmup, chains = samp$chains)),
-      bf_results  = tryCatch(compute_all_bf(fitres$fit, has_pseudo_passive = TRUE),
-                             error = function(e) tibble::tibble(error = conditionMessage(e))),
+      summary     = dplyr::bind_cols(
+        tibble::tibble(status = "success"), base_cols,
+        tibble::tibble(
+          model_level = cell$model_level,
+          threshold_mode = cell$threshold_mode,
+          iter = samp$iter, warmup = samp$warmup, chains = samp$chains
+        )
+      ),
+      bf_results  = tryCatch(
+        compute_all_bf(fitres$fit, has_pseudo_passive = TRUE),
+        error = function(e) tibble::tibble(error = conditionMessage(e))
+      ),
       # Protected like the fit and BF steps (see run_databased_cell_v2).
-      diagnostics = tryCatch(extract_convergence_diagnostics(fitres$fit),
-                             error = function(e) tibble::tibble(error = conditionMessage(e))))
+      diagnostics = tryCatch(
+        extract_convergence_diagnostics(fitres$fit),
+        error = function(e) tibble::tibble(error = conditionMessage(e))
+      )
+    )
   }
-  tmp <- paste0(out_file, ".tmp"); saveRDS(result, tmp); file.rename(tmp, out_file)
+  tmp <- paste0(out_file, ".tmp")
+  saveRDS(result, tmp)
+  file.rename(tmp, out_file)
   message("[pooled2] done ", cell_id, " (", round(rt, 1), "s)")
   result
 }

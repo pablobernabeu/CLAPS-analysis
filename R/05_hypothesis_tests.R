@@ -172,14 +172,14 @@ classify_bf <- function(bf_10) {
   # exactly 1 is no evidence either way; the >= ordering below places that
   # boundary case on the H1 side, so the bands are half-open upwards.
   dplyr::case_when(
-    bf_10 >= 100  ~ "extreme_H1",
-    bf_10 >= 30   ~ "very_strong_H1",
-    bf_10 >= 10   ~ "strong_H1",
-    bf_10 >= 3    ~ "moderate_H1",
-    bf_10 >= 1    ~ "anecdotal_H1",
-    bf_10 >= 1/3  ~ "anecdotal_H0",
-    bf_10 >= 1/10 ~ "moderate_H0",
-    TRUE          ~ "strong_or_more_H0"
+    bf_10 >= 100    ~ "extreme_H1",
+    bf_10 >= 30     ~ "very_strong_H1",
+    bf_10 >= 10     ~ "strong_H1",
+    bf_10 >= 3      ~ "moderate_H1",
+    bf_10 >= 1      ~ "anecdotal_H1",
+    bf_10 >= 1 / 3  ~ "anecdotal_H0",
+    bf_10 >= 1 / 10 ~ "moderate_H0",
+    TRUE            ~ "strong_or_more_H0"
   )
 }
 
@@ -204,7 +204,7 @@ classify_bf <- function(bf_10) {
 #'   confirms that affectedness predicts acceptability in the passive, the
 #'   reference level against which the H1b interaction is interpreted.
 compute_all_bf <- function(fit, has_pseudo_passive = TRUE,
-                            semantics_var = "Semantics_scaled") {
+                           semantics_var = "Semantics_scaled") {
   # Population-level coefficients carry a "b_" prefix in brms.
   s_param <- paste0("b_", semantics_var)
   # The interaction separator is matched rather than assumed: brms writes ":" but
@@ -231,7 +231,9 @@ compute_all_bf <- function(fit, has_pseudo_passive = TRUE,
            length(ia_pseudo_hits), ": ", paste(ia_pseudo_hits, collapse = ", "))
     }
     ia_pseudo_hits[1]
-  } else NA_character_
+  } else {
+    NA_character_
+  }
 
   results <- list()
 

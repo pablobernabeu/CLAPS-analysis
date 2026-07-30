@@ -116,10 +116,10 @@ load_design_cells <- function(out_dir = "outputs/design_analysis") {
 #'   spotted; na.rm = TRUE means these proportions are computed over cells with a
 #'   usable value, so a low `n_sims` deserves attention.
 compute_bf_exceedance <- function(df, group_vars = c("language", "model_level",
-                                                      "n_participants", "n_verbs",
-                                                      "prior_regime", "hypothesis"),
-                                   bf_threshold = 10,
-                                   bf_threshold_secondary = 3) {
+                                                     "n_participants", "n_verbs",
+                                                     "prior_regime", "hypothesis"),
+                                  bf_threshold = 10,
+                                  bf_threshold_secondary = 3) {
   df |>
     dplyr::filter(status == "success") |>
     dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) |>

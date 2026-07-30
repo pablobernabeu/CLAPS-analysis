@@ -106,7 +106,7 @@ extract_convergence_diagnostics <- function(fit, max_treedepth = 12L) {
   # a strict flag by design, and is recorded rather than used to discard fits;
   # see the aggregation scripts, which report power with and without it.
   convergence_ok <- max_rhat < 1.01 & min_ess_b >= 400 & min_ess_t >= 400 &
-                    n_divergent == 0 & n_max_treedepth == 0
+    n_divergent == 0 & n_max_treedepth == 0
 
   tibble::tibble(
     n_params          = nrow(focal),

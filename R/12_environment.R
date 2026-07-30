@@ -123,7 +123,7 @@ claps_compare_to_record <- function(record_path, packages = NULL) {
     recorded       = rec$Version,
     here           = here_v,
     status         = ifelse(is.na(here_v), "absent_here",
-                     ifelse(here_v == rec$Version, "match", "differs")),
+                            ifelse(here_v == rec$Version, "match", "differs")),
     stringsAsFactors = FALSE
   )
 }

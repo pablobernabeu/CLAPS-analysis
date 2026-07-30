@@ -44,11 +44,12 @@ source("R/07_extract_diagnostics.R")
 # the permitted reasons are stated in one place and can be quoted in the
 # preregistration rather than being inferred from the control flow below.
 FALLBACK_TRIGGERS <- c(
-  "timeout",          # SLURM wall-time exceeded
-  "oom",              # Out-of-memory error
-  "compilation_error",# Stan compilation failed
-  "convergence_failed"# not publication-grade: R-hat >= 1.01, any divergence /
-                      # treedepth saturation, or bulk/tail ESS < 400
+  "timeout",           # SLURM wall-time exceeded
+  "oom",               # Out-of-memory error
+  "compilation_error", # Stan compilation failed
+  # not publication-grade: R-hat >= 1.01, any divergence /
+  # treedepth saturation, or bulk/tail ESS < 400
+  "convergence_failed"
 )
 
 #' Run the model ladder for a single language's data, applying fallback logic.
@@ -87,16 +88,16 @@ FALLBACK_TRIGGERS <- c(
 #'   left behind by an earlier run under different convergence criteria cannot be
 #'   silently accepted.
 run_model_ladder <- function(df,
-                              prior_obj,
-                              sampling_args,
-                              control_args,
-                              has_pseudo_passive = TRUE,
-                              start_level        = "L5_correlated_maximal",
-                              out_dir            = "outputs/models",
-                              language           = "unknown",
-                              prior_label        = "primary",
-                              include_gender     = FALSE,
-                              overwrite          = FALSE) {
+                             prior_obj,
+                             sampling_args,
+                             control_args,
+                             has_pseudo_passive = TRUE,
+                             start_level        = "L5_correlated_maximal",
+                             out_dir            = "outputs/models",
+                             language           = "unknown",
+                             prior_label        = "primary",
+                             include_gender     = FALSE,
+                             overwrite          = FALSE) {
   ladder      <- build_model_ladder(has_pseudo_passive = has_pseudo_passive,
                                     include_gender = include_gender)
   level_order <- ladder_names()

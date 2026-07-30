@@ -233,7 +233,7 @@ write_status_report <- function(grid_status, out_path = "outputs/job_status_repo
 #'   died after computing its results. The timestamp keeps its UTC offset (%z), so
 #'   runs on a cluster in one timezone remain comparable with local runs.
 write_manifest <- function(out_path = "outputs/manifest.csv",
-                            additional_cols = list()) {
+                           additional_cols = list()) {
   dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
 
   git_sha <- tryCatch(

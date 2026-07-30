@@ -117,16 +117,22 @@ simulate_claps_data <- function(
         # Small 3-way: Gender x Semantics, strongest in the PASSIVE (the reference
         # S_Type, which foregrounds the patient's affectedness). No new RNG draws.
         b_g3     <- if (include_gender && identical(st, "Passive")) {
-                      beta_gender_sem_passive * gcode * sem
-                    } else 0
+          beta_gender_sem_passive * gcode * sem
+        } else {
+          0
+        }
 
         # Linear predictor
         b_st   <- if (st == "Active") 0 else if (st == "Pseudo_Passive") 0 else 0  # S_Type main effect = 0 for now
-        b_int  <- if (st == "Active") beta_active_interaction * sem
-                  else if (st == "Pseudo_Passive") beta_pseudo_interaction * sem
-                  else 0
+        b_int  <- if (st == "Active") {
+          beta_active_interaction * sem
+        } else if (st == "Pseudo_Passive") {
+          beta_pseudo_interaction * sem
+        } else {
+          0
+        }
         eta <- part_intercepts[pid] + part_slopes[pid] * sem +
-               verb_intercepts[vid] + beta_semantics * sem + b_int + b_gender + b_g3
+          verb_intercepts[vid] + beta_semantics * sem + b_int + b_gender + b_g3
 
         # Ordinal probabilities from cumulative logit
         cum_probs <- plogis(thresholds - eta)
@@ -242,14 +248,20 @@ simulate_claps_data_multilanguage <- function(
           gcode    <- if (include_gender) (if (identical(g, "Man")) 0.5 else -0.5) else 0
           b_gender <- if (include_gender) beta_gender * gcode else 0
           b_g3     <- if (include_gender && identical(st, "Passive")) {
-                        beta_gender_sem_passive * gcode * sem
-                      } else 0
-          b_int    <- if (st == "Active") beta_active_interaction * sem
-                      else if (st == "Pseudo_Passive") beta_pseudo_interaction * sem
-                      else 0
+            beta_gender_sem_passive * gcode * sem
+          } else {
+            0
+          }
+          b_int    <- if (st == "Active") {
+            beta_active_interaction * sem
+          } else if (st == "Pseudo_Passive") {
+            beta_pseudo_interaction * sem
+          } else {
+            0
+          }
           eta <- lang_int[lang] + part_int[pid] + verb_int[vid] +
-                 (beta_semantics + lang_slp[lang] + part_slp[pid]) * sem +
-                 b_int + b_gender + b_g3
+            (beta_semantics + lang_slp[lang] + part_slp[pid]) * sem +
+            b_int + b_gender + b_g3
 
           cum_probs <- plogis(thresholds - eta)
           probs     <- diff(c(0, cum_probs, 1))
@@ -309,7 +321,11 @@ run_design_cell <- function(cell, out_dir = "outputs/design_analysis", overwrite
   # the 3-way interaction spec.
   .gs <- if (!is.null(cell$gender_spec) && !is.na(cell$gender_spec)) {
     as.character(cell$gender_spec)
-  } else if (isTRUE(cell$include_gender)) "main" else "none"
+  } else if (isTRUE(cell$include_gender)) {
+    "main"
+  } else {
+    "none"
+  }
   if (.gs == "main")        cell_id <- paste0(cell_id, "_gender")
   if (.gs == "interaction") cell_id <- paste0(cell_id, "_genderX")
   if (!is.null(cell$n_languages) && !is.na(cell$n_languages)) {

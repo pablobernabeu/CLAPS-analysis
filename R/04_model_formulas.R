@@ -54,10 +54,10 @@ suppressPackageStartupMessages({
 #'   weakly-informative "b" prior and is not part of any focal hypothesis.
 #' @return Named list of brmsformula objects, in order L5 … L0.
 build_model_ladder <- function(has_pseudo_passive = TRUE,
-                                response_var  = "Response",
-                                semantics_var = "Semantics_scaled",
-                                gender_spec   = c("none", "main", "interaction"),
-                                include_gender = NULL) {
+                               response_var  = "Response",
+                               semantics_var = "Semantics_scaled",
+                               gender_spec   = c("none", "main", "interaction"),
+                               include_gender = NULL) {
 
   # Back-compat shim: legacy callers (R/09_model_ladder.R, pilot scripts, tests)
   # pass include_gender = TRUE/FALSE; translate to gender_spec. New callers pass
@@ -269,9 +269,9 @@ production_control <- function(adapt_delta = 0.99, max_treedepth = 12) {
 #'   variation in the affectedness effect is the object of interest here, so it is
 #'   the last thing given up.
 build_multilanguage_ladder <- function(response_var  = "Response",
-                                        semantics_var = "Semantics_scaled",
-                                        gender_spec   = c("none", "main", "interaction"),
-                                        include_gender = NULL) {
+                                       semantics_var = "Semantics_scaled",
+                                       gender_spec   = c("none", "main", "interaction"),
+                                       include_gender = NULL) {
   if (!is.null(include_gender)) {
     gender_spec <- if (isTRUE(include_gender)) "main" else "none"
   }
@@ -452,7 +452,7 @@ next_multilanguage_fallback <- function(level_name) {
 #'   runs pass values from config/analysis_config.yaml explicitly; see the note in
 #'   the file header.
 production_sampling <- function(iter = 4000, warmup = 2000, chains = 4,
-                                 cores = as.integer(Sys.getenv("STAN_NUM_THREADS", "4")),
-                                 seed = 12345) {
+                                cores = as.integer(Sys.getenv("STAN_NUM_THREADS", "4")),
+                                seed = 12345) {
   list(iter = iter, warmup = warmup, chains = chains, cores = cores, seed = seed)
 }

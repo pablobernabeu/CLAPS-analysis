@@ -156,6 +156,26 @@ CLAPS_ALLOW_PARTIAL_TESTS=1 Rscript tests/testthat.R
 That downgrades the gate to a skip and prints a prominent `!! PARTIAL TEST RUN !!`
 banner. CI sets nothing, so CI cannot pass with an incomplete environment.
 
+## Linting
+
+The lint standard lives in `.lintr.R`, next to the code, so that
+
+```bash
+Rscript -e 'lintr::lint_dir("R")'
+```
+
+reproduces CI exactly. It used to be passed inline in the workflow YAML, which meant
+running lintr locally applied different rules, and because the step only warned, 259
+findings had accumulated unread. The step now **fails** on any finding, and `R/` is
+clean against the configuration.
+
+Of those 259, some 60% were `object_usage_linter` reporting dplyr's NSE column names
+and functions defined in `source()`d files as undefined. Those are artefacts of this
+project's architecture rather than defects, so the linter is disabled with that
+reasoning recorded in `.lintr.R`; the remaining 87 were real formatting issues and
+were fixed. Every deviation from lintr's defaults is argued in that file. If a new
+rule needs relaxing, argue it there rather than restoring a warn-only step.
+
 ## Checking an environment
 
 ```bash
