@@ -15,6 +15,14 @@ suppressPackageStartupMessages({
   library(optparse)
 })
 
+# Null-coalescing operator, defined before first use. Base R gained %||% only in
+# 4.4, while config/arc_modules.yaml sets min_version 4.3.0 and CI pins 4.3.3, so it
+# cannot be assumed present. R/06_simulate_design.R sourced below also defines it
+# identically, so this script would inherit one either way; it is kept here so the
+# file does not depend on a transitive definition from a module it merely happens to
+# source.
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
 source("R/03_define_priors.R")
 source("R/04_model_formulas.R")
 source("R/05_hypothesis_tests.R")
@@ -114,5 +122,3 @@ tmp <- paste0(out_path, ".tmp")
 readr::write_csv(calibration, tmp)
 file.rename(tmp, out_path)
 message("[calibration] Written: ", out_path)
-
-`%||%` <- function(a, b) if (!is.null(a)) a else b

@@ -13,6 +13,12 @@ suppressPackageStartupMessages({
   library(readr)
 })
 
+# Null-coalescing operator, defined before first use. Base R gained %||% only in
+# 4.4, while config/arc_modules.yaml sets min_version 4.3.0 and CI pins 4.3.3, so it
+# cannot be assumed present. None of the modules sourced below defines it, and
+# R/07_extract_diagnostics.R actually depends on a caller supplying it.
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
 source("R/01_read_validate_data.R")
 source("R/02_preprocess_factors.R")
 source("R/03_define_priors.R")
@@ -119,5 +125,3 @@ ladder_log_df <- purrr::imap_dfr(result$ladder_log, function(entry, lv) {
 })
 readr::write_csv(ladder_log_df, log_path)
 message("[fit_pilot] Ladder log: ", log_path)
-
-`%||%` <- function(a, b) if (!is.null(a)) a else b

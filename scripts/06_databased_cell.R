@@ -1,7 +1,33 @@
 #!/usr/bin/env Rscript
 # scripts/06_databased_cell.R
-# Run one cell of the data-grounded BAYESIAN power analysis: load the pilot DGP
-# for the cell's language, simulate from it, refit the model, compute BFs, save.
+#
+# Purpose
+#   One cell of the data-grounded power analysis: load the pilot data-generating
+#   spec for the cell's language, simulate a data set from it, refit the model,
+#   compute Bayes factors, and save. The counterpart of
+#   scripts/04_design_analysis_cell.R for the pilot-calibrated engine.
+#
+# Superseded for reporting
+#   This runs the point-estimate engine (R/10_simulate_from_pilot.R). The reported
+#   data-grounded results come from scripts/06_databased_cell_v2.R, which adds the
+#   assurance mode that accounts for the pilot's estimation uncertainty. Kept as
+#   the labelled reference case.
+#
+# Inputs
+#   --row_index N  Row of the grid. Note that unlike the v2 script, this does NOT
+#                  fall back to SLURM_ARRAY_TASK_ID, so an array submission must
+#                  pass the index explicitly.
+#   --grid FILE    Design grid. Default config/design_grid_databased.csv.
+#   --dgpdir DIR   Where pilot_dgp_<language>.rds files live. Produced by
+#                  scripts/fit_pilot_models.R; a missing file is a hard error,
+#                  since simulating without it is impossible.
+#   --outdir DIR   Destination for the per-cell .rds.
+#   --overwrite    Recompute an existing cell.
+#
+# Usage
+#   Rscript scripts/06_databased_cell.R --row_index 1
+#   sbatch hpc/submit_databased_array.sh
+
 suppressPackageStartupMessages({ library(optparse); library(readr); library(dplyr) })
 source("R/10_simulate_from_pilot.R")
 

@@ -1,8 +1,44 @@
 # R/04_model_formulas.R
-# Prespecified model ladder for the CLAPS Bayesian ordinal mixed-effects model.
-# Single-language ladder: L5 (maximal correlated) down to L0 (intercepts only).
-# For languages without Pseudo_Passive, terms are dropped before returning formulas.
-# S_Type must be treatment-coded with Passive as reference.
+#
+# Purpose
+#   Define, once and in advance, every model the analysis is permitted to fit.
+#   Two ladders live here: a single-language one (L5 down to L0) and a
+#   cross-language one (L7 down to L0) that adds Language as a third grouping
+#   factor. R/09_model_ladder.R walks a ladder; this file only builds it.
+#
+# The likelihood
+#   All levels use a cumulative ordinal model with a logit link and flexible
+#   thresholds: brms::cumulative(link = "logit", threshold = "flexible").
+#   "Cumulative" treats a 1-7 acceptability rating as ordered categories rather
+#   than as a number, which matters because the intervals between Likert points
+#   are not known to be equal. Modelling such ratings as metric can both invent
+#   effects and hide real ones (Liddell & Kruschke, 2018,
+#   doi:10.1016/j.jesp.2018.08.009). "Flexible" lets the six thresholds take any
+#   ordered values instead of being forced onto a parametric spacing, which is
+#   what allows the model to represent the ceiling effects these ratings show.
+#
+# What varies down a ladder
+#   The fixed effects are identical at every level. Only the random-effects
+#   structure is reduced, and always in a prespecified order. The first step
+#   (L5 to L4) replaces "|" with "||", dropping the correlations among random
+#   slopes while keeping the slopes themselves; for a term with k random effects
+#   that removes k(k-1)/2 correlation parameters, which is usually the largest
+#   single saving available and the least costly in interpretive terms. Later
+#   steps remove slopes, starting with the by-participant interaction slope,
+#   which the pilot showed to be the least well identified.
+#
+# Assumption this file depends on
+#   S_Type must already be treatment-coded with Passive as the reference level
+#   (R/02_preprocess_factors.R). The formulas name no coefficients directly, but
+#   the priors and hypothesis tests do, and they assume that coding.
+#
+# Sampler settings
+#   production_control() and production_sampling() at the foot of this file supply
+#   defaults for interactive use. The authoritative values live in
+#   config/analysis_config.yaml, and the pipeline scripts pass them explicitly;
+#   the defaults here match neither the heavy convergence-demonstration sampler
+#   nor the lighter per-replicate one, so do not read them as the settings used
+#   for any reported result.
 
 suppressPackageStartupMessages({
   library(brms)
@@ -120,10 +156,13 @@ build_model_ladder <- function(has_pseudo_passive = TRUE,
     )
   )
 
-  # For languages without pseudo-passives, S_Type has only two levels (Active, Passive).
-  # The formula terms remain the same; the pseudo-passive contrast simply does not
-  # appear in the posterior because the level is absent from the data.
-  # We annotate the ladder to signal this.
+  # For languages without pseudo-passives, S_Type has only two levels (Active,
+  # Passive). The formula terms remain the same; the pseudo-passive contrast simply
+  # does not appear in the posterior because the level is absent from the data.
+  # has_pseudo_passive is therefore recorded as an annotation and does not alter
+  # any formula built above. The argument matters to the *callers*: build_brms_prior()
+  # uses it to omit a prior for a coefficient that will not exist, and
+  # compute_all_bf() uses it to decide whether to report H2 at all.
   attr(ladder, "has_pseudo_passive") <- has_pseudo_passive
   attr(ladder, "semantics_var")      <- semantics_var
   attr(ladder, "response_var")       <- response_var
@@ -134,6 +173,12 @@ build_model_ladder <- function(has_pseudo_passive = TRUE,
 }
 
 #' Return the names of the model ladder in descending order of complexity.
+#'
+#' @return Character vector, most complex first. This ordering *is* the fallback
+#'   order: R/09_model_ladder.R iterates over it, and next_fallback() below reads
+#'   the successor from it. It is duplicated in select_highest_feasible_model()
+#'   in R/07_extract_diagnostics.R, which must be updated in step with any change
+#'   here.
 ladder_names <- function() {
   c(
     "L5_correlated_maximal",
@@ -146,7 +191,13 @@ ladder_names <- function() {
 }
 
 #' Given a ladder name, return the next fallback level.
-#' Returns NA if already at L0.
+#'
+#' @param level_name A level name from ladder_names().
+#' @return The next simpler level, or NA_character_ at the bottom of the ladder
+#'   or when the name is unrecognised. Both cases return NA so that a caller's
+#'   loop terminates rather than erroring; an unrecognised name reaching here
+#'   means the caller built it wrongly, and R/09_model_ladder.R checks for that
+#'   explicitly at its start.
 next_fallback <- function(level_name) {
   nms <- ladder_names()
   idx <- match(level_name, nms)
@@ -154,7 +205,23 @@ next_fallback <- function(level_name) {
   nms[idx + 1L]
 }
 
-#' Standard brms control arguments for production fits.
+#' Standard brms `control` arguments for production fits.
+#'
+#' @param adapt_delta Target acceptance rate for the NUTS step-size adaptation.
+#'   Raised from Stan's default of 0.8 to 0.99, which forces a smaller step size.
+#'   Hierarchical ordinal models of this kind have sharply curved posterior
+#'   geometry near the variance-component boundaries, where the default step size
+#'   produces divergent transitions; a higher adapt_delta trades sampling speed
+#'   for the absence of those divergences.
+#' @param max_treedepth Ceiling on the NUTS trajectory length, as a power of 2.
+#'   Raised from the default of 10 to 12. Note that saturating this limit is a
+#'   warning about efficiency rather than about validity, and it is counted as a
+#'   convergence failure in R/07_extract_diagnostics.R only because it degrades the
+#'   tail resolution the Bayes factors depend on. It is deliberately not raised
+#'   further ad hoc: config/analysis_config.yaml marks it "diagnostic escalation
+#'   only", because repeatedly raising it masks a model that is misspecified for
+#'   the data rather than merely slow.
+#' @return A list for brms::brm(control = ...).
 production_control <- function(adapt_delta = 0.99, max_treedepth = 12) {
   list(adapt_delta = adapt_delta, max_treedepth = max_treedepth)
 }
@@ -178,11 +245,29 @@ production_control <- function(adapt_delta = 0.99, max_treedepth = 12) {
 # Verb labels are language-specific (Language_VERB format).
 
 #' Return the cross-language model ladder as a named list of brmsformula objects.
-#' The L5 level matches the OSF reference model exactly; lower levels are
-#' computational fallbacks.
+#'
 #' @param response_var Character; name of the response variable.
 #' @param semantics_var Character; name of the scaled Semantics predictor.
-#' @return Named list of brmsformula objects, in order L5_cross … L0_cross.
+#' @param gender_spec "none", "main" or "interaction"; how referent gender enters
+#'   the fixed effects.
+#' @param include_gender Deprecated logical, translated to gender_spec for older
+#'   callers.
+#' @return Named list of brmsformula objects, in order L7_cross … L0_cross.
+#' @details L5_cross_maximal reproduces the published OSF reference model exactly,
+#'   which is why it, rather than the topmost rung, is the point of comparison with
+#'   previous work. L6 and L7 sit *above* it and exist to test a specific
+#'   expectation rather than to be selected: they place the full fixed structure,
+#'   including gender, into the by-Language random effects, and with only three to
+#'   twenty language groups that covariance block is not expected to be
+#'   identifiable. Running them documents where on the complexity gradient
+#'   convergence actually breaks, instead of asserting it. Levels below L5 are
+#'   computational fallbacks in the usual sense.
+#'
+#'   Descending this ladder reduces the by-Participant and by-Verb structure first
+#'   and keeps the by-Language slopes longest (compare L2, which has intercepts
+#'   only for participants and verbs but full slopes for Language). Cross-language
+#'   variation in the affectedness effect is the object of interest here, so it is
+#'   the last thing given up.
 build_multilanguage_ladder <- function(response_var  = "Response",
                                         semantics_var = "Semantics_scaled",
                                         gender_spec   = c("none", "main", "interaction"),
@@ -349,6 +434,23 @@ next_multilanguage_fallback <- function(level_name) {
 }
 
 #' Standard sampling arguments for production fits.
+#'
+#' @param iter,warmup Total and warm-up iterations per chain, so the retained
+#'   draws per chain are iter - warmup.
+#' @param chains Number of chains. Four is the minimum at which R-hat is
+#'   informative about between-chain disagreement.
+#' @param cores Chains to run in parallel. Read from the STAN_NUM_THREADS
+#'   environment variable so that a SLURM script can set it from
+#'   --cpus-per-task and the same code adapts to the allocation it was given,
+#'   rather than hard-coding a core count that would either oversubscribe or
+#'   waste the node.
+#' @param seed Sampler seed. Fixed so a fit is reproducible; the design-analysis
+#'   grids override it per cell, since there the seed is what distinguishes one
+#'   simulated replicate from another.
+#' @return A list of arguments for brms::brm().
+#' @details These defaults are for interactive and smoke-test use. The reported
+#'   runs pass values from config/analysis_config.yaml explicitly; see the note in
+#'   the file header.
 production_sampling <- function(iter = 4000, warmup = 2000, chains = 4,
                                  cores = as.integer(Sys.getenv("STAN_NUM_THREADS", "4")),
                                  seed = 12345) {

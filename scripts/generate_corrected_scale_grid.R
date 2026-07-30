@@ -62,7 +62,13 @@ conditions <- langs |>
   dplyr::mutate(.cond = dplyr::row_number())
 
 grid <- tidyr::crossing(conditions, .rep = seq_len(B)) |>
-  dplyr::mutate(seed = as.integer(700000L + (.cond - 1L) * B + (.rep - 1L))) |>   # base 7e5: collision-free vs 6e5/8e5
+  # Seed base 1.0e6, exclusive to this grid: 1000000-1002099 (42 conditions x B = 50).
+  # Moved off 7e5 on 2026-07-30, where it had overlapped generate_floor50_power_grid.R
+  # and generate_safeguard_grid.R. This grid was chosen to move because it has never
+  # been run (no outputs/design_corrected_scale directory exists on ARC), so re-basing
+  # orphaned nothing. See the seed registry in
+  # docs/design_power_analysis_pipeline.md.
+  dplyr::mutate(seed = as.integer(1000000L + (.cond - 1L) * B + (.rep - 1L))) |>
   dplyr::select(-.cond, -.rep)
 
 COL_ORDER <- c(

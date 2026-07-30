@@ -1,7 +1,19 @@
 # R/10_simulate_from_pilot_v2.R
 # ---------------------------------------------------------------------------
-# Amended data-grounded engine addressing the Albers & Lakens (2018) pilot-power
-# critique of the point-estimate plug-in in R/10_simulate_from_pilot.R.
+# Amended data-grounded engine addressing the Albers & Lakens (2018,
+# doi:10.1016/j.jesp.2017.09.004) pilot-power critique of the point-estimate
+# plug-in in R/10_simulate_from_pilot.R. Their argument in brief: a pilot effect
+# size is estimated with substantial error, so treating it as if it were the true
+# effect gives a power figure that is itself uncertain, and one that is biased
+# upward whenever the pilot is small, because a pilot is more likely to be
+# followed up when its estimate happened to be large.
+#
+# Which mode to use, and when
+#   Report "assurance" as the headline result. It is the mode that answers the
+#   question actually being asked, namely what proportion of future studies of a
+#   given size would return decisive evidence, given what the pilot tells us and
+#   does not tell us about the effect. Use "safeguard" for the pessimistic case,
+#   and "point" only for comparison with the earlier base-engine results.
 #
 # The base engine plugs the pilot posterior MEANS of the focal slopes in as the
 # true effect (a conditional-power / fixed-point design analysis). This variant
@@ -70,8 +82,15 @@ extract_dgp_params_v2 <- function(fit, verb_affectedness, s_types, n_cats = 7L, 
   thr_idx   <- as.integer(gsub(".*\\[(\\d+)\\].*", "\\1", colnames(thr_draws)))
   thr_draws <- thr_draws[, order(thr_idx), drop = FALSE]
 
+  # intersect() rather than indexing by .FOCAL_TERMS directly, because the
+  # pseudo-passive term is absent for languages without that construction.
   focal     <- intersect(.FOCAL_TERMS, colnames(pop_draws))
   focal_lwr <- vapply(focal, function(f) {
+    # Take both tails and keep whichever is nearer zero. This is what makes the
+    # safeguard sign-agnostic: for a positive-signed effect the smaller quantile is
+    # the conservative one, and for a negative-signed effect it is the larger.
+    # Selecting by |value| picks the conservative end in both cases. See the note
+    # on lwr_q above for the bug this replaced.
     q <- stats::quantile(pop_draws[, f], probs = c(lwr_q, 1 - lwr_q))
     q[[which.min(abs(q))]]
   }, numeric(1))
@@ -107,7 +126,15 @@ simulate_from_pilot_v2 <- function(dgp, n_participants, mode = "assurance",
     ff[names(ff) %in% .FOCAL_TERMS] <- ff[names(ff) %in% .FOCAL_TERMS] * effect_mult
   } else if (identical(mode, "assurance")) {
     if (is.null(dgp$fixef_draws)) stop("[v2] assurance mode needs a v2 DGP (posterior draws).")
+    # One posterior draw per replicate, so that averaging the outcome over
+    # replicates integrates over the pilot's uncertainty rather than conditioning
+    # on a single estimate. The modular wrap lets the grid request more replicates
+    # than there are draws without erroring; that reuses draws cyclically, so a
+    # replicate count far above ndraws stops adding information.
     di  <- ((as.integer(draw_index) - 1L) %% dgp$ndraws) + 1L
+    # Coefficients and thresholds are taken from the SAME draw index. Mixing draws
+    # would combine parameter values that never co-occurred in the posterior and so
+    # describe a model the pilot gives no support for.
     ff  <- dgp$fixef_draws[di, ]
     thr <- dgp$thresholds_draws[di, ]
     names(ff) <- colnames(dgp$fixef_draws)
@@ -136,9 +163,15 @@ simulate_from_pilot_v2 <- function(dgp, n_participants, mode = "assurance",
   vidx <- match(grid$Verb, verbs)
   eta <- eta + Reduce(`+`, lapply(vterms, function(t) bV[vidx, t] * tc[[t]]))
 
+  # Cumulative-logit response generation. plogis(threshold - eta) is P(Y <= k), so
+  # bounding the row with 0 and 1 and differencing turns the K-1 cumulative
+  # probabilities into K category probabilities that sum to one by construction.
   cum   <- vapply(thr, function(tk) plogis(tk - eta), numeric(length(eta)))
   cum   <- cbind(0, cum, 1)
   probs <- t(apply(cum, 1, diff))
+  # pmax guards against a tiny negative probability from floating-point error in
+  # the differencing, which sample.int() would reject; renormalising keeps the
+  # vector a valid distribution afterwards.
   resp  <- apply(probs, 1, function(p) { p <- pmax(p, 0); sample.int(n_cats, 1, prob = p / sum(p)) })
 
   tibble::tibble(
@@ -151,10 +184,30 @@ simulate_from_pilot_v2 <- function(dgp, n_participants, mode = "assurance",
 }
 
 #' Run one v2 data-grounded cell (assurance / safeguard / point), refit, BF, save.
-#' cell columns: language, n_participants, mode, draw_index, prior_source,
-#'   model_level, prior_regime, threshold_mode, has_pseudo_passive, iter, warmup,
-#'   chains, seed, effect_mult (point only).
+#'
+#' @param cell One row of a design grid. Expected columns: language,
+#'   n_participants, mode, draw_index, prior_source, model_level, prior_regime,
+#'   threshold_mode, has_pseudo_passive, iter, warmup, chains, seed, and
+#'   effect_mult (used in "point" mode only).
+#' @param dgp A DGP spec from extract_dgp_params_v2().
+#' @param out_dir Directory for the per-cell .rds.
+#' @param overwrite If FALSE, an existing output is returned rather than recomputed,
+#'   which is what makes a resubmitted array cheap after a partial run.
+#' @return The result list, also written to disk as
+#'   databased2_<prior_source>_<mode>_<language>_N<nnn>_<seed>.rds.
+#' @details Note what the analysis prior is *not*. The data are generated from the
+#'   pilot posterior, but the model refitted to them uses the ordinary zero-centred
+#'   prior regime named in the cell, exactly as the confirmatory analysis will. If
+#'   the generating values were also used as the analysis prior, the Bayes factor
+#'   would be testing a hypothesis the prior already asserted, and the resulting
+#'   power figure would be meaningless.
+#'
+#'   The seed serves double duty: it seeds both the data simulation and the
+#'   sampler, so a cell is reproducible end to end from its grid row alone.
 run_databased_cell_v2 <- function(cell, dgp, out_dir, overwrite = FALSE) {
+  # Sourced inside the function rather than at file scope because each SLURM array
+  # task runs one cell in a fresh R session, and this keeps the cell runner
+  # self-contained.
   source("R/03_define_priors.R");  source("R/04_model_formulas.R");  source("R/05_hypothesis_tests.R")
   source("R/07_extract_diagnostics.R")
   mode <- as.character(cell$mode %||% "assurance")

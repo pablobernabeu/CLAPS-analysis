@@ -35,6 +35,23 @@
 # multilanguage path) mirrors R/02_preprocess_factors.R::scale_semantics exactly;
 # for the balanced simulated design it equals verb-level scaling up to the
 # negligible (n-1) finite-sample correction.
+#
+# HOW TO USE IT
+# Source this file INSTEAD OF R/06_simulate_design.R, not in addition to it. It
+# sources the base file itself and then rebinds two of its functions, so sourcing
+# the base afterwards would restore the unscaled versions and silently undo the
+# correction. scripts/04_design_analysis_cell_gelman.R is the intended entry point;
+# compare its results with scripts/04_design_analysis_cell.R to see the
+# prior-scale effect on its own.
+#
+# WHY THE OVERRIDE WORKS
+# run_design_cell() in the base file calls simulate_claps_data() by name, and R
+# resolves that name at call time in the global environment. Rebinding the name
+# here therefore changes what run_design_cell() calls, without any edit to the base
+# file. This is deliberate but fragile: it depends on the base file not calling the
+# simulators via a namespace-qualified or locally captured reference. A start-up
+# message is emitted below so a reader of the job log can confirm which variant
+# actually ran.
 # ---------------------------------------------------------------------------
 
 suppressPackageStartupMessages({

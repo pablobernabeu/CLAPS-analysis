@@ -45,8 +45,25 @@ conditions <- langs |>
 
 grid <- tidyr::crossing(conditions, .rep = seq_len(REPS)) |>
   dplyr::mutate(
-    draw_index = .rep,                                   # assurance: distinct posterior draw per replicate
-    seed       = as.integer(900000L + (.cond - 1L) * REPS + (.rep - 1L))
+    # In assurance mode the replicate index doubles as the posterior-draw index, so
+    # each replicate uses a distinct pilot draw. Note this walks a CONTIGUOUS block
+    # of the first REPS draws rather than sampling across the posterior; the pooled
+    # grids sample randomly instead, which is the better approach where the draw
+    # count allows it.
+    draw_index = .rep,
+    # Seed base 1.2e6, exclusive to this grid: 1200000-1200719 (30 conditions x
+    # REPS = 24). Moved off 9e5 on 2026-07-30, where its first 200 seeds had collided
+    # with the cross-language block of generate_design_grid.R, whose output
+    # config/design_grid_cross.csv occupies 900000-900199. This grid moved rather than
+    # the cross block because design_grid_cross.csv is committed to the repository and
+    # its cells are already computed.
+    #
+    # CONSEQUENCE OF THE MOVE: the 719 cells already computed under
+    # outputs/design_databased_v2 carry the old 9e5 seeds in their filenames and will
+    # no longer be found by the resume-by-existing-output check. They are not deleted.
+    # The 374 extended-N cells in that same directory use base 9.1e5 and are
+    # unaffected. See the seed registry in docs/design_power_analysis_pipeline.md.
+    seed       = as.integer(1200000L + (.cond - 1L) * REPS + (.rep - 1L))
   ) |>
   dplyr::select(-.cond, -.rep)
 

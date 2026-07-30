@@ -57,7 +57,19 @@ conds <- dplyr::bind_rows(
   dplyr::mutate(.cond = dplyr::row_number())
 
 grid <- tidyr::crossing(conds, .rep = seq_len(B)) |>
-  dplyr::mutate(seed = as.integer(700000L + (.cond - 1L) * B + (.rep - 1L))) |>   # base 7e5: collision-free
+  # Seed base 1.1e6, exclusive to this grid: 1100000-1100439 (11 conditions x B = 40).
+  # Moved off 7e5 on 2026-07-30, where it had overlapped
+  # generate_floor50_power_grid.R (700000-701049) and
+  # generate_corrected_scale_grid.R. One of the three had to move regardless, and
+  # this grid had the fewest computed cells to lose.
+  #
+  # CONSEQUENCE OF THE MOVE: the 122 cells already computed under
+  # outputs/design_safeguard carry the old seeds (700280-700401) in their filenames,
+  # so they no longer match what this grid asks for and the resume-by-existing-output
+  # check will not find them. They are not deleted; regenerating this grid and
+  # resubmitting recomputes them under the new seeds. See the seed registry in
+  # docs/design_power_analysis_pipeline.md.
+  dplyr::mutate(seed = as.integer(1100000L + (.cond - 1L) * B + (.rep - 1L))) |>
   dplyr::select(-.cond, -.rep, -discount)
 
 COL_ORDER <- c(

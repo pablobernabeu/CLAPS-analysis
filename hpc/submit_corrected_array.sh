@@ -18,6 +18,10 @@
 #   sbatch --account=PROJECT_GROUP    --array=1-2940%40   hpc/submit_corrected_array.sh
 #   sbatch --account=PROJECT_GROUP --array=2941-4200%30 hpc/submit_corrected_array.sh
 # Writes to a NEW dir, outputs/design_corrected (the original power cells untouched).
+#
+# The shared preamble below (module handling, R_LIBS_USER, thread limits, CmdStan
+# discovery, the over-wide-array clean exit) is explained line by line under
+# "Anatomy of a submission script" in docs/arc_submission_guide.md.
 
 set -euo pipefail
 SUBMIT_DIR="$HOME/design_analysis"
@@ -49,6 +53,11 @@ if [[ "$ROW_INDEX" -gt "$N_ROWS" ]]; then
   echo "[corrected] task $ROW_INDEX exceeds grid size $N_ROWS; exiting cleanly."; exit 0
 fi
 
+# Find the seed column BY NAME from the header, so the log stays correct if the
+# grid's column order changes. The ${SEED_COL:-15} fallback covers the case where
+# the header has no "seed" column at all; 15 is where it sits in the corrected
+# grid's COL_ORDER. The seed is echoed only for the log: the R script reads the
+# grid itself and does not take a seed argument.
 SEED_COL=$(awk -F',' 'NR==1{for(i=1;i<=NF;i++) if($i=="seed"){print i; exit}}' "$GRID")
 SEED=$(awk -F',' -v row="$((ROW_INDEX+1))" -v c="${SEED_COL:-15}" 'NR==row {print $c}' "$GRID")
 echo "Grid row $ROW_INDEX / $N_ROWS | $(awk -F',' -v row="$((ROW_INDEX+1))" 'NR==row{print $1,$2,"N="$5,"nverb="$6}' "$GRID") | seed $SEED"
@@ -60,6 +69,11 @@ Rscript scripts/04_design_analysis_cell.R \
   --outdir    "$OUTPUT_DIR" \
   ${OVERWRITE:+--overwrite}
 
+# Note that under `set -e` these lines only run when Rscript succeeded, so the
+# reported code is always 0. A genuine R failure aborts the script at the call
+# above and SLURM records the non-zero status itself. The line is therefore a
+# completion marker in the log, not a diagnostic; the cell's own status lives in
+# its .rds.
 EXIT_CODE=$?
 echo "End $(date -Iseconds) | exit $EXIT_CODE"
 exit $EXIT_CODE

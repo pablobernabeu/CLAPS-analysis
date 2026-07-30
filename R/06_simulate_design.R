@@ -13,6 +13,15 @@ suppressPackageStartupMessages({
   library(ordinal)
 })
 
+# Null-coalescing operator, defined before first use. Base R gained %||% only in
+# 4.4, while config/arc_modules.yaml sets min_version 4.3.0 and CI pins 4.3.3, so it
+# cannot be assumed present. run_design_cell() below relies on it for the optional
+# grid columns (iter, warmup, chains, gender_spec, n_languages).
+#
+# Note that this plain variant and the stricter one in R/00_reference_audit.R share
+# a name, so whichever is evaluated last wins; see the hazard note in that file.
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
 source("R/03_define_priors.R")
 source("R/04_model_formulas.R")
 source("R/05_hypothesis_tests.R")
@@ -455,6 +464,3 @@ run_design_cell <- function(cell, out_dir = "outputs/design_analysis", overwrite
   message("[design_cell] Done: ", cell_id, " (", round(runtime_sec, 1), "s)")
   result
 }
-
-# Null-coalescing operator
-`%||%` <- function(a, b) if (!is.null(a)) a else b

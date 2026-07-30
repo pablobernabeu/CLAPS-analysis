@@ -43,6 +43,73 @@ per row:
 | `config/design_grid_gender.csv` | 2400 | 3 langs × N∈{30,40,50,60} × gender variation × 200 |
 | `config/design_grid_cross.csv`  | 200  | AllLanguages L4 cross-uncorrelated × N∈{30,40,50,60} × 50 |
 
+## Seed allocation across grids
+
+Every replicate is independently seeded, and the seed is the only thing that
+distinguishes one replicate of a design point from another. Each grid generator
+therefore allocates from its own numeric base, so that two grids do not hand the
+same RNG stream to two different cells. A shared stream would mean the two cells
+draw identical data whenever their design parameters also coincide, which would
+present one simulated data set as two independent replicates.
+
+Every base below is exclusive to one generator. The ranges are pairwise disjoint,
+and `tests/testthat/test-seed-disjointness.R` fails if that ever stops being true.
+
+| Base | Range | Generator / grid |
+|------|-------|------------------|
+| 1e5 | 100000–101799 | `generate_design_grid.R` power curves → `design_grid_single.csv` |
+| 2e5 | 200000–201799 | `generate_design_grid.R` prior sensitivity → `design_grid_single.csv` |
+| 3e5 | 300000–302399 | `generate_design_grid.R` gender → `design_grid_gender.csv` |
+| 4e5 | 400000–402399 | `generate_design_grid.R` extended N → `design_grid_extend.csv` |
+| 5e5 | from 500000 | `generate_feasibility_grid.R` |
+| 6e5 | 600000–… | `generate_corrected_power_grid.R` |
+| 7e5 | 700000–701049 | `generate_floor50_power_grid.R` |
+| 8e5 | 800000–… | `generate_databased_grid.R` |
+| 9e5 | 900000–900199 | `generate_design_grid.R` cross → `design_grid_cross.csv` |
+| 9.1e5 | 910000–… | `generate_databased_v2_extendedN_grid.R` |
+| 9.29e5 | 929000 | `design_grid_pooled_v2_TEST.csv` (smoke test) |
+| 9.3e5 | 930000–931490 | `generate_pooled_v2_grid.R` |
+| 9.32e5 | 932000–932290 | `generate_pooled_v2_N80_grid.R` |
+| 9.4e5 | 940000–941079 | `generate_databased_v2_decision_grid.R` |
+| 1.0e6 | 1000000–1002099 | `generate_corrected_scale_grid.R` |
+| 1.1e6 | 1100000–1100439 | `generate_safeguard_grid.R` |
+| 1.2e6 | 1200000–1200719 | `generate_databased_v2_grid.R` |
+
+Bases from 1.3e6 upward are free. Leave a gap of at least 1e5 above a new base, so
+that raising a grid's replicate count later cannot run it into its neighbour.
+
+### The 2026-07-30 re-basing
+
+Two collisions existed until 2026-07-30 and are now resolved. `corrected_scale`,
+`floor50` and `safeguard` all began at 700000, so the latter two ranges sat inside
+the first; and `databased_v2` began at 900000, covering the 200 seeds already used
+by the committed `design_grid_cross.csv`. Comments in those generators had described
+each base as collision-free.
+
+No published result was affected. The grids committed under `config/` were checked
+pairwise and share no seeds, and the computed outputs on ARC were checked for
+identical cell IDs across directories, of which there were none: the overlapping
+seeds always went with a different verb count, so no two cells ever produced the
+same simulated data.
+
+Which generator moved was decided by how many cells each already had computed,
+because the seed forms part of every output filename and re-basing therefore
+orphans existing outputs:
+
+| Generator | Old base | New base | Computed cells | Orphaned |
+|---|---|---|---|---|
+| `generate_floor50_power_grid.R` | 7e5 | 7e5 (kept) | 1028, in `outputs/design_corrected` | 0 |
+| `generate_corrected_scale_grid.R` | 7e5 | 1.0e6 | 0, never run | 0 |
+| `generate_safeguard_grid.R` | 7e5 | 1.1e6 | 122, in `outputs/design_safeguard` | 122 |
+| `generate_databased_v2_grid.R` | 9e5 | 1.2e6 | 719, in `outputs/design_databased_v2` | 719 |
+
+The 841 orphaned cells are the unavoidable minimum: one of the three 7e5 grids had
+to move, and `databased_v2` had to move because the cross grid it collided with is
+committed. Orphaned outputs are not deleted, only no longer matched by the
+resume-by-existing-output check, so regenerating either grid and resubmitting
+recomputes those cells under the new seeds. The 374 extended-N cells sharing the
+`design_databased_v2` directory use base 9.1e5 and are unaffected.
+
 ## Step 2 — submit the chained pipeline
 
 Three design arrays (resources overridden at submit time; `GRID` selects the

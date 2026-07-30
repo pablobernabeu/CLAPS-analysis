@@ -1,14 +1,51 @@
 #!/usr/bin/env Rscript
 # scripts/07_pooled_cell_v2.R
-# Run one pooled cross-language design-analysis cell from a grid row.
-# Loads the three per-language v2 pilot DGPs (with posterior draws), simulates
-# each language independently, binds them, and fits the cross-language analysis
-# model via run_pooled_cell_v2().
-# Usage: Rscript scripts/07_pooled_cell_v2.R --row_index N --grid G --dgpdir D --outdir O
+#
+# Purpose
+#   One cell of the pooled cross-language design analysis. Each language is
+#   simulated from its OWN pilot data-generating spec, the three data sets are
+#   bound together, and a single cross-language model is fitted to the result.
+#
+# Why simulate per language and pool afterwards
+#   The three languages differ in their pilot-estimated effects, thresholds and
+#   variance components, and Norwegian additionally lacks pseudo-passives.
+#   Generating each from its own spec preserves that heterogeneity, so the pooled
+#   fit faces the same between-language variation the real analysis will. Simulating
+#   from one averaged spec would understate it and overstate the power of the
+#   cross-language model.
+#
+# Inputs
+#   --row_index N  Row of the grid; defaults to SLURM_ARRAY_TASK_ID.
+#   --grid FILE    Default config/design_grid_pooled_v2.csv.
+#   --dgpdir DIR   Holds pilot_dgp_v2_<prior_source>_<language>.rds for all three
+#                  languages. All three must be present; a missing one is an error
+#                  rather than a silently smaller pool.
+#   --outdir DIR, --overwrite
+#
+# Note on the grid columns
+#   The grid carries a separate draw index per language
+#   (draw_index_english/turkish/norwegian). They are independent because the three
+#   pilot posteriors are independent: there is no joint posterior to draw a single
+#   index from, and tying them to one index would impose a correspondence between
+#   unrelated draws.
+#
+# Usage
+#   Rscript scripts/07_pooled_cell_v2.R --row_index 1
+#   sbatch hpc/submit_pooled_v2_array.sh
+#
+# Cost
+#   The most expensive cell type in the repository. A cross-language fit takes
+#   roughly 8-12 hours, which is why config/analysis_config.yaml sets a lower
+#   replicate count for cross-language design points than for single-language ones.
+
 suppressPackageStartupMessages({ library(optparse); library(dplyr); library(readr) })
 source("R/03_define_priors.R"); source("R/04_model_formulas.R"); source("R/05_hypothesis_tests.R")
 source("R/07_extract_diagnostics.R"); source("R/11_simulate_pooled_v2.R")
 
+# The three CLAPS pilot languages, hard-coded because the pooled grids are built
+# around exactly these three and the grid's per-language draw-index columns are
+# named after them. Adding a language means updating both this vector and the grid
+# generator scripts/generate_pooled_v2_grid.R.
 LANGS <- c("English", "Turkish", "Norwegian")
 
 opt <- optparse::parse_args(optparse::OptionParser(option_list = list(

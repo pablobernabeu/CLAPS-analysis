@@ -1,9 +1,51 @@
 #!/usr/bin/env Rscript
 # scripts/03_prior_sensitivity.R
-# Run prior sensitivity analysis across all prior regimes × threshold modes
-# for a given language, using the pilot-fitted model as the base.
-# Saves BF and diagnostic results per cell.
-# Usage: Rscript scripts/03_prior_sensitivity.R --language English --model_level L4_uncorrelated_maximal
+#
+# Purpose
+#   Refit the same pilot data under every prior regime crossed with every threshold
+#   mode, and record how far the Bayes factors move. The question is whether a
+#   conclusion is a property of the data or an artefact of the prior. It matters
+#   more here than in an estimation analysis, because a Savage-Dickey Bayes factor
+#   depends on the prior's width directly, not just on its centre.
+#
+# What varies and what does not
+#   The data, the model formula and the sampler settings are held fixed across all
+#   eight cells. Only the prior changes. Any difference in the resulting Bayes
+#   factors is therefore attributable to the prior alone.
+#
+# Inputs
+#   --language          Which language's pilot data to use. One language per run.
+#   --model_level       Ladder level to fit. Defaults to L4 rather than the maximal
+#                       L5, because this script fits eight models and L4 is the
+#                       level that reliably converges on pilot-sized data; use the
+#                       language's maximal feasible level once that is known.
+#   --include_gender    Fit the gender model variation. Implies a different
+#                       affectedness source; see below.
+#   --semantics_source  Column to take affectedness from.
+#   --config            config/analysis_config.yaml.
+#   --outdir            Destination for the per-cell files and the summary.
+#   --seed, --overwrite
+#
+# Outputs, per cell (8 cells = 4 regimes x 2 threshold modes)
+#   <label>.rds        The fitted model.
+#   <label>_diag.csv   Convergence diagnostics.
+#   <label>_bf.csv     Bayes factors.
+#   plus one <language>_<model_level>[_gender]_sensitivity_summary.csv across cells.
+#
+# Usage
+#   Rscript scripts/03_prior_sensitivity.R --language English \
+#     --model_level L4_uncorrelated_maximal
+#
+# Cost
+#   Eight full brms fits, run sequentially in one process. Submit via
+#   hpc/submit_prior_sensitivity_array.sh rather than running it on a login node.
+#
+# Reading the result
+#   Compare bf_category across regimes rather than raw BF values. A Bayes factor
+#   moving from 40 to 120 does not change any conclusion, whereas one crossing the
+#   preregistered threshold of 10 does. The literature_centred regime is expected
+#   to give the largest Bayes factors, since it encodes the predicted direction;
+#   that is why it is a sensitivity check and never the primary result.
 
 suppressPackageStartupMessages({
   library(brms)
@@ -77,6 +119,10 @@ results <- purrr::pmap_dfr(sens_grid, function(regime_name, threshold_mode) {
   diag_csv <- file.path(opt$outdir, paste0(cell_label, "_diag.csv"))
   bf_csv   <- file.path(opt$outdir, paste0(cell_label, "_bf.csv"))
 
+  # Resume support: a cell is skipped only if BOTH its CSVs exist, since the two are
+  # written separately and a job killed between them would otherwise be treated as
+  # complete. The saved summaries are re-read so the returned table is identical
+  # whether a cell was fitted now or previously, and `status` records which.
   if (all(file.exists(c(diag_csv, bf_csv))) && !opt$overwrite) {
     message("[sensitivity] Skipping existing: ", cell_label)
     diag <- readr::read_csv(diag_csv, show_col_types = FALSE)
@@ -91,6 +137,18 @@ results <- purrr::pmap_dfr(sens_grid, function(regime_name, threshold_mode) {
 
   message("[sensitivity] Fitting: ", cell_label)
 
+  # Threshold priors are derived from data only in ceiling_calibrated mode; broad
+  # mode uses the generic Student-t and needs no parameters.
+  #
+  # CAVEAT: the thresholds are computed from `df`, the same data the model is then
+  # fitted to. compute_ceiling_calibrated_thresholds() documents that its input
+  # should be an INDEPENDENT pilot sample. Using the analysis data makes this cell
+  # mildly optimistic, since the threshold prior is centred on the very response
+  # distribution it will be tested against. It is acceptable here because this
+  # script is a sensitivity check on the pilot rather than a confirmatory analysis,
+  # and because the thresholds are nuisance parameters that no hypothesis concerns.
+  # For the confirmatory analysis the pilot and confirmatory samples must be split,
+  # which is what split_pilot_confirmatory() is for.
   threshold_params <- NULL
   if (threshold_mode == "ceiling_calibrated") {
     threshold_params <- compute_ceiling_calibrated_thresholds(df, opt$language)

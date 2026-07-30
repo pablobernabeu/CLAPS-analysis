@@ -1,7 +1,41 @@
 # R/08_summarise_design.R
-# Aggregate design-analysis cells into operating-characteristic summaries.
-# Computes BF exceedance probabilities, sensitivity to prior regime,
-# model-ladder selection frequency, and failure rates.
+#
+# Purpose
+#   Turn the many per-cell .rds files written by the design analysis into the
+#   handful of CSV summaries the report reads. A "cell" is one simulated design
+#   point: one combination of language, model level, prior regime, threshold
+#   mode, sample size, verb count and seed, fitted once. Aggregating over the
+#   seeds within a design point converts individual Bayes factors into the
+#   operating characteristic of interest, namely the probability that a study of
+#   that size returns BF > 10.
+#
+# Inputs
+#   out_dir  A directory of per-cell .rds files (default
+#            "outputs/design_analysis"). Each file holds either a list with
+#            $summary, $bf_results and $diagnostics for a cell that fitted, or a
+#            one-row tibble carrying a status for a cell that did not.
+#
+# Outputs (written by write_design_summary into out_dir)
+#   failure_summary.csv        Counts by status, plus the overall failure rate.
+#   bf_exceedance.csv          P(BF > threshold) per design point. The main result.
+#   prior_sensitivity.csv      How far a single simulated data set's BF moves
+#                              when only the prior regime changes.
+#   ladder_selection.csv       How often each model-ladder level was run.
+#   maximal_feasible_model.csv Highest convergent ladder level per language.
+#   recommended_sample_size.csv Smallest N meeting the target, per language.
+#   runtime_summary.csv        Fit times, for planning HPC walltime.
+#
+# Thresholds
+#   The BF thresholds default to 10 (primary) and 3 (secondary), matching
+#   config/analysis_config.yaml design_analysis$bf_threshold_primary and
+#   $bf_threshold_secondary. They are function arguments rather than constants so
+#   a sensitivity check can vary them without editing this file, but the
+#   preregistered value is 10.
+#
+# A note on interpreting the output
+#   An exceedance proportion is only as stable as the number of seeds behind it.
+#   The number of rows contributing to each estimate is reported as `n_sims` in
+#   bf_exceedance.csv, and should be read before the proportion beside it.
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -12,8 +46,23 @@ suppressPackageStartupMessages({
 
 source("R/05_hypothesis_tests.R")
 
-#' Load all completed design-analysis cell results from an output directory.
-#' Skips errored cells with a warning.
+#' Read every per-cell .rds file in a directory into one long data frame.
+#'
+#' @param out_dir Directory of per-cell .rds files.
+#' @return A data frame with one row per hypothesis per cell, so a cell testing
+#'   four hypotheses contributes four rows. Cells that failed contribute a single
+#'   row carrying their status and no BF columns; dplyr::bind_rows() fills the
+#'   missing columns with NA. Every downstream summary therefore filters on
+#'   status == "success" before computing anything.
+#' @details Failures are recorded rather than dropped. A design analysis in which
+#'   a third of the cells hit the walltime is a different result from one in
+#'   which they all fitted, and that distinction would be invisible if unreadable
+#'   files were skipped silently. Three shapes are recognised, in order: a
+#'   complete result list, a status-only tibble from a cell that errored, and
+#'   anything else, which is labelled "malformed". A file that cannot be
+#'   deserialised at all becomes "load_error" with a warning; this happens when a
+#'   job was killed midway through writing, although the atomic
+#'   write-to-.tmp-then-rename in the cell runners makes it rare.
 load_design_cells <- function(out_dir = "outputs/design_analysis") {
   files <- list.files(out_dir, pattern = "\\.rds$", full.names = TRUE)
   if (length(files) == 0) {
@@ -45,11 +94,27 @@ load_design_cells <- function(out_dir = "outputs/design_analysis") {
   })
 }
 
-#' Compute BF exceedance probabilities by design condition.
-#' @param df Combined design cell data frame.
-#' @param group_vars Character vector of grouping variables.
-#' @param bf_threshold Numeric; primary BF threshold (default 10).
-#' @param bf_threshold_secondary Numeric; secondary BF threshold (default 3).
+#' Bayes-factor exceedance probability per design point. This is the headline
+#' result of the design analysis: for a study of a given size, the proportion of
+#' simulated data sets in which the evidence reached the threshold.
+#'
+#' @param df Combined cell data frame from load_design_cells().
+#' @param group_vars Columns defining a design point. Everything not named here
+#'   is averaged over, so the default deliberately retains `hypothesis`: H1a and
+#'   H1b have different power and must not be pooled.
+#' @param bf_threshold Primary BF threshold; 10 as preregistered.
+#' @param bf_threshold_secondary Secondary, more lenient threshold; 3.
+#' @return One row per design point, with `n_sims` (seeds behind the estimate),
+#'   `p_bf_primary` and `p_bf_secondary` (the exceedance proportions),
+#'   the median and mean BF, and `p_convergence_ok`.
+#' @details Both the median and the mean BF are kept because the BF distribution
+#'   over seeds is heavily right-skewed: a handful of simulated data sets produce
+#'   enormous Bayes factors that dominate the mean. The median describes the
+#'   typical study, and a mean far above it is a signal of that skew rather than
+#'   of a stronger effect. `p_convergence_ok` is reported alongside so that an
+#'   apparently high exceedance rate resting on poorly converged fits can be
+#'   spotted; na.rm = TRUE means these proportions are computed over cells with a
+#'   usable value, so a low `n_sims` deserves attention.
 compute_bf_exceedance <- function(df, group_vars = c("language", "model_level",
                                                       "n_participants", "n_verbs",
                                                       "prior_regime", "hypothesis"),
@@ -69,7 +134,20 @@ compute_bf_exceedance <- function(df, group_vars = c("language", "model_level",
     )
 }
 
-#' Compute sensitivity of BF category to prior regime.
+#' How much the conclusion moves when only the prior changes.
+#'
+#' @param df Combined cell data frame.
+#' @return One row per (n_participants, n_verbs, hypothesis, seed) combination,
+#'   with the number of prior regimes compared, the number of distinct evidence
+#'   categories they produced, the largest and smallest BF, their ratio, and
+#'   `category_stable`.
+#' @details Grouping includes `seed`, which is what makes this a sensitivity
+#'   analysis rather than a power analysis: holding the simulated data set fixed
+#'   and varying only the prior isolates the prior's contribution. `category_stable`
+#'   is the interpretable quantity, since a BF moving from 40 to 120 changes the
+#'   number but not the conclusion, whereas one moving from 8 to 12 crosses the
+#'   preregistered threshold. `pmax(min_bf, 1e-6)` guards the ratio against a
+#'   division by zero when a regime yields a BF that underflows.
 prior_sensitivity_summary <- function(df) {
   df |>
     dplyr::filter(status == "success") |>
@@ -85,7 +163,15 @@ prior_sensitivity_summary <- function(df) {
     )
 }
 
-#' Compute model-ladder selection frequency.
+#' How often each model-ladder level appears among the successful cells.
+#'
+#' @param df Combined cell data frame.
+#' @return One row per model level, with counts and proportions.
+#' @details This counts the ladder levels that were *run and succeeded*, which is
+#'   not the same as an automatic fallback frequency: the design grid specifies
+#'   the level for each cell, so the mix reflects both the grid's composition and
+#'   which levels survived fitting. Read it as a feasibility profile, not as a
+#'   model-selection result. For the selection result see maximal_feasible_model().
 ladder_selection_summary <- function(df) {
   df |>
     dplyr::filter(status == "success") |>
@@ -93,7 +179,19 @@ ladder_selection_summary <- function(df) {
     dplyr::mutate(prop_selected = n_selected / sum(n_selected))
 }
 
-#' Compute failure rate summary.
+#' Tally cell outcomes by status.
+#'
+#' @param df Combined cell data frame.
+#' @return A one-row tibble of counts and the overall failure rate.
+#' @details Reported first by write_design_summary(), because every other summary
+#'   below is conditional on the cells that succeeded and is therefore only as
+#'   representative as this tally allows. The "oom" and "timeout" statuses come
+#'   from run_model_ladder() in R/09_model_ladder.R, which classifies a failure by
+#'   matching its error text. They are therefore only populated for cells that
+#'   went through the ladder engine and that died with a message R could catch;
+#'   a job killed outright by SLURM leaves no .rds at all and is invisible here.
+#'   Counting the expected cells against the files present is the way to detect
+#'   that case, and hpc/ arrays are sized so this comparison is possible.
 failure_summary <- function(df) {
   tibble::tibble(
     total_cells      = nrow(df),
@@ -109,6 +207,19 @@ failure_summary <- function(df) {
 #' Highest-complexity model level that converged, per language ("maximal feasible
 #' model"). Feasible = fit succeeded AND met the publication-grade convergence
 #' criteria (convergence_ok). Level rank is the L-number in the level name.
+#'
+#' @param df Combined cell data frame.
+#' @return One row per language, naming the level and its rank, or a zero-row
+#'   tibble of the same shape when nothing converged. Returning the empty tibble
+#'   rather than NULL keeps the downstream join in recommended_sample_size()
+#'   working without a special case.
+#' @details This implements the repository's standing rule that the reported model
+#'   is the most complex one that fits, never the one that is most convenient. The
+#'   rank is parsed from the level name, so the naming convention "L<digit>_..."
+#'   in R/04_model_formulas.R is load-bearing: a level named otherwise yields
+#'   NA_integer_ and drops out of the max(). `convergence_ok %in% TRUE` rather
+#'   than `== TRUE` because the column is NA for cells that never fitted, and
+#'   `%in%` returns FALSE there where `==` would return NA and keep the row.
 maximal_feasible_model <- function(df) {
   ok <- dplyr::filter(df, status == "success", convergence_ok %in% TRUE)
   if (nrow(ok) == 0) {
@@ -128,11 +239,37 @@ maximal_feasible_model <- function(df) {
 
 #' Recommended sample size: per language, the smallest n_participants at which
 #' BOTH focal hypotheses exceed the primary BF threshold with probability >=
-#' target, evaluated at that language's maximal feasible model and the primary
-#' (primary) prior regime. NA if the target is not reached anywhere in the grid.
-#' NOTE: a trustworthy exceedance *probability* needs many simulations per design
-#' point (config `design_analysis$n_simulations_per_cell`); with one simulation
-#' per cell this is an indicative 0/1 estimate, not a stable probability.
+#' target, evaluated at that language's maximal feasible model under the primary
+#' prior regime. NA if the target is not reached anywhere in the grid.
+#'
+#' @param exc Output of compute_bf_exceedance().
+#' @param mfm Output of maximal_feasible_model().
+#' @param target Required exceedance probability; 0.80 by convention.
+#' @param focal The hypotheses that must *both* be powered. H2 is excluded
+#'   because it is a secondary, two-tailed prediction and powering the design for
+#'   it would inflate the recommendation beyond what is preregistered.
+#' @param regime Prior regime the recommendation is read from. The sensitivity
+#'   regimes exist to be compared against this one, not to set the sample size.
+#' @return One row per language, or a zero-row tibble of the same shape when the
+#'   inputs are empty or lack the join columns.
+#' @details Both focal hypotheses must clear the target *at the same design
+#'   point*, which is stricter than taking the larger of two per-hypothesis
+#'   recommendations, and is the reason for the `dplyr::n() == length(focal)`
+#'   check: it rejects a design point where one hypothesis is simply missing from
+#'   the grid rather than present and underpowered.
+#'
+#'   Restricting to the maximal feasible model matters because power is reported
+#'   for the model that will actually be used. A simpler ladder level would give a
+#'   flatteringly small recommendation by ignoring variance components that the
+#'   real analysis estimates.
+#'
+#' @section Interpretation:
+#'   A trustworthy exceedance probability needs many simulations per design point
+#'   (config `design_analysis$n_simulations_per_cell`, currently 200). Run with one
+#'   seed per cell, `p_bf_primary` can only be 0 or 1, and this function then
+#'   reports the smallest N at which a single simulated study happened to succeed.
+#'   That is an indicative figure for smoke-testing the pipeline, not a sample-size
+#'   recommendation. Check `n_sims` in bf_exceedance.csv before quoting the result.
 recommended_sample_size <- function(exc, mfm, target = 0.80,
                                     focal = c("H1a_semantics_positive",
                                               "H1b_active_interaction_negative"),
@@ -150,6 +287,8 @@ recommended_sample_size <- function(exc, mfm, target = 0.80,
   if (nrow(d) == 0) return(empty)
 
   d |>
+    # A design point qualifies only if every focal hypothesis is present in the
+    # grid there AND all of them clear the target.
     dplyr::group_by(language, n_participants, n_verbs) |>
     dplyr::summarise(all_focal_ok = (dplyr::n() == length(focal)) && all(p_bf_primary >= target),
                      .groups = "drop") |>
@@ -157,13 +296,25 @@ recommended_sample_size <- function(exc, mfm, target = 0.80,
     dplyr::summarise(
       meets_target = any(all_focal_ok),
       recommended_n_participants = if (any(all_focal_ok)) min(n_participants[all_focal_ok]) else NA_integer_,
+      # Report the verb count belonging to the recommended N, since participants
+      # and verbs trade off against each other; quoting a marginal minimum of each
+      # separately would describe a design point that was never simulated.
       n_verbs = if (any(all_focal_ok)) n_verbs[all_focal_ok][which.min(n_participants[all_focal_ok])] else NA_integer_,
       .groups = "drop"
     ) |>
     dplyr::mutate(target = target, regime = regime)
 }
 
-#' Per-cell fit runtimes, summarised by language and model level (in minutes).
+#' Per-cell fit runtimes by language and model level, in minutes.
+#'
+#' @param df Combined cell data frame.
+#' @return One row per (language, model_level), or a zero-row tibble of that
+#'   shape when no cell recorded a runtime.
+#' @details Exists to size the SLURM walltime requests in hpc/. The maximum
+#'   matters more than the median for that purpose, because an array job is
+#'   killed on the walltime of its slowest task, so both are reported.
+#'   `p_converged` sits alongside them because a level that fits quickly but
+#'   rarely converges is not the cheap option it appears to be.
 runtime_summary <- function(df) {
   ok <- dplyr::filter(df, status == "success", !is.na(runtime_sec))
   if (nrow(ok) == 0) {
@@ -183,7 +334,19 @@ runtime_summary <- function(df) {
     dplyr::arrange(language, dplyr::desc(model_level))
 }
 
-#' Write aggregated design summary to CSV.
+#' Compute every summary above and write them as CSVs.
+#'
+#' @param df Combined cell data frame from load_design_cells().
+#' @param out_dir Destination directory; created if absent.
+#' @return Invisibly, a named list of the summary tables. When no cell succeeded
+#'   the list holds only `fail`, so a caller must not assume the other names are
+#'   present.
+#' @details The failure summary is written before anything else, so that a run in
+#'   which every cell failed still leaves a diagnosable artefact on disk instead
+#'   of an empty directory. That case then returns early: the summaries below
+#'   would otherwise all be empty tables, which read as "no effect" rather than
+#'   "no data". The statuses actually observed are printed to make the reason
+#'   visible in the job log.
 write_design_summary <- function(df, out_dir = "outputs/design_summary") {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 

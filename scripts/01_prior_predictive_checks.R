@@ -12,6 +12,11 @@ suppressPackageStartupMessages({
   library(optparse)
 })
 
+# Null-coalescing operator, defined before first use. Base R gained %||% only in
+# 4.4, while config/arc_modules.yaml sets min_version 4.3.0 and CI pins 4.3.3, so it
+# cannot be assumed present. None of the modules sourced below defines it.
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
 source("R/02_preprocess_factors.R")
 source("R/03_define_priors.R")
 source("R/04_model_formulas.R")
@@ -120,5 +125,3 @@ tmp_rds <- paste0(out_rds, ".tmp")
 saveRDS(fit_ppc, tmp_rds)
 file.rename(tmp_rds, out_rds)
 message("[ppc] RDS saved: ", out_rds)
-
-`%||%` <- function(a, b) if (!is.null(a)) a else b

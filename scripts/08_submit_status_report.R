@@ -1,8 +1,30 @@
 #!/usr/bin/env Rscript
 # scripts/08_submit_status_report.R
-# Generate a status report comparing the design grid against completed outputs,
-# query SLURM for job statuses if available, and write a summary CSV.
-# Usage: Rscript scripts/08_submit_status_report.R
+#
+# Purpose
+#   Answer "how far has the design analysis got?" by comparing the design grid
+#   against the outputs actually on disk, and cross-checking against SLURM where
+#   its records are available.
+#
+# Inputs (hard-coded, not options)
+#   config/design_grid.csv         The grid whose completion is being measured.
+#   outputs/design_analysis/       The per-cell .rds files.
+#   outputs/slurm_job_ids.csv      Optional. If present, each job_id is queried via
+#                                  sacct and its state printed.
+#
+# Output
+#   outputs/job_status_report.csv, one row per grid row with a done/pending status.
+#
+# Usage
+#   Rscript scripts/08_submit_status_report.R
+#
+# Two caveats before trusting the numbers
+#   "done" means the cell wrote an output, not that its model converged; read the
+#   status column of the aggregated summary for that. And check_grid_completion()
+#   in R/10_job_status.R does not reproduce the filename suffixes used by the
+#   gender and cross-language grids, so those cells are reported as pending even
+#   when complete. This script is reliable for the baseline single-language grid it
+#   was written for; see the Known limitation section in R/10_job_status.R.
 
 suppressPackageStartupMessages({
   library(dplyr)

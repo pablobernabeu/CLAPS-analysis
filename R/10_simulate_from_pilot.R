@@ -16,6 +16,25 @@
 # extract_dgp_params()   : pull a DGP spec out of a fitted brms pilot model.
 # simulate_from_pilot()  : simulate one ordinal dataset from a DGP spec.
 # run_databased_cell()   : simulate -> refit (brms) -> Bayes factors -> save.
+#
+# WHY A DATA-GROUNDED ENGINE ALONGSIDE THE LITERATURE-ANCHORED ONE
+# R/06_simulate_design.R answers "what sample size would detect an effect of the
+# size the literature reports, in a design of the shape we assume?". This file
+# answers "what sample size would detect the effect our own pilot suggests, in a
+# design with our actual verbs and their actual affectedness ratings?". The second
+# question is the more directly relevant one, and the first is the more robust to
+# the pilot being unrepresentative, so both are reported. Where they disagree, the
+# disagreement is itself informative and is discussed in the report.
+#
+# KNOWN LIMITATION OF THIS FILE
+# Every parameter is plugged in at its pilot posterior MEAN, which treats an
+# estimate as if it were the truth and so understates the uncertainty in the
+# resulting power figure (Albers & Lakens, 2018,
+# doi:10.1016/j.jesp.2017.09.004). R/10_simulate_from_pilot_v2.R supersedes this
+# for reporting: it adds an "assurance" mode that draws the whole parameter vector
+# from the pilot posterior once per replicate. This file remains the shared
+# machinery both use, and its point-estimate behaviour is retained as a labelled
+# reference case.
 # ---------------------------------------------------------------------------
 
 suppressPackageStartupMessages({
@@ -24,8 +43,17 @@ suppressPackageStartupMessages({
 
 `%||%` <- function(a, b) if (!is.null(a)) a else b
 
-# Design value of a named population/RE term (treatment coding, Passive reference)
-# for a given sentence type and (scaled) affectedness. Vectorised over a data frame.
+# The model matrix, built by hand. Returns one column per named model term, giving
+# that term's value for each row. Constructing it explicitly rather than via
+# model.matrix() means the column NAMES match brms coefficient names exactly, so a
+# coefficient vector can be applied to it by name; this is what lets the linear
+# predictor be assembled with a simple lookup below, and what makes an unexpected
+# term visible as a missing name rather than a silent misalignment.
+#
+# The encoding here IS treatment coding with Passive as the reference level: the
+# Passive rows have Active = 0 and Pseudo = 0, so their linear predictor reduces to
+# the intercept plus the main affectedness slope. This must stay in step with
+# R/02_preprocess_factors.R::code_s_type().
 .term_columns <- function(s_type, sem) {
   Active <- as.numeric(s_type == "Active")
   Pseudo <- as.numeric(s_type == "Pseudo_Passive")
@@ -51,12 +79,23 @@ extract_dgp_params <- function(fit, verb_affectedness, s_types, n_cats = 7L) {
   fixef_pop  <- fe[!is_thr]                      # S_TypeActive, Semantics_scaled, interactions, ...
 
   vc <- brms::VarCorr(fit)
+  # Rebuild each grouping factor's random-effect covariance matrix from the SDs and
+  # the correlation matrix, since brms reports them separately: Sigma = D R D where
+  # D is diag(sd). The simulator needs the full covariance because participants'
+  # intercepts and slopes are correlated in the pilot, and drawing them
+  # independently would understate the variability of the simulated data.
   build_Sigma <- function(grp) {
     sd <- vc[[grp]]$sd[, "Estimate"]
     terms <- names(sd)
+    # An uncorrelated (||) or intercept-only fit has no correlation block, in which
+    # case brms either errors or returns something without dimensions. Falling back
+    # to the identity matrix then yields Sigma = diag(sd^2), which is exactly the
+    # uncorrelated structure that was fitted.
     R <- tryCatch(vc[[grp]]$cor[, "Estimate", ], error = function(e) NULL)
     if (is.null(R) || is.null(dim(R))) R <- diag(length(sd))
     dimnames(R) <- list(terms, terms)
+    # diag(sd, length(sd)) rather than diag(sd): with a length-one sd, diag(sd)
+    # would be read as a dimension and build an sd x sd identity matrix.
     S <- diag(sd, length(sd)) %*% R %*% diag(sd, length(sd))
     dimnames(S) <- list(terms, terms)
     S
@@ -85,12 +124,21 @@ simulate_from_pilot <- function(dgp, n_participants, effect_mult = 1.0, seed = 1
   s_types <- dgp$s_types
   n_cats  <- dgp$n_cats %||% 7L
 
+  # A fully crossed design: every participant sees every verb in every sentence
+  # type. This is the design CLAPS actually uses, and it means n_participants is
+  # the only sample-size lever, the verb count being fixed by the real stimulus set.
   grid <- expand.grid(pi = seq_len(n_participants), Verb = verbs, S_Type = s_types,
                       KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+  # Affectedness is looked up per verb, so a verb carries the same value on every
+  # row it appears in. This is the level-2 property of the real design, and getting
+  # it wrong inflates the effective sample size for the affectedness effects.
   sem  <- unname(dgp$verb_affectedness[grid$Verb])
   tc   <- .term_columns(grid$S_Type, sem)
 
-  # Fixed effects, focal terms discounted by effect_mult.
+  # Fixed effects, focal terms discounted by effect_mult. Only the focal terms are
+  # scaled: discounting the intercept or the S_Type main effects would move the
+  # response distribution up or down the scale, changing where the thresholds bite
+  # and confounding the effect-size question with a ceiling-effect one.
   ff <- dgp$fixef
   focal <- c("Semantics_scaled", "S_TypeActive:Semantics_scaled",
              "S_TypePseudo_Passive:Semantics_scaled")
@@ -126,7 +174,26 @@ simulate_from_pilot <- function(dgp, n_participants, effect_mult = 1.0, seed = 1
 }
 
 #' Run one data-grounded design cell: simulate from pilot DGP, refit, compute BF.
-#' Mirrors run_design_cell() but with the pilot-calibrated simulator.
+#'
+#' @param cell One design-grid row: language, n_participants, effect_mult,
+#'   model_level, prior_regime, threshold_mode, has_pseudo_passive, seed, and
+#'   optionally iter, warmup, chains.
+#' @param dgp A spec from extract_dgp_params().
+#' @param out_dir Directory for the per-cell .rds.
+#' @param overwrite If FALSE, an existing result is returned unchanged.
+#' @return The result list, also saved as
+#'   databased_<language>_N<nnn>_mult<nnn>_<seed>.rds. effect_mult is encoded as an
+#'   integer percentage so the filename stays free of decimal points.
+#' @details Mirrors run_design_cell() in R/06_simulate_design.R, differing only in
+#'   which simulator produces the data. Keeping the two runners parallel is what
+#'   allows the literature-anchored and data-grounded results to be aggregated and
+#'   compared by the same downstream code.
+#'
+#'   Note one asymmetry with the v2 runner: here extract_convergence_diagnostics()
+#'   is called unprotected, so a diagnostics failure would discard an otherwise
+#'   successful and expensive fit. R/10_simulate_from_pilot_v2.R wraps that call in
+#'   tryCatch for exactly this reason. No such failure has been observed, but a
+#'   cell lost this way would be recorded as absent rather than as failed.
 run_databased_cell <- function(cell, dgp, out_dir, overwrite = FALSE) {
   source("R/03_define_priors.R");  source("R/04_model_formulas.R");  source("R/05_hypothesis_tests.R")
   source("R/07_extract_diagnostics.R")

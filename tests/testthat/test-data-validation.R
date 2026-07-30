@@ -119,7 +119,63 @@ test_that("scale_semantics produces near-zero mean and ~0.5 SD", {
 test_that("preprocess_data produces treatment-coded S_Type with Passive reference", {
   df <- make_valid_df()
   result <- preprocess_data(df, has_pseudo_passive = TRUE)
-  assert_treatment_coding(result)
+  expect_true(assert_treatment_coding(result))
+})
+
+test_that("assert_treatment_coding accepts the two-level (no pseudo-passive) case", {
+  # Norwegian and Balinese have only Passive and Active, so the assertion must hold
+  # for a two-column contrast matrix as well as a three-column one.
+  df <- make_valid_df(has_pp = FALSE)
+  result <- preprocess_data(df, has_pseudo_passive = FALSE)
+  expect_true(assert_treatment_coding(result))
+})
+
+# ---------------------------------------------------------------------------
+# assert_treatment_coding: the negative cases.
+#
+# These are what make the assertion worth having. Each below leaves the
+# coefficient NAMES that the priors and hypothesis tests refer to intact while
+# changing what those coefficients estimate, so nothing downstream would fail
+# loudly on its own.
+# ---------------------------------------------------------------------------
+
+test_that("assert_treatment_coding rejects a non-default contrast (contr.sum)", {
+  df <- preprocess_data(make_valid_df(), has_pseudo_passive = TRUE)
+  # Passive stays the first level, so the reference-level check still passes and
+  # only the contrast-matrix check can catch this.
+  stats::contrasts(df$S_Type) <- stats::contr.sum(nlevels(df$S_Type))
+  expect_error(assert_treatment_coding(df),
+               regexp = "does not carry treatment contrasts")
+})
+
+test_that("assert_treatment_coding rejects contr.helmert", {
+  df <- preprocess_data(make_valid_df(), has_pseudo_passive = TRUE)
+  stats::contrasts(df$S_Type) <- stats::contr.helmert(nlevels(df$S_Type))
+  expect_error(assert_treatment_coding(df),
+               regexp = "does not carry treatment contrasts")
+})
+
+test_that("assert_treatment_coding rejects a wrong reference level", {
+  df <- preprocess_data(make_valid_df(), has_pseudo_passive = TRUE)
+  # R's alphabetical default would make Active the baseline, which inverts the sign
+  # of the focal H1b interaction.
+  df$S_Type <- factor(as.character(df$S_Type),
+                      levels = c("Active", "Passive", "Pseudo_Passive"))
+  expect_error(assert_treatment_coding(df), regexp = "Reference level")
+})
+
+test_that("assert_treatment_coding rejects a non-factor S_Type", {
+  df <- make_valid_df()   # S_Type is still character here
+  expect_error(assert_treatment_coding(df), regexp = "must be a factor")
+})
+
+test_that("assert_treatment_coding rejects a single-level S_Type", {
+  # Guarded explicitly, because contrasts() on a one-level factor otherwise fails
+  # with R's opaque "contrasts not defined for 0 degrees of freedom".
+  df <- make_valid_df()
+  df <- df[df$S_Type == "Passive", ]
+  df$S_Type <- factor(df$S_Type, levels = "Passive")
+  expect_error(assert_treatment_coding(df), regexp = "at least two")
 })
 
 test_that("preprocess_data without Pseudo_Passive drops that level", {

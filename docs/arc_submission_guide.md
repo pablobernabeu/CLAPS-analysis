@@ -9,6 +9,81 @@ This guide covers:
 4. Monitoring and restart logic
 5. Memory troubleshooting
 
+Read the section below first if you are trying to understand what an existing
+submission script does, rather than to submit one.
+
+---
+
+## 0. Anatomy of a submission script
+
+Every script in `hpc/` shares the same preamble. It is repeated rather than
+factored into a common file because SLURM copies the submitted script to a spool
+directory before running it, so a `source`d helper alongside it would not
+reliably be found. What each part is for:
+
+**`#SBATCH` block.** The resource request. `%A` and `%a` in the log paths expand
+to the job ID and the array task ID, giving one log pair per task; without `%a`
+every task in an array would write over the same file. `--mail-type=FAIL,END`
+reports the array as a whole, not each task.
+
+**`set -euo pipefail`.** Abort on an unset variable, on any command failure, and
+on a failure anywhere in a pipeline. Without it a missing module or a failed
+`module load` would be reported only as a warning and the job would proceed to
+run R against the wrong environment, producing results that look valid. The CI
+check in `.github/workflows/static-checks.yaml` enforces its presence.
+
+**`cd "$HOME/design_analysis"`.** All scripts anchor to an absolute path rather
+than deriving one from `$BASH_SOURCE`, because at run time `$BASH_SOURCE` points
+into the non-writable SLURM spool copy, not the repository.
+
+**`module purge` then `module load`.** Purge first so the environment does not
+depend on whatever the submitting shell happened to have loaded, which is the
+usual cause of a job that runs for one person and not another. The R module is
+read from `$ARC_R_MODULE` with a pinned default, so a cluster-wide module change
+does not silently alter the R version behind published results.
+
+**`$DATA` guard.** Fails immediately with a clear message if the project storage
+variable is unset. Everything below writes under `$DATA`, so continuing without it
+would scatter outputs into the home quota and fill it.
+
+**`R_LIBS_USER` and `RENV_PATHS_CACHE`.** Point R at the project library and the
+renv cache on project storage. Home directories are too small for a Stan
+toolchain, and a shared cache means parallel array tasks do not each rebuild
+packages.
+
+**`OMP_NUM_THREADS` and `STAN_NUM_THREADS`.** Both are set from
+`$SLURM_CPUS_PER_TASK` so the process uses exactly the cores it was allocated.
+This is the single most common cause of an HPC job being slower than expected:
+without it, the threading libraries default to the *physical core count of the
+node*, and every task on a shared node oversubscribes it. `production_sampling()`
+in `R/04_model_formulas.R` reads `STAN_NUM_THREADS` for its `cores` argument, which
+is how the R code inherits the allocation.
+
+**`CMDSTANR_OUTPUT_DIR`.** Sends Stan's intermediate CSV output to `$TMPDIR`, on
+node-local disk. Stan writes one CSV per chain per fit; on shared storage this is
+slow and, across a large array, enough to disturb the filesystem for other users.
+
+**`CMDSTAN` discovery.** `ls -d … | sort -V | tail -1` picks the highest installed
+CmdStan version (`sort -V` compares version strings, so 2.36 sorts after 2.9).
+The `stanc` executable check that follows turns a missing or half-installed
+toolchain into an immediate, named failure instead of a compilation error inside R
+several minutes later.
+
+**The `$ROW -gt $N_ROWS` clean exit.** An array is often submitted with a range
+wider than the grid, or split across accounts. A task beyond the last grid row
+exits 0 with a message rather than failing, so an over-wide `--array` does not
+fill the mail queue with spurious failures. `tail -n +2` skips the CSV header when
+counting rows, which is why grid rows are 1-based and `--array` must start at 1.
+
+**The `awk` echo of the grid row.** Prints the cell's parameters into the log, so
+the log alone identifies what the task ran. Note that these `awk` field indices
+are positional, so a change to a grid's column order will silently mislabel the
+log line without affecting the analysis, which reads the CSV by column name.
+
+**`${OVERWRITE:+--overwrite}`.** Passes the flag only when `$OVERWRITE` is set and
+non-empty, so a resubmission can force recomputation with `OVERWRITE=1 sbatch …`
+without a separate script.
+
 ---
 
 ## 1. Interactive Node Builds

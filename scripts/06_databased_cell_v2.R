@@ -1,9 +1,31 @@
 #!/usr/bin/env Rscript
 # scripts/06_databased_cell_v2.R
-# Run one v2 data-grounded cell (assurance / safeguard / point) from a grid row.
-# Loads the v2 DGP (with posterior draws) for the row's (prior_source, language),
-# then simulates -> refits -> Bayes factors via run_databased_cell_v2().
-# Usage: Rscript scripts/06_databased_cell_v2.R --row_index N --grid G --dgpdir D --outdir O
+#
+# Purpose
+#   One cell of the amended data-grounded power analysis. Loads the v2 pilot
+#   data-generating spec, which carries the posterior DRAWS rather than only the
+#   posterior means, then simulates, refits and computes Bayes factors via
+#   run_databased_cell_v2().
+#
+# This is the engine behind the reported data-grounded numbers
+#   The cell's `mode` column selects the treatment of pilot uncertainty:
+#   "assurance" integrates over it by using one posterior draw per replicate,
+#   "safeguard" uses a conservative credible bound, and "point" reproduces the
+#   older plug-in behaviour for comparison. See R/10_simulate_from_pilot_v2.R for
+#   why assurance is the headline mode.
+#
+# Inputs
+#   --row_index N  Row of the grid; defaults to SLURM_ARRAY_TASK_ID.
+#   --grid FILE    Default config/design_grid_databased_v2.csv.
+#   --dgpdir DIR   Holds pilot_dgp_v2_<prior_source>_<language>.rds. The
+#                  prior_source component means several pilot fits (for example
+#                  different affectedness sources) can coexist, with each grid row
+#                  naming the one it draws from.
+#   --outdir DIR, --overwrite
+#
+# Usage
+#   Rscript scripts/06_databased_cell_v2.R --row_index 1
+#   sbatch hpc/submit_databased_v2_array.sh
 suppressPackageStartupMessages({ library(optparse); library(dplyr); library(readr); library(yaml) })
 source("R/03_define_priors.R"); source("R/04_model_formulas.R"); source("R/05_hypothesis_tests.R")
 source("R/07_extract_diagnostics.R"); source("R/10_simulate_from_pilot_v2.R")

@@ -1,6 +1,29 @@
 # R/10_job_status.R
-# Monitor SLURM array job progress, collect output manifests, and
-# report which design cells are complete, pending, failed or missing.
+#
+# Purpose
+#   Answer "how far has this run got?" for a SLURM array job, and record the
+#   provenance of whatever it produced. Progress is inferred from the output
+#   files on disk rather than from SLURM's own accounting, because a task can be
+#   reported as COMPLETED by SLURM while its cell errored inside R, and because
+#   sacct records expire from the accounting database after a site-configured
+#   retention window whereas the .rds files persist.
+#
+# Entry points
+#   list_completed_cells()  What is on disk.
+#   check_grid_completion() On disk, compared with what the grid asked for.
+#   query_slurm_status()    Optional sacct cross-check for one job ID.
+#   write_status_report()   Progress CSV.
+#   write_manifest()        Provenance CSV (git SHA, R and package versions).
+#
+# Used by
+#   scripts/08_submit_status_report.R, and the polling helpers
+#   scripts/poll_arc_status.sh and scripts/parse_arc_status.sh.
+#
+# Caveat on judging success
+#   A cell's .rds file existing means the cell *finished*, not that it fitted.
+#   A cell that errored still writes an .rds carrying status = "error". Read the
+#   status column via R/08_summarise_design.R for that distinction; this module
+#   deliberately reports only completion.
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -10,7 +33,16 @@ suppressPackageStartupMessages({
   library(stringr)
 })
 
-#' List completed design-analysis output files and extract cell metadata from filenames.
+#' List the design-analysis cells that have finished, from the files on disk.
+#'
+#' @param out_dir Directory the cell runners write into.
+#' @return A tibble with one row per .rds file, holding the filename, the
+#'   `cell_id` (the filename without its extension, which is how the cell
+#'   runners construct it), and the modification time. Returns an empty tibble,
+#'   not an error, when nothing has completed: a run that has only just started
+#'   is a normal state for a progress check.
+#' @details `mtime` is included because it is the cheapest way to see whether a
+#'   long array is still making progress or has stalled.
 list_completed_cells <- function(out_dir = "outputs/design_analysis") {
   # Cells are written with saveRDS (see R/06_simulate_design.R), so the
   # extension is .rds. This globbed .qs until 2026-07, which silently matched
@@ -29,9 +61,26 @@ list_completed_cells <- function(out_dir = "outputs/design_analysis") {
 }
 
 #' Compare completed cells against the design grid to find gaps.
-#' @param design_grid Tibble; the full design grid.
+#'
+#' @param design_grid Tibble; the full design grid, one row per requested cell.
 #' @param completed Tibble from list_completed_cells().
-#' @return Tibble with completion status per grid row.
+#' @return The design grid with `completed` (logical) and `status` ("done" or
+#'   "pending") added. A left join from the grid, so every requested cell appears
+#'   whether or not it ran; `coalesce(completed, FALSE)` turns the join's NAs for
+#'   unmatched rows into an explicit FALSE.
+#'
+#' @section Known limitation:
+#'   The expected ID is rebuilt from the seven fields below, mirroring the base
+#'   naming scheme in run_design_cell() (R/06_simulate_design.R). That function
+#'   additionally appends "_gender" or "_genderX" for the gender model variations
+#'   and "_<k>lang" for cross-language cells with an explicit language count.
+#'   Those suffixes are not reproduced here, so cells of those kinds never match
+#'   and are reported as "pending" even once they have finished. Progress figures
+#'   for the gender and cross-language grids are therefore understated; the
+#'   baseline single-language grids, which is what this report was written for,
+#'   are unaffected. Counting the .rds files in the output directory is the
+#'   reliable check for the affected grids until the two naming schemes are
+#'   unified.
 check_grid_completion <- function(design_grid, completed) {
   design_grid <- dplyr::mutate(design_grid,
     expected_cell_id = paste(language, model_level, prior_regime,
@@ -49,8 +98,20 @@ check_grid_completion <- function(design_grid, completed) {
     )
 }
 
-#' Query SLURM job status for a given job ID via sacct.
-#' Returns NULL silently if sacct is not available (e.g., on Windows dev machine).
+#' Query SLURM's accounting database for one job ID, via sacct.
+#'
+#' @param job_id A SLURM job ID, with or without an array suffix.
+#' @return A tibble of one row per task with JobID, State, ExitCode, Elapsed and
+#'   MaxRSS, or NULL when sacct is unavailable or returns nothing. NULL rather
+#'   than an error, so the same scripts run unchanged on a laptop with no SLURM
+#'   installed; callers must therefore handle NULL.
+#' @details MaxRSS and Elapsed are requested because they are what the walltime
+#'   and memory requests in hpc/ are tuned against: a task whose MaxRSS approaches
+#'   the requested memory is the one that will be killed when the model grows.
+#'   `--parsable2` gives pipe-delimited output with no padding and no trailing
+#'   delimiter, and `--noheader` suppresses the header, so the column names below
+#'   are supplied explicitly and stay correct regardless of the site's default
+#'   sacct format.
 query_slurm_status <- function(job_id) {
   if (!nchar(Sys.which("sacct"))) {
     message("[status] sacct not available; skipping SLURM query.")
@@ -73,7 +134,13 @@ query_slurm_status <- function(job_id) {
   )
 }
 
-#' Write a status report CSV.
+#' Write the per-cell progress table to CSV and print a one-line tally.
+#'
+#' @param grid_status Output of check_grid_completion().
+#' @param out_path Destination CSV; its directory is created if absent.
+#' @return Invisibly, `out_path`.
+#' @details The console tally exists so the numbers land in the SLURM job log,
+#'   where they can be read without transferring the CSV off the cluster.
 write_status_report <- function(grid_status, out_path = "outputs/job_status_report.csv") {
   dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
   readr::write_csv(grid_status, out_path)
@@ -84,7 +151,23 @@ write_status_report <- function(grid_status, out_path = "outputs/job_status_repo
   invisible(out_path)
 }
 
-#' Write outputs/manifest.csv with Git SHA, datetime, software versions.
+#' Record the provenance of a run: git SHA, timestamp and software versions.
+#'
+#' @param out_path Destination CSV.
+#' @param additional_cols Named list of extra columns to append, for run-specific
+#'   context such as the grid file or SLURM job ID.
+#' @return Invisibly, the manifest tibble.
+#' @details Written next to the outputs so that a result can be traced back to the
+#'   exact code and package versions that produced it, which is the minimum needed
+#'   for a computational result to be reproducible (Sandve et al., 2013,
+#'   doi:10.1371/journal.pcbi.1003285). brms and cmdstanr are recorded by name
+#'   because they determine the sampler's behaviour, and a change in either can
+#'   move a Bayes factor without any change to this repository's code.
+#'
+#'   Each lookup is wrapped so that a missing tool degrades to "unknown" rather
+#'   than aborting the run: an incomplete manifest is more useful than a job that
+#'   died after computing its results. The timestamp keeps its UTC offset (%z), so
+#'   runs on a cluster in one timezone remain comparable with local runs.
 write_manifest <- function(out_path = "outputs/manifest.csv",
                             additional_cols = list()) {
   dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)

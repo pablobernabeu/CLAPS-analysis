@@ -113,13 +113,36 @@ PRIOR_REGIMES <- list(
   # (Gelman et al., 2008, 2017). Threshold, sd and cor priors follow
   # Bürkner & Vuorre (2019), Gelman (2006), Chung et al. (2015),
   # Simpson et al. (2017) and Lewandowski et al. (2009).
+  #
+  # How the scales were chosen. Every focal prior is centred at zero, so it does
+  # not presuppose the direction under test, and the scale is set so that the
+  # previously observed magnitudes sit comfortably inside the prior rather than in
+  # its tail. With SD 0.5, roughly 95% of the prior mass lies within +/- 1.0 on
+  # the log-odds scale, which spans the published single-language Semantics slopes
+  # of about 0.27 to 0.80 (EMPIRICAL_ANCHORS) with room to spare. The
+  # pseudo-passive interaction gets a slightly wider 0.6 because it is attested in
+  # fewer languages and its magnitude is correspondingly less well established.
+  #
+  # A caution specific to Bayes factors: unlike a posterior mean, a Savage-Dickey
+  # Bayes factor depends on the prior scale directly, and an arbitrarily wide prior
+  # inflates evidence for the null (the Jeffreys-Lindley effect). That is why these
+  # scales are argued from prior evidence rather than made vague for safety, and
+  # why the `weak` regime below exists as a declared sensitivity check instead of
+  # as the default.
   primary = list(
     b_default     = "normal(0, 1.5)",
     b_semantics   = "normal(0, 0.5)",
     b_active_int  = "normal(0, 0.5)",
     b_pseudo_int  = "normal(0, 0.6)",
     Intercept     = "student_t(3, 0, 2.5)",
+    # Student-t rather than normal on the group-level SDs: the heavier tail lets a
+    # variance component be larger than expected without the prior fighting the
+    # data, while still shrinking it away from implausibly large values
+    # (Gelman, 2006; Chung et al., 2015).
     sd            = "student_t(3, 0, 1)",
+    # lkj(2) places mild mass away from perfect correlation, which regularises the
+    # random-effects correlation matrix that L5 must estimate; lkj(1) would be
+    # uniform over all valid matrices (Lewandowski et al., 2009).
     cor           = "lkj(2)"
   ),
 
@@ -127,6 +150,10 @@ PRIOR_REGIMES <- list(
   # Replaces focal slope SDs with normal(0, 1) and non-focal SDs with
   # normal(0, 2). Conclusions should not depend on the more concentrated
   # primary prior (Schad et al., 2021, 2023).
+  # Roughly a doubling of every focal scale, which is the magnitude that matters:
+  # a Bayes factor that survives a halving of prior precision is not an artefact
+  # of the prior. lkj(1) removes the mild correlation regularisation as part of the
+  # same check.
   weak = list(
     b_default     = "normal(0, 2)",
     b_semantics   = "normal(0, 1)",
@@ -202,13 +229,35 @@ compute_ceiling_calibrated_thresholds <- function(pilot_df,
                                                   smooth_alpha = 0.5) {
   stopifnot("Response" %in% names(pilot_df))
   n_cats <- 7L
+  # tabulate() with nbins guarantees a length-7 vector, including zeros for
+  # categories no participant used. table() would silently omit them and shift
+  # every subsequent threshold.
   counts <- tabulate(pilot_df$Response, nbins = n_cats)
+  # Additive (Dirichlet / Laplace) smoothing. An unused category would otherwise
+  # give a cumulative proportion equal to its neighbour's, and a category at the
+  # top of the scale would give exactly 1, whose logit is infinite. alpha = 0.5 is
+  # the Jeffreys prior for a multinomial, and is set in
+  # config/analysis_config.yaml under ceiling_calibration$smooth_alpha.
   smoothed <- (counts + smooth_alpha) / (sum(counts) + n_cats * smooth_alpha)
+  # A 7-category ordinal model has 6 thresholds, so the final cumulative
+  # probability (which is 1 by construction) is dropped.
   cum_prob <- cumsum(smoothed)[seq_len(n_cats - 1)]
+  # Belt-and-braces bound before the logit. Smoothing already prevents exact 0 and
+  # 1, but with a large pilot sample a genuine ceiling can still push a cumulative
+  # proportion close enough to 1 that its logit becomes an extreme threshold mean.
+  # Clipping at 0.01/0.99 caps the resulting prior mean at about +/- 4.6 log-odds.
   cum_prob_clipped <- pmin(pmax(cum_prob, 0.01), 0.99)
   threshold_means  <- qlogis(cum_prob_clipped)
-  # Per-threshold SDs are wider when the threshold is far from zero, to
-  # reflect that extreme thresholds are estimated from fewer observations.
+  # Per-threshold SDs widen as the threshold moves away from zero, because extreme
+  # thresholds sit where the pilot has fewest observations and so are the least
+  # precisely located. The particular constants (a 1.5 baseline shrinking by 0.10
+  # per log-odds, floored at 0.8) are a pragmatic choice rather than a derived
+  # result: they keep every threshold prior clearly weaker than the pilot
+  # likelihood while remaining proper, which is what Bayes-factor validity
+  # requires. Given the 0.01/0.99 clipping above, a threshold mean cannot exceed
+  # about 4.6 in absolute value, so the realised SDs span roughly 1.04 to 1.5 and
+  # the 0.8 floor never actually binds; it is a guard against a future change to
+  # the clipping bounds rather than an active constraint.
   threshold_sds <- pmax(0.8, 1.5 - abs(threshold_means) * 0.10)
 
   message("[thresholds] Language: ", language,
@@ -294,16 +343,27 @@ build_brms_prior <- function(regime_name        = "primary",
 #' @param data The data the model will be fit to.
 #' @return The subset of prior_obj whose (class, coef, group, dpar) exist in the model.
 align_prior_to_model <- function(prior_obj, formula, data) {
+  # Ask brms which priors this model actually admits. default_prior() is the
+  # current name; get_prior() is the deprecated alias, kept as a fallback because
+  # ARC's brms may be older than the local one.
   valid <- tryCatch(
     brms::default_prior(formula, data = data),
     error = function(e) tryCatch(brms::get_prior(formula, data = data),
                                  error = function(e2) NULL)
   )
+  # If brms could not be asked at all, pass the prior through untouched rather than
+  # filtering against an empty table, which would discard every prior and silently
+  # fit the model with brms defaults.
   if (is.null(valid) || nrow(valid) == 0) return(prior_obj)
 
+  # In a brms prior table, an empty coef/group/dpar means "every parameter of this
+  # class", so a blank field must be treated as a wildcard that matches rather than
+  # as a value that must be equal. Without this, the class-wide priors (b, sd, cor)
+  # would match nothing and be dropped, leaving the model with default priors.
   blank <- function(x) is.na(x) | x == ""
   keep <- vapply(seq_len(nrow(prior_obj)), function(i) {
     p <- prior_obj[i, , drop = FALSE]
+    # Keep the row if at least one real parameter of the model matches it.
     any(valid$class == p$class &
         (blank(p$coef)  | valid$coef  == p$coef) &
         (blank(p$group) | valid$group == p$group) &
@@ -322,8 +382,14 @@ align_prior_to_model <- function(prior_obj, formula, data) {
   kept
 }
 
-#' Return a data frame of all prior x threshold combinations for the
-#' sensitivity grid.
+#' Every prior regime crossed with every threshold mode, for the sensitivity grid.
+#'
+#' @return A tibble with one row per (regime_name, threshold_mode) combination:
+#'   four regimes by two threshold modes, so eight rows.
+#' @details Used by scripts/03_prior_sensitivity.R to enumerate the sensitivity
+#'   runs. Deriving the grid from names(PRIOR_REGIMES) and THRESHOLD_MODES rather
+#'   than listing it means a regime added above is picked up automatically and
+#'   cannot be left out of the sensitivity analysis by oversight.
 prior_sensitivity_grid <- function() {
   tidyr::crossing(
     regime_name    = names(PRIOR_REGIMES),

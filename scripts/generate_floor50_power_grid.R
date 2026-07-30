@@ -58,7 +58,13 @@ conditions <- langs |>
   dplyr::mutate(.cond = dplyr::row_number())
 
 grid <- tidyr::crossing(conditions, .rep = seq_len(B)) |>
-  dplyr::mutate(seed = as.integer(700000L + (.cond - 1L) * B + (.rep - 1L))) |>   # base 7e5: clear of the 6e5 corrected grid
+  # Seed base 7e5, exclusive to this grid: 700000-701049 (21 conditions x B = 50).
+  # This grid keeps the base it has always used because 1028 of its cells are already
+  # computed on ARC (under outputs/design_corrected, identifiable by n_verbs = 50),
+  # and the seed forms part of each output filename, so re-basing would orphan them
+  # all. The two generators that formerly shared 7e5 were moved instead. See the seed
+  # registry in docs/design_power_analysis_pipeline.md.
+  dplyr::mutate(seed = as.integer(700000L + (.cond - 1L) * B + (.rep - 1L))) |>
   dplyr::select(-.cond, -.rep)
 
 COL_ORDER <- c(

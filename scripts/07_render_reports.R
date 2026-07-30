@@ -1,8 +1,34 @@
 #!/usr/bin/env Rscript
 # scripts/07_render_reports.R
-# Render all QMD reports after reference audit and aggregation are complete.
-# Fails immediately if the reference audit has not been run or has failed.
-# Usage: Rscript scripts/07_render_reports.R [--report all|preliminary]
+#
+# Purpose
+#   Render the Quarto reports, but only once the bibliography has been verified.
+#   The audit check at the top is the point of this wrapper: it makes an unverified
+#   citation a build failure rather than something a reader might notice after
+#   publication.
+#
+# Preconditions
+#   scripts/00_verify_references.R must have run and left a clean audit CSV. The
+#   check re-reads that CSV rather than trusting its existence, so an audit that
+#   ran and failed also blocks the render. The blocking flags are the same three
+#   used in R/00_reference_audit.R; WARN rows do not block.
+#
+#   Aggregation should also have run, since the reports read the summary CSVs, but
+#   that is not enforced here: a missing input surfaces as a Quarto error naming the
+#   file, which is clear enough.
+#
+# Inputs
+#   --report all|preliminary   Which report to render. "all" renders every entry in
+#                              the `reports` list below.
+#   CLAPS_OUTPUTS_ROOT (environment variable) to locate the audit CSV.
+#
+# Usage
+#   Rscript scripts/00_verify_references.R && Rscript scripts/07_render_reports.R
+#
+# Behaviour on an unknown or missing report
+#   Warns and moves on rather than stopping, so that rendering several reports is
+#   not aborted by one absent file. Read the warnings: the final "All reports
+#   complete" message is printed even when a report was skipped.
 
 suppressPackageStartupMessages({
   library(quarto)

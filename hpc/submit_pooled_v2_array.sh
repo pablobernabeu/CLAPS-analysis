@@ -29,6 +29,14 @@
 #   OUTPUT_DIR=$DATA/PROJECT_GROUP/outputs/design_pooled_test \
 #   sbatch --clusters=htc --account=PROJECT_GROUP --partition=short --time=2:00:00 \
 #     --export=ALL,GRID,OUTPUT_DIR --array=1 hpc/submit_pooled_v2_array.sh
+#
+# Note the --export=ALL,GRID,OUTPUT_DIR in the smoke-test form: SLURM does not pass
+# the submitting shell's variables to the job unless they are named, so setting
+# GRID= on the sbatch line without exporting it has no effect inside the script.
+#
+# The shared preamble below (module handling, R_LIBS_USER, thread limits, CmdStan
+# discovery, the over-wide-array clean exit) is explained line by line under
+# "Anatomy of a submission script" in docs/arc_submission_guide.md.
 
 set -euo pipefail
 SUBMIT_DIR="$HOME/design_analysis"; cd "$SUBMIT_DIR"
