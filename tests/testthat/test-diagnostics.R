@@ -4,6 +4,16 @@
 # ESS >= 400, zero divergences and zero max-treedepth saturations.
 
 library(testthat)
+
+# Deliberate skip, placed before the source() below. R/07_extract_diagnostics.R
+# calls library(brms), so without it the source() errors and testthat reports the
+# whole file as a skip anyway — but as an accident rather than a decision, and with
+# a reason that describes the symptom rather than the cause. Declaring it here makes
+# the dependency explicit and the skip intentional. test-environment.R is what
+# ensures a run missing brms fails outright unless a partial run was requested.
+skip_if_not_installed("brms")
+skip_if_not_installed("posterior")
+
 source(here::here("R", "07_extract_diagnostics.R"))
 
 # Field names match the tibble returned by extract_convergence_diagnostics().

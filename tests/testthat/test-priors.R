@@ -2,6 +2,13 @@
 # Unit tests for prior construction (R/03_define_priors.R).
 
 library(testthat)
+
+# Deliberate skip, before library(brms) below, so an absent Stan toolchain produces
+# a stated dependency rather than a load failure that testthat reports as a skip.
+# test-environment.R fails the run outright in that case unless a partial run was
+# explicitly requested.
+skip_if_not_installed("brms")
+
 library(brms)
 source(here::here("R", "03_define_priors.R"))
 

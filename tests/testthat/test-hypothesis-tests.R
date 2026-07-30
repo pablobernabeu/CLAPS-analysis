@@ -2,6 +2,14 @@
 # Unit tests for Savage-Dickey BF implementation (R/05_hypothesis_tests.R).
 
 library(testthat)
+
+# Deliberate skip, before the source() below: R/05_hypothesis_tests.R calls
+# library(brms). Without this the file would still be skipped, but as a load
+# failure reported as a skip rather than as a stated dependency. See
+# test-environment.R, which fails the run outright when brms is absent unless a
+# partial run was explicitly requested.
+skip_if_not_installed("brms")
+
 source(here::here("R", "05_hypothesis_tests.R"))
 
 # ---------------------------------------------------------------------------

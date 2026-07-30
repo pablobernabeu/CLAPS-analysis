@@ -1,40 +1,79 @@
 # config/arc_modules.yaml
-# ARC module names for the CLAPS workflow.
-# NOTE: Module names on ARC may change. Verify with `module avail R` and
-#       `module avail cmdstan` on the target cluster before submitting jobs.
-#       Update this file and the SLURM scripts if module names differ.
+# The ARC software environment for the CLAPS workflow.
 #
-# Implementation note (UNRESOLVED):
-#   The exact R module name on ARC as of project start is unknown.
-#   Common ARC R module names include: R/4.3.1-foss-2023a, R/4.4.0, R.
-#   Set ARC_R_MODULE in your environment or update the scripts.
-#   Similarly, a Quarto module may be available as quarto or quarto/1.x.
+# Every value below was verified on ARC on 2026-07-30 by loading the module and
+# reading the version back, not inferred. An earlier version of this file recorded
+# the R module as "UNRESOLVED" and guessed at plausible names; the pin is now known.
+#
+# This file is the RECORD of intent. The observed state of the resulting
+# environment, package by package, is config/arc_environment_recorded.csv. Read
+# docs/reproducibility.md for how the two relate and how to rebuild from scratch.
+#
+# To re-verify after a cluster upgrade:
+#   ssh <arc-host> 'module -t avail R; module load R/4.4.2-gfbf-2024a; R --version'
+#   Rscript scripts/check_environment.R --compare config/arc_environment_recorded.csv
 
 r:
-  module: "R"                   # Override with ARC_R_MODULE env var
-  min_version: "4.3.0"
+  # VERIFIED loadable on 2026-07-30; reports "R version 4.4.2 (2024-10-31)".
+  # This exact string is the default in 18 of the 19 hpc/ scripts, via
+  # "${ARC_R_MODULE:-R/4.4.2-gfbf-2024a}", so overriding ARC_R_MODULE changes the R
+  # used by a job. Do not set it casually: renv.lock records 4.4.2, and the reported
+  # results were produced under it.
+  module: "R/4.4.2-gfbf-2024a"
+  version: "4.4.2"
+  min_version: "4.4.0"          # base R gained %||%, which the scripts rely on, in 4.4
   notes: >
-    Check available versions with: module spider R
-    Recommended: load the latest R/4.x.x-foss-20xx or equivalent.
+    Other versions present on the cluster as of 2026-07-30: 4.1.2, 4.2.1, 4.2.2,
+    4.3.2, 4.4.1, 4.4.2, 4.5.1. Moving to 4.5.1 would require regenerating
+    renv.lock and re-recording config/arc_environment_recorded.csv, because the
+    project library is built per R minor version.
+    NOTE hpc/submit_setup_renv.sh still defaults to a bare "R" rather than this
+    pin, so it may load a different version than every other script.
 
 cmdstan:
-  module: "cmdstan"             # May not be available; install via cmdstanr if absent
+  # NOT a module on ARC. Installed into project storage and discovered at run time
+  # by each SLURM script, which globs $DATA/PROJECT_GROUP/cmdstan/cmdstan-* and takes
+  # the highest version.
+  module: null
+  installed_version: "cmdstan-2.39.0"
+  path: "$DATA/PROJECT_GROUP/cmdstan/cmdstan-2.39.0"
   notes: >
-    If not available as a module, install via:
+    Verified present on 2026-07-30; it is the only version installed, so the
+    glob-and-sort discovery in the hpc/ scripts resolves to it deterministically.
+    Reinstall on an interactive node with:
       Rscript -e "cmdstanr::install_cmdstan(cores = 4)"
-    on an interactive node. CmdStan will be placed in ~/.cmdstan/.
+    cmdstanr 0.8.0 is the locked interface to it.
 
 quarto:
-  module: "quarto"              # May not be available as a module
+  # Not a module. A standalone build lives in project storage and is put on PATH by
+  # hpc/submit_render_reports.sh. Its bundled deno traps on the hardened login node,
+  # so rendering only works inside a job; see docs/arc_submission_guide.md.
+  module: null
+  path: "$DATA/PROJECT_GROUP/quarto-1.9.38"
   notes: >
-    If not available, install Quarto CLI manually and add to PATH.
-    Download from https://quarto.org/docs/download/
+    Renders on compute nodes only, never from a bare login-node `quarto render`.
 
 gcc:
-  module: "GCC"                 # Required for CmdStan compilation
+  # Comes in as a dependency of the R module rather than being loaded separately.
+  module: null
+  observed_version: "13.3.0"
   notes: >
-    GCC or a compatible C++ compiler is required for Stan.
-    Usually loaded as a dependency of the R module on ARC.
+    Reported by `gcc --version` after loading R/4.4.2-gfbf-2024a. Required for
+    CmdStan to compile Stan models.
+
+os:
+  # Recorded because Stan compiles C++ against the system toolchain, so the OS is
+  # part of what determines whether a fit reproduces bit for bit.
+  observed: "AlmaLinux 9.8 (Olive Jaguar)"
+  kernel: "5.14.0-687.29.1.el9_8.x86_64"
+
+containers:
+  # Checked on 2026-07-30: apptainer, singularity, podman and docker are absent from
+  # PATH and from the module tree on the login node. Containerising the analysis is
+  # therefore not an option on this cluster at present, which is why reproducibility
+  # rests on the module pin plus renv.lock plus the recorded package set instead.
+  available: false
+  checked: "2026-07-30"
 
 # Default module purge and load sequence for SLURM scripts
 load_sequence:
