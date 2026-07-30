@@ -78,10 +78,17 @@ list(
       pilot_lang_df,
       {
         d <- dplyr::filter(pilot_split$pilot, Language == language)
-        # A config language with no data yet filters to zero rows. Return NULL
-        # instead of calling preprocess_data(), which stops in code_s_type()
-        # because no Passive level is present. Combined with error = "stop", that
-        # aborted the ENTIRE pipeline rather than the one branch with nothing to do.
+        # A config language with no data yet filters to zero rows, and
+        # preprocess_data() then stops in code_s_type() because no Passive level is
+        # present. Reproduced against the real pilot data on 2026-07-30: the config
+        # declares Balinese, the pilot holds only English, Norwegian and Turkish,
+        # and the branch body raised "'Passive' level not found in S_Type" while the
+        # other three preprocessed cleanly. Returning NULL skips such a branch.
+        #
+        # The pipeline-level consequence follows from targets' documented
+        # error = "stop" behaviour: an erroring target halts the run, so a branch
+        # with nothing to do would stop the whole pipeline. That step was inferred
+        # from documented behaviour, not executed.
         if (nrow(d) == 0L) NULL else preprocess_data(d, has_pseudo_passive = has_pp)
       }
     ),
@@ -91,8 +98,11 @@ list(
       # scale, so it applies to any language with data. The gate here was previously
       # has_pseudo_passive, which is unrelated: whether a language has
       # pseudo-passives says nothing about whether its ratings pile up at the top of
-      # the scale. That wrongly excluded Norwegian. The only real precondition is
-      # that the branch has data.
+      # the scale. The only real precondition is that the branch has data.
+      #
+      # Checked against the pilot data on 2026-07-30: under the old gate Norwegian
+      # was excluded despite having data; under the new one its six cutpoints
+      # compute cleanly, and Balinese is still excluded, now for the right reason.
       if (is.null(pilot_lang_df)) NULL
       else compute_ceiling_calibrated_thresholds(pilot_lang_df, language)
     )
