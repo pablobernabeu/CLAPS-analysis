@@ -18,7 +18,13 @@ cd "${SUBMIT_DIR:-$HOME/design_analysis}"
 # Load modules
 # ---------------------------------------------------------------------------
 module purge
-ARC_R_MODULE="${ARC_R_MODULE:-R}"
+# Pinned to match every other script in hpc/ and config/arc_modules.yaml. It
+# defaulted to a bare "R" until 2026-07-30, which resolved to whatever the cluster
+# considered default — a different R from the one the production arrays load. That
+# is the worst place for such a mismatch: this is the smoke test, run precisely to
+# confirm the environment works before committing real compute to it, so it was
+# validating an environment no real job would use.
+ARC_R_MODULE="${ARC_R_MODULE:-R/4.4.2-gfbf-2024a}"
 module load "$ARC_R_MODULE"
 
 # Load CmdStan module if available; otherwise use renv-installed version

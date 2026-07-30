@@ -27,8 +27,9 @@ r:
     4.3.2, 4.4.1, 4.4.2, 4.5.1. Moving to 4.5.1 would require regenerating
     renv.lock and re-recording config/arc_environment_recorded.csv, because the
     project library is built per R minor version.
-    NOTE hpc/submit_setup_renv.sh still defaults to a bare "R" rather than this
-    pin, so it may load a different version than every other script.
+    All 21 scripts in hpc/ now resolve to this module. hpc/submit_devel_smoke_test.sh
+    defaulted to a bare "R" until 2026-07-30, meaning the smoke test validated a
+    different R from the one the production arrays use.
 
 cmdstan:
   # NOT a module on ARC. Installed into project storage and discovered at run time

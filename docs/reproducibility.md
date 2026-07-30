@@ -44,49 +44,74 @@ at <https://mc-stan.org/r-packages/> — so CI reasonably has brms without it, a
 unit tests never sample anything. An ARC node about to spend days fitting should
 check everything with `--groups all`.
 
-**`renv.lock` — the pinned versions.** Records exact versions for the 26 packages
-the analysis directly depends on, and the R version they go with. As of this
-writing all 26 match ARC exactly, and the file records R 4.4.2.
+**`renv.lock` — the pinned versions.** Records exact versions and content hashes
+for **176 packages** under R 4.4.2. Regenerated on ARC on 2026-07-30 with
+`renv::snapshot(type = "all")` against the live library, so every version in it
+matches `config/arc_environment_recorded.csv` exactly: 176 locked, 176 matching,
+none differing. 176 rather than 190 because renv excludes the ~14 base packages
+that ship with R itself, which the module pin already fixes.
 
 **`config/arc_environment_recorded.csv` — the observation.** The 190 packages
 actually present on ARC, with the library each resolves from, written by
 `scripts/record_environment.R`. This is evidence, not intent: it is what the
 reported results were produced under.
 
-### Known limits of the lockfile
+### Regenerating the lockfile
 
-Stated plainly, because a lockfile that is trusted beyond its coverage is worse
-than none:
-
-- It covers **26 of the 190** packages present on ARC. The rest are transitive
-  dependencies, resolved by whatever CRAN served at install time and not pinned.
-- **`testthat` and `withr` are not in it**, so the test suite's own dependencies
-  are unpinned even though the analysis packages are.
-- It records R 4.4.2, which matches ARC. It previously recorded **4.3.3**, which
-  matched nothing — not ARC, not CI, not any workstation. Corrected 2026-07-30.
-- renv is **not activated**: there is no `.Rprofile` and no `renv/` directory, so
-  nothing forces a session to obey the lockfile. It is a specification that is
-  *checked* (see below) rather than one that is *enforced* by library redirection.
-
-That last point is deliberate. Activating renv would override `R_LIBS_USER`, which
-every `hpc/` script sets explicitly to the project library on `$DATA`, and would
-break the working cluster setup. On a cluster where the library is managed outside
-the project, verification is the appropriate mechanism; library hijacking is not.
-
-To close the coverage gap, regenerate the lockfile **on ARC**, where the real
-library lives:
+It must be regenerated **on ARC**, because that is where the library it describes
+lives. Doing it anywhere else records the wrong machine.
 
 ```bash
 ssh <arc-host>
 cd ~/design_analysis
 module load R/4.4.2-gfbf-2024a
 export R_LIBS_USER=$DATA/PROJECT_GROUP/R/library_4.4
-Rscript -e 'renv::snapshot(type = "all", prompt = FALSE)'
+export RENV_PATHS_CACHE=$DATA/PROJECT_GROUP/renv/cache
+Rscript -e 'renv::snapshot(project = ".", library = .libPaths(), \
+                           lockfile = "~/renv_new.lock", type = "all", \
+                           prompt = FALSE, force = TRUE)'
 ```
 
-`type = "all"` captures everything installed rather than only what renv detects as
-used, which is what produces a lockfile that can actually rebuild the environment.
-Regenerating it anywhere else records the wrong machine.
+Three arguments are doing real work and are not optional:
+
+- `library = .libPaths()` snapshots **both** libraries. Restricting it to the
+  project library alone fails pre-flight validation, because roughly a hundred
+  dependencies live in the R module's site library and renv correctly reports them
+  as unsatisfied.
+- `type = "all"` records everything installed rather than only what renv infers
+  from the source, which is what makes the lockfile able to rebuild the
+  environment rather than merely describe its direct dependencies.
+- `force = TRUE` bypasses one genuine pre-flight failure: `pkgdown` requires
+  httr2 (>= 1.0.2) while the project library pins **httr2 1.0.1**, which shadows
+  the site library's 1.0.6. Neither `pkgdown` nor `devtools` is referenced anywhere
+  in the analysis — they are incidental tooling — and httr2 1.0.1 is the version
+  the reference audit has always used. The inconsistency is therefore recorded
+  rather than repaired: upgrading httr2 would change a package the analysis
+  actually depends on, to satisfy one it does not.
+
+Writing to a new path and reviewing before replacing `renv.lock` is worth the extra
+step; validate with `scripts/check_environment.R --lockfile <path>`.
+
+### Known limits of the lockfile
+
+- **`cmdstanr` is not on CRAN.** It is locked from an r-universe mirror
+  (`https://bbsbayes.r-universe.dev`) with the upstream `stan-dev/cmdstanr` remote
+  and commit SHA recorded alongside. `renv::restore()` uses the per-package
+  `Repository` field, so this resolves, but that mirror must be reachable. If it is
+  not, install CmdStan the ordinary way with
+  `cmdstanr::install_cmdstan(cores = 4)`.
+- **The lockfile pins R packages, not the Stan toolchain.** CmdStan 2.39.0 and GCC
+  13.3.0 are recorded in `config/arc_modules.yaml` and in the environment record,
+  not in `renv.lock`. Stan models are compiled C++, so the compiler is part of what
+  determines whether a fit reproduces exactly.
+- renv is **not activated**: there is no `.Rprofile` and no `renv/` directory, so
+  nothing forces a session to obey the lockfile. It is a specification that is
+  *checked* rather than one *enforced* by library redirection.
+
+That last point is deliberate. Activating renv would override `R_LIBS_USER`, which
+every `hpc/` script sets explicitly to the project library on `$DATA`, and would
+break the working cluster setup. On a cluster where the library is managed outside
+the project, verification is the appropriate mechanism; library hijacking is not.
 
 ## Why not a container
 
