@@ -60,6 +60,15 @@ list(
   # ---------------------------------------------------------------------------
   # 2. Prior predictive checks (one per language)
   # ---------------------------------------------------------------------------
+  # One branch per language in the config. Note that this iterates over the CONFIG,
+  # not over the languages present in the data, so a language listed there before its
+  # data arrive still gets a branch. Such a branch yields NULL rather than failing,
+  # for the reason given below.
+  #
+  # This file is the one public copy that scrub_to_public.sh does not regenerate (it
+  # is listed in PUBLIC_SPECIFIC, because the public pipeline is deliberately smaller
+  # than the private one). That exemption is about scope, not correctness, so the two
+  # fixes below were applied here by hand to match the private source.
   tar_map(
     values = tibble::tibble(
       language = names(cfg$languages),
@@ -67,16 +76,25 @@ list(
     ),
     tar_target(
       pilot_lang_df,
-      preprocess_data(
-        dplyr::filter(pilot_split$pilot, Language == language),
-        has_pseudo_passive = has_pp
-      )
+      {
+        d <- dplyr::filter(pilot_split$pilot, Language == language)
+        # A config language with no data yet filters to zero rows. Return NULL
+        # instead of calling preprocess_data(), which stops in code_s_type()
+        # because no Passive level is present. Combined with error = "stop", that
+        # aborted the ENTIRE pipeline rather than the one branch with nothing to do.
+        if (nrow(d) == 0L) NULL else preprocess_data(d, has_pseudo_passive = has_pp)
+      }
     ),
     tar_target(
       threshold_params,
-      if (isTRUE(cfg$languages[[language]]$has_pseudo_passive))
-        compute_ceiling_calibrated_thresholds(pilot_lang_df, language)
-      else NULL
+      # Ceiling calibration is a property of how participants used the response
+      # scale, so it applies to any language with data. The gate here was previously
+      # has_pseudo_passive, which is unrelated: whether a language has
+      # pseudo-passives says nothing about whether its ratings pile up at the top of
+      # the scale. That wrongly excluded Norwegian. The only real precondition is
+      # that the branch has data.
+      if (is.null(pilot_lang_df)) NULL
+      else compute_ceiling_calibrated_thresholds(pilot_lang_df, language)
     )
   ),
 

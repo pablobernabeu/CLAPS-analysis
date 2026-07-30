@@ -192,6 +192,14 @@ derive_gender <- function(df, item_col = "Item") {
 #'   variation). NULL keeps the existing `Semantics` column.
 #' @param include_gender Logical; if TRUE, derive the `Gender` factor from Item.
 #' @return Preprocessed data frame ready for model fitting.
+#' @details Ends by calling assert_treatment_coding(), so that no data frame leaves
+#'   this function with a coding the priors and hypothesis tests would misinterpret.
+#'   The assertion was previously available but never invoked outside the tests,
+#'   which meant the guarantee it describes was not actually enforced anywhere in the
+#'   pipeline. Every path through this function produces two or more S_Type levels
+#'   with Passive first for the CLAPS languages; an error here means the input was
+#'   not what the analysis assumes, and is worth surfacing before a model is fitted
+#'   rather than after.
 preprocess_data <- function(df, has_pseudo_passive = TRUE,
                             semantics_source = NULL,
                             include_gender = FALSE) {
@@ -204,6 +212,10 @@ preprocess_data <- function(df, has_pseudo_passive = TRUE,
     drop_pseudo_passive_if_absent(has_pseudo_passive) |>
     scale_semantics()
   if (isTRUE(include_gender)) df <- derive_gender(df)
+  # Called for its error, and deliberately last: dropping an unused level can reset
+  # a factor's contrasts, so this is the only point at which the final coding is
+  # known. Returns invisible(TRUE), hence the explicit return of df below.
+  assert_treatment_coding(df)
   df
 }
 

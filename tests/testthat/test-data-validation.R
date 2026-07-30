@@ -169,6 +169,35 @@ test_that("assert_treatment_coding rejects a non-factor S_Type", {
   expect_error(assert_treatment_coding(df), regexp = "must be a factor")
 })
 
+test_that("preprocess_data enforces the coding itself, not just on request", {
+  # The assertion existed for a long time without any production caller, so the
+  # guarantee it documents was not in force anywhere. preprocess_data() now calls it,
+  # which is what makes the guarantee real. Checked by confirming the call happens:
+  # a stub that records having been invoked is substituted for the duration.
+  called <- FALSE
+  orig   <- assert_treatment_coding
+  # Inject into the environment preprocess_data() resolves its callees from.
+  env <- environment(preprocess_data)
+  assign("assert_treatment_coding",
+         function(x) { called <<- TRUE; orig(x) }, envir = env)
+  on.exit(assign("assert_treatment_coding", orig, envir = env), add = TRUE)
+
+  preprocess_data(make_valid_df(), has_pseudo_passive = TRUE)
+  expect_true(called)
+})
+
+test_that("preprocess_data still succeeds for both language shapes", {
+  # Guards against the new assertion firing on legitimate input: three sentence
+  # types (English, Turkish) and two (Norwegian, Balinese).
+  expect_s3_class(preprocess_data(make_valid_df(has_pp = TRUE),
+                                  has_pseudo_passive = TRUE), "data.frame")
+  expect_s3_class(preprocess_data(make_valid_df(has_pp = FALSE),
+                                  has_pseudo_passive = FALSE), "data.frame")
+  # And for the case where the data carry pseudo-passives but the language does not.
+  expect_s3_class(preprocess_data(make_valid_df(has_pp = TRUE),
+                                  has_pseudo_passive = FALSE), "data.frame")
+})
+
 test_that("assert_treatment_coding rejects a single-level S_Type", {
   # Guarded explicitly, because contrasts() on a one-level factor otherwise fails
   # with R's opaque "contrasts not defined for 0 degrees of freedom".

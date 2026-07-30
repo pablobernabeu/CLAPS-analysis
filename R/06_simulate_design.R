@@ -292,6 +292,16 @@ run_design_cell <- function(cell, out_dir = "outputs/design_analysis", overwrite
     cell$n_participants, cell$n_verbs, cell$seed,
     sep = "_"
   )
+  # NOTE: this naming scheme is mirrored by .design_cell_ids() in R/10_job_status.R,
+  # which rebuilds these IDs to decide which grid rows have finished. Any change
+  # here must be made there too; tests/testthat/test-job-status.R pins the expected
+  # names and will fail if the two drift apart.
+  #
+  # Be aware that paste() above converts the numeric columns, and R renders a round
+  # double in scientific notation: a seed of exactly 700000 produces "7e+05" in the
+  # filename, not "700000". Several such files exist. Formatting the seed here would
+  # be tidier but would orphan them, so the behaviour is left as it is.
+  #
   # Disambiguate cells that share the fields above but differ in gender spec or
   # simulated language count, so they never overwrite one another's .rds. Baseline
   # cells (no gender, no n_languages column) keep their original cell_id, leaving

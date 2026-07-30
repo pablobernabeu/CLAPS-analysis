@@ -18,13 +18,14 @@
 # Usage
 #   Rscript scripts/08_submit_status_report.R
 #
-# Two caveats before trusting the numbers
-#   "done" means the cell wrote an output, not that its model converged; read the
-#   status column of the aggregated summary for that. And check_grid_completion()
-#   in R/10_job_status.R does not reproduce the filename suffixes used by the
-#   gender and cross-language grids, so those cells are reported as pending even
-#   when complete. This script is reliable for the baseline single-language grid it
-#   was written for; see the Known limitation section in R/10_job_status.R.
+# One caveat before trusting the numbers
+#   "done" means the cell wrote an output, not that its model converged. A cell that
+#   errored still writes an .rds and is counted as done here. Read the status column
+#   of the aggregated summary (R/08_summarise_design.R) for convergence.
+#
+#   The filename-suffix problem that used to make this script understate progress for
+#   the gender grids was fixed on 2026-07-30; check_grid_completion() now reproduces
+#   run_design_cell()'s naming in full.
 
 suppressPackageStartupMessages({
   library(dplyr)

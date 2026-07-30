@@ -60,6 +60,72 @@ list_completed_cells <- function(out_dir = "outputs/design_analysis") {
   )
 }
 
+#' Rebuild the output cell IDs a design grid is expected to produce.
+#'
+#' @param grid A design grid, one row per requested cell.
+#' @return Character vector of cell IDs, one per row, matching the .rds basenames
+#'   that run_design_cell() writes.
+#' @details This MIRRORS the cell_id construction in run_design_cell()
+#'   (R/06_simulate_design.R). The duplication is unavoidable here: that function
+#'   lives in a module which loads brms, and the status scripts must stay usable on
+#'   a machine with no Stan toolchain. tests/testthat/test-job-status.R pins the
+#'   expected names literally, so a future divergence between the two fails a test
+#'   rather than silently reporting finished cells as pending.
+#'
+#'   Naming rules, in the order run_design_cell() applies them:
+#'     base            language_modellevel_priorregime_thresholdmode_N_nverbs_seed
+#'     + "_gender"     when the gender spec is the main-effect variation
+#'     + "_genderX"    when it is the three-way interaction variation
+#'     + "_<k>lang"    when n_languages is present, appended after any gender suffix
+#'
+#'   The gender spec is resolved with run_design_cell()'s precedence: an explicit
+#'   non-NA gender_spec wins; otherwise include_gender being TRUE means "main";
+#'   otherwise "none". Both columns are optional, and a grid lacking them describes
+#'   baseline cells.
+#'
+#' @section Why the numeric columns are not reformatted:
+#'   The base ID uses paste() on the grid's columns exactly as run_design_cell()
+#'   does, with no formatting applied. That is deliberate, and it matters. readr
+#'   types a seed column as double, and R renders a round double in scientific
+#'   notation: paste(700000) gives "7e+05", not "700000". Cells whose seed is
+#'   exactly a grid's base therefore already exist on disk with names such as
+#'   English_L5_correlated_maximal_proposal_broad_50_50_7e+05.rds — eight such
+#'   files were present on ARC when this was written. Formatting the seed "properly"
+#'   here would stop those cells from ever matching. The two code paths agree
+#'   because both let paste() do the conversion; see the note in run_design_cell().
+.design_cell_ids <- function(grid) {
+  n <- nrow(grid)
+
+  id <- paste(grid$language, grid$model_level, grid$prior_regime,
+              grid$threshold_mode, grid$n_participants, grid$n_verbs, grid$seed,
+              sep = "_")
+
+  gs_col  <- if ("gender_spec"    %in% names(grid)) grid$gender_spec    else rep(NA, n)
+  inc_col <- if ("include_gender" %in% names(grid)) grid$include_gender else rep(NA, n)
+
+  # Resolved per row rather than vectorised, so the isTRUE() semantics of
+  # run_design_cell() are reproduced exactly for any column type: isTRUE() is FALSE
+  # for NA and for the string "TRUE", which a vectorised `&` would not be.
+  gs <- vapply(seq_len(n), function(i) {
+    g <- gs_col[[i]]
+    if (length(g) == 1L && !is.na(g)) return(as.character(g))
+    if (isTRUE(inc_col[[i]])) return("main")
+    "none"
+  }, character(1))
+
+  id[gs == "main"]        <- paste0(id[gs == "main"],        "_gender")
+  id[gs == "interaction"] <- paste0(id[gs == "interaction"], "_genderX")
+
+  # Applied after the gender suffix, matching run_design_cell()'s order, so a
+  # gendered cross-language cell reads "..._gender_3lang".
+  if ("n_languages" %in% names(grid)) {
+    nl  <- grid$n_languages
+    hit <- !is.na(nl)
+    id[hit] <- paste0(id[hit], "_", as.integer(nl[hit]), "lang")
+  }
+  id
+}
+
 #' Compare completed cells against the design grid to find gaps.
 #'
 #' @param design_grid Tibble; the full design grid, one row per requested cell.
@@ -69,23 +135,21 @@ list_completed_cells <- function(out_dir = "outputs/design_analysis") {
 #'   whether or not it ran; `coalesce(completed, FALSE)` turns the join's NAs for
 #'   unmatched rows into an explicit FALSE.
 #'
-#' @section Known limitation:
-#'   The expected ID is rebuilt from the seven fields below, mirroring the base
-#'   naming scheme in run_design_cell() (R/06_simulate_design.R). That function
-#'   additionally appends "_gender" or "_genderX" for the gender model variations
-#'   and "_<k>lang" for cross-language cells with an explicit language count.
-#'   Those suffixes are not reproduced here, so cells of those kinds never match
-#'   and are reported as "pending" even once they have finished. Progress figures
-#'   for the gender and cross-language grids are therefore understated; the
-#'   baseline single-language grids, which is what this report was written for,
-#'   are unaffected. Counting the .rds files in the output directory is the
-#'   reliable check for the affected grids until the two naming schemes are
-#'   unified.
+#' @details The expected ID is built by .design_cell_ids() below, which reproduces
+#'   run_design_cell()'s naming in full, including the gender and language-count
+#'   suffixes. Until 2026-07-30 only the seven base fields were reproduced, so any
+#'   cell whose name carries a suffix was reported as "pending" however long ago it
+#'   had finished.
+#'
+#'   Measured against the committed grids at the time of the fix: every one of the
+#'   2400 rows of design_grid_gender.csv was mis-predicted, so that grid's progress
+#'   would always have read zero, as were 8 of the 59 rows of design_grid.csv.
+#'   design_grid_single.csv and design_grid_cross.csv were unaffected — the latter
+#'   because it carries no n_languages column, so its cells take no suffix, despite
+#'   being cross-language.
 check_grid_completion <- function(design_grid, completed) {
   design_grid <- dplyr::mutate(design_grid,
-    expected_cell_id = paste(language, model_level, prior_regime,
-                             threshold_mode, n_participants, n_verbs, seed,
-                             sep = "_")
+    expected_cell_id = .design_cell_ids(design_grid)
   )
   design_grid |>
     dplyr::left_join(
