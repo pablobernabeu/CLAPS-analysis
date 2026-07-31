@@ -487,11 +487,11 @@ kable(pj[, c("n_participants", "English", "Turkish", "Norwegian")],
 Bayes factor of 10 together, at 72 verbs and 66 for Norwegian. Cells below `r MIN_REPS_V2`
 replicates are still accumulating and shown blank. The rest hold `r min(jp_a$reps)` to
 `r max(jp_a$reps)` studies each. Percentages are shown to one decimal place to preserve the
-exact Monte-Carlo summaries. In particular, Norwegian at 130 participants is
-`r jratio("Norwegian", 130)` = `r pct1(jval("Norwegian", 130, "p_joint"))`; its Monte-Carlo
-standard error is `r pct1(jmcse("Norwegian", 130))`, so its being above the approximate
-infinite-participant ceiling in @tbl-ceilings is sampling variation, not a different summary
-vector.
+exact Monte-Carlo summaries. Norwegian at 130 participants sits a little above the
+approximate infinite-participant ceiling in @tbl-ceilings, at `r jratio("Norwegian", 130)` =
+`r pct1(jval("Norwegian", 130, "p_joint"))` against a Monte-Carlo standard error of
+`r pct1(jmcse("Norwegian", 130))`, which is sampling variation rather than a disagreement
+between the two.
 
 `\vspace{12pt}`{=latex}
 
@@ -830,19 +830,19 @@ pilot effects directly, so the primary results above already reflect that discou
 
 ## Convergence and Computation
 
-Convergence is clean across the grid, with no divergent transitions anywhere, the warning sign of an unreliable fit. At the smaller verb count, essentially every fit meets the strict criteria, namely an R-hat
-below 1.01, which checks that the separate chains have settled on the same answer, together
-with bulk and tail effective sample sizes of at least 400, which measure how much independent
-information the draws carry. At 72 verbs, the
-maximal model occasionally falls just short of these criteria. This happens in roughly one
-fit in ten at the smaller samples, and up to one in five at the largest, where *N* is 80 to
-90. It occurs on the R-hat or effective-sample-size thresholds rather than on divergences, so it
-reflects how efficiently the sampler is exploring rather than a fault in the model's
-specification. Restricting the
-power calculation to the fully converged fits leaves the estimates essentially unchanged.
-For English at 72 verbs and 50 participants, the binding focal power is `r pct(cc$all)` over
-all 50 fits and `r pct(cc$conv)` over the `r cc$n_conv` converged fits, so the
-recommendation is robust to this.
+Convergence is sound across the grid, with no divergent transitions anywhere, which are the
+warning sign of an unreliable fit. At the smaller verb count, essentially every fit meets the
+strict criteria, namely an R-hat below 1.01, which checks that the separate chains have
+settled on the same answer, together with bulk and tail effective sample sizes of at least
+400, which measure how much independent information the draws carry. At 72 verbs, the maximal
+model occasionally falls just short of these criteria, in about one fit in ten at the smaller
+samples and up to one in five at the largest, where *N* is 80 to 90. It falls short on the
+R-hat or effective-sample-size thresholds rather than on divergences, so it reflects how
+efficiently the sampler is exploring rather than a fault in the model's specification.
+Restricting the power calculation to the fully converged fits leaves the estimates
+essentially unchanged. For English at 72 verbs and 50 participants, the binding focal power
+is `r pct(cc$all)` over all 50 fits and `r pct(cc$conv)` over the `r cc$n_conv` converged
+fits, so the recommendation does not depend on the difference.
 
 ## Secondary Prediction
 
@@ -1074,19 +1074,18 @@ still computing. The finding that participants alone cannot bring English and Tu
 target rests on the affectedness effect being verb-limited. The 400-participant cells now
 confirm that for English at `r jval("English", 400, "reps")` replicates, and the analytic
 ceilings bound it from above, so the running cells are expected to confirm the plateau
-rather than change its direction. One technical note on the assurance draws belongs here. Each replicate reuses
-one of the first 24 to 40 saved posterior draws rather than draws spread evenly across the whole posterior.
-Checked against the full posterior, those blocks are representative for English and
-Norwegian and sit slightly below the mean for the Turkish affectedness slope, so the
-simulated Turkish figures are, if anything, mildly pessimistic. The analytic ceilings use
-all 8,000 draws and are unaffected. The pooled cross-linguistic design analysis and the
-decision arm, both described above, sample their draw indices randomly over the full pilot
-posteriors, so the block limitation does not apply to them.
+rather than change its direction.
 
-A further check confirmed that every completed cell holds its full complement of
-replicates. The original single-language grid
-completed all 720 of its cells, and the low counts noticed mid-run were simply cells still
-computing.
+Two aspects of the simulation record qualify how far these figures can be pressed. Each
+assurance replicate reuses one of the first 24 to 40 saved posterior draws rather than draws
+spread evenly across the whole posterior. Checked against the full posterior, those blocks
+are representative for English and Norwegian and sit slightly below the mean for the Turkish
+affectedness slope, so the simulated Turkish figures are, if anything, mildly pessimistic.
+The analytic ceilings use all 8,000 draws and are unaffected, and the pooled
+cross-linguistic design analysis and the decision arm sample their draw indices randomly
+over the full pilot posteriors, so the limitation does not reach them. Replication itself is
+complete, since the original single-language grid finished all 720 of its cells and the low
+counts noticed mid-run were cells still computing.
 
 Each data-grounded condition rests on `r min(jp_a$reps)` to `r max(jp_a$reps)` simulated
 studies, and each literature-anchored cell on 50, so the figures carry a Monte-Carlo error
@@ -1215,9 +1214,7 @@ bf_10      <- (post_prob / (1 - post_prob)) / (prior_prob / (1 - prior_prob))
 This appendix reports the operating characteristics for all four predictions in every available
 cell of the corrected literature-anchored run with at least ten replicates, namely the
 probability of exceeding the primary and secondary Bayes-factor thresholds, the median Bayes
-factor and the convergence rate, set out in @tbl-opchar. The saved corrected summary contains `r lit_language_text`
-cells only; it has no Norwegian rows, so Norwegian is not silently filtered out by the table
-code.
+factor and the convergence rate, set out in @tbl-opchar, which covers `r lit_language_text`.
 
 ```{r tbl-opchar}
 #| tbl-cap: "Probability of Exceeding the Primary and Secondary Bayes-Factor Thresholds, Median Bayes Factor and Convergence Rate, by Design Condition and Prediction"
@@ -1240,15 +1237,13 @@ kable(opc, booktabs = TRUE, longtable = TRUE, align = "lrrlrrrrr",
   kableExtra::kable_styling(font_size = 10, latex_options = c("repeat_header"))
 ```
 
-`\vspace{-8pt}`{=latex}
+`\vspace{-18pt}`{=latex}
 
-*Note.* The two probability columns give the proportion of the simulated studies in which
-the Bayes factor reached the primary threshold of 10 and the secondary threshold of 3.
-Median BF is the median Bayes factor across those studies, to two significant figures.
-Convergence is the proportion of fits meeting the convergence criteria, and Reps is the
-number of simulated studies in the cell. Cells with fewer than ten replicates are omitted as
-still accumulating. Norwegian carries two focal predictions rather than four, having no
-pseudo-passive, so it contributes half as many rows as the other two languages.
+*Note.* The probability columns give the proportion of simulated studies reaching a Bayes
+factor of 10 and of 3, Median BF the median across them to two significant figures,
+Convergence the proportion of fits meeting the criteria, and Reps the number of studies in
+the cell. Cells with fewer than ten are omitted as still accumulating, and Norwegian has no
+pseudo-passive, hence half as many rows.
 
 `\vspace{12pt}`{=latex}
 
@@ -1312,11 +1307,9 @@ conditions on the published effect sizes. Separately, the suffix `_v2` on a simu
 engine marks the extended version rather than a correction, so both files are live and the
 pair should be read together.
 
-### The two engines, and why they occupy three numbered files
-
-The numbering is the one part of the layout likely to mislead, since `06`, `10` and `11` all
-generate simulated studies but do not correspond to three methods. There are two engines,
-distinguished by where the true effects come from, and the second is written at two scopes.
+Three files in `R/` generate simulated studies, `06`, `10` and `11`, and between them they
+implement two engines rather than three. The engines differ in where the true effects come
+from, and the second of them is written at two scopes.
 
 The literature-anchored engine is
 [`R/06_simulate_design.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/06_simulate_design.R).
