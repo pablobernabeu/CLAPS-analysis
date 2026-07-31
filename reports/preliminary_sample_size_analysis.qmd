@@ -970,7 +970,11 @@ The choices that follow from this are set out in @tbl-choices. Each row is a dec
 collaborators, with what the evidence says about it and what, if anything, is still
 outstanding.
 
-`\vspace{10pt}`{=latex}
+<!-- This table is tall enough to break across a page, which strands a single row
+     under the caption and repeats the header. The break below keeps it whole. If the
+     text above is substantially rewritten, check the rendered page and adjust. -->
+
+`\newpage`{=latex}
 
 | Choice | Options | What the results say now | What would settle it |
 |:----------|:------------------|:---------------------------------|:--------------------------|
@@ -1362,9 +1366,9 @@ analyses comparable.
 
 `\vspace{10pt}`{=latex}
 
-| Engine | Where the true effects come from | Single language | All three pooled |
-|:-----------------|:-------------------------|:------------------|:------------------|
-| Literature-anchored | Published effect sizes, stipulated | `06`, `simulate_claps_data()` | `06`, `simulate_claps_data_multilanguage()` |
+| Engine | Where the effects come from | Single language | All three pooled |
+|:----------------------|:--------------------------------|:---------------------|:---------------------|
+| Literature-anchored | Published effect sizes, stipulated | `06` | `06`, the same file |
 | Pilot-grounded | Estimated from the fitted pilot models | `10`, extended by `10_v2` | `11`, which loads `10_v2` |
 
 : The two simulation engines and the files implementing them. {#tbl-engines}
@@ -1379,5 +1383,6 @@ submits one array task per row;
 [`scripts/07_pooled_cell_v2.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/scripts/07_pooled_cell_v2.R)
 runs a single row by calling `run_pooled_cell_v2()`; and
 [`scripts/aggregate_pooled.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/scripts/aggregate_pooled.R)
-reduces the resulting `.rds` files to `outputs/design_summary_pilot/pooled_power_pilot.csv`,
-which is the table this report reads for every pooled figure it quotes.
+reduces the resulting `.rds` files to `pooled_power_pilot.csv` in
+`outputs/design_summary_pilot/`, which is the table this report reads for every pooled
+figure it quotes.
