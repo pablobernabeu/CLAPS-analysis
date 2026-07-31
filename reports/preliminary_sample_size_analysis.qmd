@@ -443,7 +443,9 @@ participants at verb counts of 40 and 72. Each completed cell holds 50 replicate
 gives a Monte-Carlo standard error of about five to six percentage
 points near a power of 80%, so estimates close to the threshold are not perfectly ordered
 across adjacent sample sizes. The central code for the data-generating process, the model
-and the Bayes factor is reproduced in Appendix B.
+and the Bayes factor is reproduced in Appendix B, and Appendix D maps the whole repository,
+including which file implements each of the two simulation engines described above and how
+the pooled analysis reuses one of them.
 
 # Results
 
@@ -1264,16 +1266,20 @@ the report reads.
 Three entry points cover most purposes. A reader checking a reported number wants
 `outputs/`, which holds the aggregated summaries and is where every figure in this report
 comes from. A reader checking how a simulated study is built and analysed wants
-`R/06_simulate_design.R` for the literature-anchored generator, `R/10_simulate_from_pilot_v2.R`
-for the pilot-grounded one, and `R/05_hypothesis_tests.R` for the Bayes factor. A reader
-intending to rerun the analysis wants `scripts/`, whose files are numbered in the order they
-are meant to run, together with the matching submitters in `hpc/`.
+[`R/06_simulate_design.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/06_simulate_design.R)
+for the literature-anchored generator,
+[`R/10_simulate_from_pilot_v2.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/10_simulate_from_pilot_v2.R)
+for the pilot-grounded one, and
+[`R/05_hypothesis_tests.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/05_hypothesis_tests.R)
+for the Bayes factor. A reader intending to rerun the analysis wants `scripts/`, whose files
+are numbered in the order they are meant to run, together with the matching submitters in
+`hpc/`.
 
 `\vspace{10pt}`{=latex}
 
 | Location | What it holds |
 |:------------------|:-----------------------------------------------------------|
-| `R/` | The building blocks: data validation and preprocessing (`01`, `02`), priors and model formulas (`03`, `04`), the Bayes factor (`05`), the two simulation engines (`06`, `10`, `11`), convergence diagnostics (`07`) and summarising (`08`) |
+| `R/` | The building blocks: data validation and preprocessing (`01`, `02`), priors and model formulas (`03`, `04`), the Bayes factor (`05`), the two simulation engines (`06`, and `10` with `11`), convergence diagnostics (`07`) and summarising (`08`) |
 | `scripts/` | Runnable steps, numbered in running order, from harmonising the pilot (`00`) through fitting the pilot models, generating a design grid, running one cell, to aggregating results (`aggregate_pilot.R`, `aggregate_pooled.R`, `aggregate_literature.R`) |
 | `hpc/` | One SLURM submitter per arm. Each takes a grid file and an output directory, and runs one grid row per array task |
 | `config/` | The design grids, one row per simulated condition, plus the model and prior configuration |
@@ -1297,6 +1303,81 @@ Two conventions are worth knowing before reading the code. Names carrying `pilot
 the data-grounded analysis that conditions on the fitted pilot models and forms the primary
 basis of this report, while names carrying `literature` refer to the cross-check that
 conditions on the published effect sizes. Separately, the suffix `_v2` on a simulation
-engine marks the extended version rather than a correction: `R/10_simulate_from_pilot_v2.R`
-loads `R/10_simulate_from_pilot.R` and adds the assurance and safeguard variants on top of
-it, so both files are live and the pair should be read together.
+engine marks the extended version rather than a correction, so both files are live and the
+pair should be read together.
+
+### The two engines, and why they occupy three numbered files
+
+The numbering is the one part of the layout likely to mislead, since `06`, `10` and `11` all
+generate simulated studies but do not correspond to three methods. There are two engines,
+distinguished by where the true effects come from, and the second is written at two scopes.
+
+The literature-anchored engine is
+[`R/06_simulate_design.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/06_simulate_design.R).
+It invents a study from assumed effect sizes taken from the published estimates, drawing
+participants, verbs and affectedness values from scratch. Because the parameters are
+stipulated rather than estimated, extending it from one language to several is only a matter
+of adding a language level to the same recipe, which is why this engine covers both scopes
+in one file: `simulate_claps_data()` for a single language and
+`simulate_claps_data_multilanguage()` beside it.
+
+The pilot-grounded engine is
+[`R/10_simulate_from_pilot.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/10_simulate_from_pilot.R).
+It takes the true effects from a model already fitted to the pilot data, so a simulated study
+inherits that language's estimated slopes, thresholds and variance components together with
+its real verbs and their measured affectedness.
+[`R/10_simulate_from_pilot_v2.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/10_simulate_from_pilot_v2.R)
+loads that file and adds the assurance and safeguard variants, which draw the effects from
+the pilot posterior rather than fixing them at its mean.
+
+Extending this second engine across languages is not a matter of adding a level, because each
+language carries its own fitted model. A pooled study has to be assembled from three separate
+sets of parameters, simulated language by language and then combined before a single
+cross-language model is fitted to the result. That orchestration is what
+[`R/11_simulate_pooled_v2.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/11_simulate_pooled_v2.R)
+adds. It loads the `_v2` file, calls its per-language simulator once for each language, binds
+the three datasets and fits the pooled model, so it is the same engine at a wider scope rather
+than a third method.
+
+The files therefore stack rather than compete, each loading the one below it and adding to it:
+`11` on `10_v2` on `10`, and separately
+[`R/06_simulate_design_gelman.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/06_simulate_design_gelman.R)
+on `06`. That last file is the narrowest of them. It changes only the scale on which the
+analysed predictor is expressed, leaving the simulated responses identical, so that the
+literature-anchored cells are analysed on the same footing as the confirmatory model.
+
+Both engines end in the same place. Each defines a cell runner, `run_design_cell()` in `06`
+and `run_databased_cell_v2()` and `run_pooled_cell_v2()` in `10_v2` and `11`, which simulates
+one dataset, fits it with
+[`R/04_model_formulas.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/04_model_formulas.R)
+and the priors in
+[`R/03_define_priors.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/03_define_priors.R),
+computes the Bayes factors with
+[`R/05_hypothesis_tests.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/05_hypothesis_tests.R)
+and records the diagnostics from
+[`R/07_extract_diagnostics.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/07_extract_diagnostics.R),
+then writes the `.rds` for that cell. Only the source of the true effects differs; the model,
+the evidence criterion and the convergence standard are shared, which is what makes the two
+analyses comparable.
+
+`\vspace{10pt}`{=latex}
+
+| Engine | Where the true effects come from | Single language | All three pooled |
+|:-----------------|:-------------------------|:------------------|:------------------|
+| Literature-anchored | Published effect sizes, stipulated | `06`, `simulate_claps_data()` | `06`, `simulate_claps_data_multilanguage()` |
+| Pilot-grounded | Estimated from the fitted pilot models | `10`, extended by `10_v2` | `11`, which loads `10_v2` |
+
+: The two simulation engines and the files implementing them. {#tbl-engines}
+
+`\vspace{12pt}`{=latex}
+
+Following one arm end to end is the quickest way to see how the pieces connect. For the
+pooled analysis reported here, the grid is `config/design_grid_pooled_v2.csv`, one row per
+simulated study;
+[`hpc/submit_pooled_v2_array.sh`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/hpc/submit_pooled_v2_array.sh)
+submits one array task per row;
+[`scripts/07_pooled_cell_v2.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/scripts/07_pooled_cell_v2.R)
+runs a single row by calling `run_pooled_cell_v2()`; and
+[`scripts/aggregate_pooled.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/scripts/aggregate_pooled.R)
+reduces the resulting `.rds` files to `outputs/design_summary_pilot/pooled_power_pilot.csv`,
+which is the table this report reads for every pooled figure it quotes.
