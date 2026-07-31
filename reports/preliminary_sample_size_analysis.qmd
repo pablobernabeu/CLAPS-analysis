@@ -1119,7 +1119,7 @@ the data-grounded runs complete and the largest English and Turkish samples are 
 \end{center}
 ```
 
-Appendix A describes the pilot sample from which the affectedness ratings and the
+This appendix describes the pilot sample from which the affectedness ratings and the
 descriptive trends in @fig-pilot are drawn, and against which the data-grounded analysis
 fits its models. The counts are read directly from the harmonised pilot data.
 
@@ -1147,7 +1147,7 @@ hence two sentence types rather than three.
 \end{center}
 ```
 
-Appendix B reproduces the central code, lightly abridged, from the analysis scripts. The
+This appendix reproduces the central code, lightly abridged, from the analysis scripts. The
 code shown is the data-generating process for the literature-anchored cross-check, in
 `R/06_simulate_design.R`, together with the analysis model in `R/04_model_formulas.R` and
 the Bayes factor in `R/05_hypothesis_tests.R`. The data-grounded analysis uses the same
@@ -1212,7 +1212,7 @@ bf_10      <- (post_prob / (1 - post_prob)) / (prior_prob / (1 - prior_prob))
 \end{center}
 ```
 
-Appendix C reports the operating characteristics for all four predictions in every available
+This appendix reports the operating characteristics for all four predictions in every available
 cell of the corrected literature-anchored run with at least ten replicates, namely the
 probability of exceeding the primary and secondary Bayes-factor thresholds, the median Bayes
 factor and the convergence rate, set out in @tbl-opchar. The saved corrected summary contains `r lit_language_text`
@@ -1261,7 +1261,7 @@ pseudo-passive, so it contributes half as many rows as the other two languages.
 \end{center}
 ```
 
-Appendix D is a map of the analysis code, which is openly available at
+This appendix maps the analysis code, which is openly available at
 <https://github.com/pablobernabeu/CLAPS-analysis>. It is meant to make the repository
 navigable for a reader who wants to check how a number in this report was produced, or to
 reuse part of the machinery. The raw pilot data are not published, since they are
