@@ -424,9 +424,13 @@ number that weighs how strongly the data favour the predicted direction of the e
 there being no effect, obtained by sampling the prior alongside the posterior
 [@wagenmakersLodewyckxKuriyalGrasman2010]. A simulated study counts as a detection when its
 Bayes factor reaches 10, the preregistered threshold for strong evidence. Under the
-zero-centred prior, this is not a stringent bar. A directional Bayes factor of 10 corresponds
-to an estimate about 1.34 standard errors from zero, whereas a one-sided *p* < .05 requires
-1.64, so the Bayesian criterion is if anything the less demanding of the two. Power is the
+zero-centred prior, this is not a stringent bar. The Bayes factor used here is directional,
+meaning the posterior odds that the coefficient carries the predicted sign divided by the
+same odds under the prior, so under a symmetric prior a value of 10 is odds of 10 to 1 on the
+direction. That is a posterior probability of 0.91, or about 1.34 standard errors from zero,
+whereas a one-sided *p* < .05 requires 1.64, so the Bayesian criterion is if anything the
+less demanding of the two. It is not the point-null Bayes factor of a default two-sided test,
+which is a different quantity on a different scale. Power is the
 proportion of simulated studies that reach it. The recommended sample size is the smallest
 at which both focal predictions reach a power of 80%.
 
