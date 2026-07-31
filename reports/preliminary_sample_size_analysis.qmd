@@ -333,7 +333,8 @@ error rates where floor or ceiling effects are present [@liddellKruschke2018]. R
 empirical work shows that modelling them cumulatively recovers psycholinguistic effects
 more accurately [@verissimo2021; @taylorRousseletScheepersSereno2023].
 
-The expected pattern is already visible in the pilot data. @fig-pilot shows the raw
+The expected pattern is already visible in the pilot data, which come from the sample whose
+composition by language is given in @tbl-pilot in Appendix A. @fig-pilot shows the raw
 acceptability ratings against agent semantic affectedness, separately by sentence type,
 referent gender and language. The affectedness slope is positive and steepest for the
 passive in English and Norwegian, and shallower for the active and the pseudo-passive. The
@@ -443,9 +444,10 @@ participants at verb counts of 40 and 72. Each completed cell holds 50 replicate
 gives a Monte-Carlo standard error of about five to six percentage
 points near a power of 80%, so estimates close to the threshold are not perfectly ordered
 across adjacent sample sizes. The central code for the data-generating process, the model
-and the Bayes factor is reproduced in Appendix B, and Appendix D maps the whole repository,
-including which file implements each of the two simulation engines described above and how
-the pooled analysis reuses one of them.
+and the Bayes factor is reproduced in Appendix B. The full operating characteristics of this
+run, cell by cell, are reported in @tbl-opchar in Appendix C, and Appendix D maps the whole
+repository, including which file implements each of the two simulation engines described
+above and how the pooled analysis reuses one of them.
 
 # Results
 
@@ -1213,7 +1215,7 @@ bf_10      <- (post_prob / (1 - post_prob)) / (prior_prob / (1 - prior_prob))
 Appendix C reports the operating characteristics for all four predictions in every available
 cell of the corrected literature-anchored run with at least ten replicates, namely the
 probability of exceeding the primary and secondary Bayes-factor thresholds, the median Bayes
-factor and the convergence rate. The saved corrected summary contains `r lit_language_text`
+factor and the convergence rate, set out in @tbl-opchar. The saved corrected summary contains `r lit_language_text`
 cells only; it has no Norwegian rows, so Norwegian is not silently filtered out by the table
 code.
 
@@ -1277,7 +1279,7 @@ for the pilot-grounded one, and
 [`R/05_hypothesis_tests.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/05_hypothesis_tests.R)
 for the Bayes factor. A reader intending to rerun the analysis wants `scripts/`, whose files
 are numbered in the order they are meant to run, together with the matching submitters in
-`hpc/`.
+`hpc/`. @tbl-repo sets out what each top-level directory holds.
 
 `\vspace{10pt}`{=latex}
 
@@ -1362,7 +1364,8 @@ and records the diagnostics from
 [`R/07_extract_diagnostics.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/07_extract_diagnostics.R),
 then writes the `.rds` for that cell. Only the source of the true effects differs; the model,
 the evidence criterion and the convergence standard are shared, which is what makes the two
-analyses comparable.
+analyses comparable. @tbl-engines summarises where each engine's effects come from and which
+file implements it at each scope.
 
 `\vspace{10pt}`{=latex}
 
