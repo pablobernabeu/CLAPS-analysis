@@ -19,6 +19,16 @@
 #   sbatch --account=PROJECT_GROUP --array=2941-4200%30 hpc/submit_corrected_array.sh
 # Writes to a NEW dir, outputs/design_corrected (the original power cells untouched).
 #
+# THIS ARM IS COMPLETE; 22 QUEUED TASKS REMAIN AND NEED NO ACTION.
+# Job 12448839 still shows 22 tasks pending with reason JobHeldAdmin, which cannot be
+# released or cancelled by the account holder. They need no attention: checked on
+# 2026-07-31, every one of the 22 already has its output file in
+# outputs/design_corrected, so releasing them would only have each task find its .rds,
+# skip, and exit within seconds. Every condition they belong to already holds the full
+# 50 replicates. The arm itself is still live and is read by scripts/aggregate_literature.R;
+# it is these particular queued tasks that are redundant, left over from a resubmission
+# of work that had already been done.
+#
 # The shared preamble below (module handling, R_LIBS_USER, thread limits, CmdStan
 # discovery, the over-wide-array clean exit) is explained line by line under
 # "Anatomy of a submission script" in docs/arc_submission_guide.md.
