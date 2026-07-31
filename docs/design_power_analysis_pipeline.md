@@ -22,7 +22,7 @@ methodological decisions this implements.
 | Key | Value | Meaning |
 |-----|-------|---------|
 | `design_analysis.n_simulations_per_cell` | 200 | replicates / single-language & gender point (MC SE ≈ 0.028 at p = 0.8) |
-| `design_analysis.n_simulations_per_cell_cross` | 50 | replicates / cross-language point (8–12 h/fit) |
+| `design_analysis.n_simulations_per_cell_cross` | 50 | replicates / cross-language point (29–96 h/fit, measured) |
 | `replication_sampler` | 4 × 3000 (1000 warmup) | per-replicate sampler |
 | `model` (iter 5000, chains 16) | — | heavy sampler, feasibility study only |
 

@@ -34,9 +34,17 @@
 #   sbatch hpc/submit_pooled_v2_array.sh
 #
 # Cost
-#   The most expensive cell type in the repository. A cross-language fit takes
-#   roughly 8-12 hours, which is why config/analysis_config.yaml sets a lower
-#   replicate count for cross-language design points than for single-language ones.
+#   The most expensive cell type in the repository, by a wide margin. Measured on
+#   2026-07-31 across 331 completed cells on htc, a fit takes between 1-04:37 (29 h)
+#   and 4-00:00 (96 h). An earlier note here said 8-12 hours; that estimate was
+#   three to eight times too low and is corrected here and in
+#   config/analysis_config.yaml and docs/design_power_analysis_pipeline.md.
+#
+#   Two practical consequences. The replicate count for cross-language points is
+#   reduced accordingly in the config. And the submitting script needs a walltime
+#   well above 42 hours: hpc/submit_pooled_v2_array.sh defaulted to that until the
+#   same date, which silently lost the expensive cells, since a timed-out task
+#   leaves no .rds and the cell merely looks unrun.
 
 suppressPackageStartupMessages({ library(optparse); library(dplyr); library(readr) })
 source("R/03_define_priors.R"); source("R/04_model_formulas.R"); source("R/05_hypothesis_tests.R")

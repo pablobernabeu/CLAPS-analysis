@@ -1,7 +1,15 @@
 #!/bin/bash
 #SBATCH --job-name=claps_pooled2
 #SBATCH --partition=medium
-#SBATCH --time=1-18:00:00
+# 5 days. Raised from 1-18:00:00 (42 h) on 2026-07-31 after measuring what these
+# fits actually cost: across 331 completed pooled/decision cells on htc the range
+# was 1-04:37 to 4-00:00, i.e. 29 to 96 hours. A 42-hour limit therefore killed a
+# large share of the expensive cells, and did so silently from the grid's point of
+# view — a timed-out task leaves no .rds, so the cell simply looks "not yet run".
+# The array currently in flight (8377361) survives only because it was submitted
+# with an explicit --time=10-00:00:00 override; the script default would have lost
+# its N=130 and N=150 cells. See the runtime note below.
+#SBATCH --time=5-00:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -17,9 +25,19 @@
 # outputs/pilot_models. Own grid, runner, and output dir, so nothing shared
 # with the running single-language sweeps.
 #
-# The medium partition (42 h here) is required: a pooled fit at N=150 per
-# language holds about 85k rows plus a third grouping factor, comparable to the
-# single-language N=400-500 cells that exceeded short's 12 h.
+# MEASURED RUNTIME (2026-07-31). A pooled fit at N=150 per language holds about
+# 85k rows plus a third grouping factor. Measured across 331 completed cells:
+#
+#   minimum   1-04:37  (29 h)
+#   maximum   4-00:00  (96 h)
+#
+# That is three to eight times the "8-12 h per fit" figure quoted elsewhere in the
+# repository, which was an early estimate and is corrected in the same commit as
+# this note. Budget accordingly: at 30 concurrent tasks the 150-cell grid is a
+# multi-week run, not a multi-day one, and the expensive N=130/150 cells dominate.
+#
+# The medium partition is required for this reason; short's 12 h is nowhere near
+# enough.
 #
 #   sbatch --clusters=htc --account=PROJECT_GROUP --array=1-75%20  hpc/submit_pooled_v2_array.sh
 #   sbatch --clusters=htc --account=PROJECT_GROUP    --array=76-150%20 hpc/submit_pooled_v2_array.sh

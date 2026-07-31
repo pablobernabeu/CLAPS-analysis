@@ -94,7 +94,12 @@ ceiling_calibration:
 # ---------------------------------------------------------------------------
 design_analysis:
   n_simulations_per_cell: 200        # replicates per single-language/gender design point (power estimate)
-  n_simulations_per_cell_cross: 50   # replicates per cross-language design point (8-12 h/fit, so fewer)
+  # Fewer replicates per cross-language point because each fit is enormously more
+  # expensive. The original note here said 8-12 h/fit; measurement on 2026-07-31
+  # across 331 completed cells put the real range at 29-96 h for the L5
+  # cross-maximal pooled fits. The reduced replication is therefore even more
+  # necessary than the original figure implied.
+  n_simulations_per_cell_cross: 50
   bf_threshold_primary: 10
   bf_threshold_secondary: 3
   success_metric: "bayes_factor"   # Never change to posterior_probability
