@@ -241,8 +241,9 @@ the verb-level information and lets every language contribute, Turkish included.
 moderate rather than a strong standard of evidence, as the project proposed at the outset,
 brings English and Norwegian to target individually and makes the combined test
 near-certain. Turkish meets neither standard alone and is better reported as an estimate
-than as a test. The simulations still running will fix the exact figures, but are unlikely
-to change this picture.
+than as a test. Simulations are still running, but they cannot change this picture: every
+per-language sample at or below the agreed cap has been simulated to full replication, and
+the cells still accumulating all sit above it.
 `\end{abstract}`{=latex}
 
 `\vspace{6pt}`{=latex}
@@ -936,6 +937,25 @@ within the cap. A Bayes factor of 10 would require either a per-language sample 
 the cap or a larger verb pool, and the analysis cannot make that trade for the
 collaborators. Of the three thresholds, only a Bayes factor of 3 supports the confirmatory
 claim on the evidence available.
+
+Two features of the results make that conclusion safe to act on before the pooled arm
+finishes. The first is where the outstanding work sits: every per-language sample at or
+below the agreed cap has been simulated to full replication, and the cells still running are
+all larger than the cap, so they describe designs the project has already ruled out on
+feasibility grounds. The second is that the strong threshold shows no sign of improving with
+sample size. Across the pooled samples completed so far the probability of joint evidence at
+a Bayes factor of 10 varies without trend, by less than the Monte-Carlo error of the
+individual estimates, which is what one expects when the binding constraint is the verb-level
+information rather than the number of participants. Waiting for the larger cells would
+therefore refine a curve whose shape is already clear, at sample sizes nobody is proposing to
+collect.
+
+It is worth being explicit about why the strong threshold fails, because the reason is not
+that the effects are small. The median simulated study clears a Bayes factor of 10 on each
+focal prediction taken separately. What it does not do reliably is clear it on both at once,
+and a criterion that sits close to the median of the evidence distribution converts a modest
+amount of variability into a large shortfall in the joint probability. Moving the criterion
+to 3 does not weaken the design so much as stop it being decided by noise.
 
 ## What Is Settled and What Is Still Open
 
