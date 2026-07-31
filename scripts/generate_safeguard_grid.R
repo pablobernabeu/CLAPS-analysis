@@ -1,6 +1,37 @@
 #!/usr/bin/env Rscript
 # scripts/generate_safeguard_grid.R
 # ---------------------------------------------------------------------------
+# SUPERSEDED ARM — RETAINED FOR THE RECORD, NOT PART OF THE REPORTED ANALYSIS.
+#
+# Both purposes described below were abandoned on 2026-07-24 (commit 3c5a872,
+# "Report: de-stale the abandoned literature-anchored refinement arms"), which
+# states that "the low-N (20-40 participant) arm ... and the 75/60%
+# discounted-effect sensitivity arm were all promised as forthcoming, but their
+# jobs have been held (admin/user) and idle for a month and are superseded: ...
+# the safeguard is now built into the data-grounded engine, and the discounted
+# scenario is realised by conditioning on the pilot effects directly."
+#
+# Those are precisely the two arms this file generates: discount = 1.00 at
+# N = 20/30/40 is the low-N arm, and discount = 0.75/0.60 is the
+# discounted-effect arm. What replaced them is the safeguard MODE of the
+# pilot-grounded engine (R/10_simulate_from_pilot_v2.R, mode = "safeguard"),
+# whose results reach the report through outputs/design_databased_v2 and
+# outputs/design_summary_pilot/joint_power_pilot.csv. Do not confuse the two: the
+# report's "safeguard" figures come from that mode, never from this grid.
+#
+# Status on the cluster. The held array job 12409496 (tasks 123-440) was
+# CANCELLED on 2026-07-30, having sat JobHeldUser since 19 June. Its 122
+# completed outputs remain in outputs/design_safeguard and are read by nothing:
+# no aggregator takes that directory as input, and the report cites it nowhere.
+# Finishing the array would have cost roughly 3,000 CPU-hours of shared credit
+# for outputs no analysis consumes.
+#
+# The generator is kept because the arm may be wanted again for a revision or a
+# reviewer request, and because deleting it would erase the record of what was
+# tried. If it is ever revived, note that its seed base moved from 7e5 to 1.1e6
+# on 2026-07-30, so a regenerated grid will not match the 122 outputs on disk.
+#
+# ---------------------------------------------------------------------------
 # Effect-size sensitivity ("safeguard") arm + low-N localisation, at the real
 # 72-verb design (English, L5 maximal correlated model, primary priors).
 #

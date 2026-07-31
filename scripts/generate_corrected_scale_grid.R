@@ -1,6 +1,33 @@
 #!/usr/bin/env Rscript
 # scripts/generate_corrected_scale_grid.R
 # ---------------------------------------------------------------------------
+# SUPERSEDED ARM — RETAINED FOR THE RECORD, NOT PART OF THE REPORTED ANALYSIS.
+#
+# One of the "abandoned literature-anchored refinement arms" of commit 3c5a872
+# (2026-07-24), which records that the literature cross-check "stands on its
+# completed English and Turkish cells" rather than on the refinements that were
+# once promised. The report was reworded at that point to stop promising results
+# from this arm.
+#
+# Status on the cluster. The held array job 12419137 was CANCELLED on 2026-07-30,
+# having sat JobHeldUser since 20 June. It had produced NOTHING: no
+# outputs/design_corrected_scale directory was ever created. Nothing reads that
+# directory in any case — no aggregator takes it as input, and the report cites
+# it nowhere. Releasing it would have committed thousands of CPU-hours of shared
+# credit to a 2,100-cell grid whose first output would also have been its last
+# use.
+#
+# The prior-scale concern this arm was built to quantify is real and is not
+# dismissed by the cancellation: it is documented in
+# R/06_simulate_design_gelman.R, which explains the sqrt(3) overstatement and
+# implements the Gelman-scaled analysis path. What was abandoned is the plan to
+# quantify it with a dedicated 2,100-cell sweep, not the finding itself.
+#
+# The generator is kept in case the arm is revived. Note its seed base moved from
+# 7e5 to 1.0e6 on 2026-07-30; since nothing was ever computed, that re-basing
+# orphaned nothing.
+#
+# ---------------------------------------------------------------------------
 # Prior-SCALE-corrected single-language power BFDA grid.
 #
 # Same design-generating assumptions as scripts/generate_corrected_power_grid.R

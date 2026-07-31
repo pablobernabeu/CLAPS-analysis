@@ -11,6 +11,14 @@
 #SBATCH --mail-type=FAIL,END
 
 # hpc/submit_safeguard_array.sh
+#
+# DO NOT RESUBMIT WITHOUT A DECISION. This arm was abandoned on 2026-07-24 (commit
+# 3c5a872) and its held array job 12409496 was cancelled on 2026-07-30. Nothing
+# reads outputs/design_safeguard, and the report's "safeguard" figures come from
+# the pilot-grounded engine's safeguard MODE instead. Completing the array would
+# cost roughly 3,000 CPU-hours for outputs no analysis consumes. See the header of
+# scripts/generate_safeguard_grid.R for the full record.
+#
 # Effect-size sensitivity ("safeguard") arm at the real 72-verb design: discounted
 # focal effects (1.00 at low N to localise the minimum; 0.75 and 0.60 to quantify
 # the N needed under conservative effects). Cells run to N=150 x 72 verbs, so the

@@ -71,12 +71,34 @@ and `tests/testthat/test-seed-disjointness.R` fails if that ever stops being tru
 | 9.3e5 | 930000–931490 | `generate_pooled_v2_grid.R` |
 | 9.32e5 | 932000–932290 | `generate_pooled_v2_N80_grid.R` |
 | 9.4e5 | 940000–941079 | `generate_databased_v2_decision_grid.R` |
-| 1.0e6 | 1000000–1002099 | `generate_corrected_scale_grid.R` |
-| 1.1e6 | 1100000–1100439 | `generate_safeguard_grid.R` |
+| 1.0e6 | 1000000–1002099 | `generate_corrected_scale_grid.R` — superseded arm, see below |
+| 1.1e6 | 1100000–1100439 | `generate_safeguard_grid.R` — superseded arm, see below |
 | 1.2e6 | 1200000–1200719 | `generate_databased_v2_grid.R` |
 
 Bases from 1.3e6 upward are free. Leave a gap of at least 1e5 above a new base, so
 that raising a grid's replicate count later cannot run it into its neighbour.
+
+### Two superseded arms
+
+`generate_safeguard_grid.R` and `generate_corrected_scale_grid.R` keep their seed
+bases in the registry above, but neither is part of the reported analysis. Commit
+3c5a872 (2026-07-24) abandoned them as "literature-anchored refinement arms" that had
+been "promised as forthcoming, but their jobs have been held (admin/user) and idle for
+a month and are superseded", and reworded the report accordingly.
+
+Their held cluster jobs were cancelled on 2026-07-30: `claps_safeguard` 12409496
+(tasks 123–440, 122 outputs already on disk) and `claps_corrscale` 12419137 (which had
+produced nothing). Nothing reads `outputs/design_safeguard` or
+`outputs/design_corrected_scale` — the four aggregators read `design_databased_v2`,
+`design_pooled_v2`, `design_corrected` and `design_analysis` respectively — and the
+report cites neither directory.
+
+Beware a name collision that has misled more than once: the report's "safeguard"
+figures come from the **safeguard mode** of the pilot-grounded engine
+(`R/10_simulate_from_pilot_v2.R`, reaching the report via
+`outputs/design_summary_pilot/joint_power_pilot.csv`), not from the safeguard array.
+The generators are retained so the record of what was tried survives, and so either
+arm can be revived; if one is, its seeds will no longer match anything on disk.
 
 ### The 2026-07-30 re-basing
 

@@ -11,6 +11,14 @@
 #SBATCH --mail-type=FAIL,END
 
 # hpc/submit_corrected_scale_array.sh
+#
+# DO NOT RESUBMIT WITHOUT A DECISION. This arm was abandoned on 2026-07-24 (commit
+# 3c5a872) and its held array job 12419137 was cancelled on 2026-07-30 having
+# produced nothing at all. Nothing reads outputs/design_corrected_scale, which has
+# never existed. The prior-scale finding it was meant to quantify stands and is
+# documented in R/06_simulate_design_gelman.R; what was abandoned is the 2,100-cell
+# sweep, not the finding. See scripts/generate_corrected_scale_grid.R for the record.
+#
 # PRIOR-SCALE-CORRECTED single-language power BFDA. Identical to the base corrected
 # run except cells are executed with scripts/04_design_analysis_cell_gelman.R, which
 # sources R/06_simulate_design_gelman.R so the analysed focal predictor is Gelman-
