@@ -947,13 +947,15 @@ collaborators. Of the three thresholds, only a Bayes factor of 3 supports the co
 claim on the evidence available.
 
 That conclusion can be acted on before the pooled arm finishes. Every per-language sample at
-or below the agreed cap has been simulated to full replication, and the cells still running
-are all larger than the cap, so they describe designs already ruled out on feasibility
-grounds. The strong threshold also shows no sign of improving with sample size: across the
-pooled samples completed so far, the probability of joint evidence at a Bayes factor of 10
-varies without trend and by less than the Monte-Carlo error of the individual estimates, as
-one expects when verb-level information binds rather than participant count. Waiting would
-refine a curve whose shape is already clear, at sample sizes nobody proposes to collect.
+or below the agreed cap has been simulated to full replication, and on the pooled arm the
+samples at and below the cap are complete or nearly so, with only two cells outstanding at
+the cap itself. What remains to run sits above the cap, at sample sizes already ruled out on
+feasibility grounds. The strong threshold also shows no sign of improving with sample size.
+Across the pooled samples completed so far, the probability of joint evidence at a Bayes
+factor of 10 varies without trend, and its spread is no wider than the Monte-Carlo error on
+the individual estimates would produce on its own, as one expects when verb-level information
+binds rather than participant count. Waiting would refine a curve whose shape is already
+clear, at sample sizes nobody proposes to collect.
 
 Why the strong threshold fails is worth stating, since the effects themselves are adequate.
 The median simulated study clears a Bayes factor of 10 on each focal prediction separately,
