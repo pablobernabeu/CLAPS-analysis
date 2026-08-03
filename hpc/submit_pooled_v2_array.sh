@@ -69,6 +69,16 @@ export R_LIBS_USER="${PROJECT_DATA}/R/library_4.4"
 export RENV_PATHS_CACHE="${PROJECT_DATA}/renv/cache"
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}"
 export STAN_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}"
+# Keep every scratch file this job writes on project storage rather than on the
+# node's /tmp. cmdstanr puts the COMPILED MODEL in R's tempdir(), which follows
+# TMPDIR, and a pooled cell can run for days: cell N130 seed 931000 died on
+# 2026-08-03 after 121 hours with "File does not exist:
+# '/tmp/RtmpW8tYOr/model_5ae97f0f...'", the compiled model having been removed
+# from /tmp underneath the running job. Setting TMPDIR here fixes the model, the
+# sampler's CSVs and anything else R writes to tempdir(), in one place. It also
+# makes the fallback on the next line unconditional, which is deliberate: the
+# node-local default is exactly what fails on the longest cells.
+export TMPDIR="${PROJECT_DATA}/cmdstan_tmp"
 export CMDSTANR_OUTPUT_DIR="${TMPDIR:-${PROJECT_DATA}/cmdstan_tmp}"
 export CMDSTAN="$(ls -d "${PROJECT_DATA}/cmdstan/cmdstan-"* 2>/dev/null | sort -V | tail -1)"
 if [[ -z "${CMDSTAN}" || ! -x "${CMDSTAN}/bin/stanc" ]]; then
