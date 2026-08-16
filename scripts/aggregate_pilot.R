@@ -119,6 +119,14 @@ joint <- cells |>
     p_joint_converged = if (any(converged %in% TRUE)) {
       mean(bf_h1a[converged %in% TRUE] >= 10 & bf_h1b[converged %in% TRUE] >= 10)
     } else NA_real_,
+    # Monte-Carlo standard errors, added 2026-08-12. Every rate above is a mean
+    # of `reps` Bernoulli outcomes, so its own sampling error is sqrt(p(1-p)/reps),
+    # and reading the table without it invites the conclusion that power falls
+    # between two adjacent sample sizes when the difference is a fraction of a
+    # standard error. The joint rate sits nearest 0.5, where binomial variance is
+    # greatest, which is why the joint column wanders most.
+    mcse_p_h1b   = sqrt(p_h1b * (1 - p_h1b) / dplyr::n()),
+    mcse_p_joint = sqrt(p_joint * (1 - p_joint) / dplyr::n()),
     .groups = "drop") |>
   dplyr::arrange(mode, language, n_participants)
 readr::write_csv(joint, file.path(opt$outdir, "joint_power_pilot.csv"))

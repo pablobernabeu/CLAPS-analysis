@@ -63,7 +63,18 @@ pooled <- cells |>
     reps           = dplyr::n(),
     p_h1a          = mean(bf_h1a >= 10), p_h1b = mean(bf_h1b >= 10),
     p_joint        = mean(bf_h1a >= 10 & bf_h1b >= 10),
+    # The MARGINAL rates at the relaxed thresholds, added 2026-08-12. Only the
+    # joint rate was carried at 6 and 3, which left the single most important
+    # quantity for the collaborators uncomputable from this file: the chance of
+    # detecting the interaction ALONE, without also requiring the passive-only
+    # affectedness slope. Powering for H1b by itself is the design question now
+    # on the table, and the stored per-cell Bayes factors already answer it, so
+    # this is a re-scoring rather than a re-run.
+    p_h1a_bf6      = mean(bf_h1a >= 6),
+    p_h1b_bf6      = mean(bf_h1b >= 6),
     p_joint_bf6    = mean(bf_h1a >= 6  & bf_h1b >= 6),
+    p_h1a_bf3      = mean(bf_h1a >= 3),
+    p_h1b_bf3      = mean(bf_h1b >= 3),
     p_joint_bf3    = mean(bf_h1a >= 3  & bf_h1b >= 3),
     median_bf_h1a  = median(bf_h1a),  median_bf_h1b = median(bf_h1b),
     # Reported, not applied: see aggregate_pilot.R. Filtering the pooled
@@ -77,6 +88,10 @@ pooled <- cells |>
     # Monte-Carlo standard error of the headline joint rate, so that readers of
     # the CSV are not left to infer the precision from the replicate count.
     mcse_p_joint      = sqrt(p_joint * (1 - p_joint) / dplyr::n()),
+    # The same for the marginal H1b rate. The pooled cells carry far fewer
+    # replicates than the per-language ones (tens rather than hundreds), so any
+    # pooled rate quoted without this is quoted more precisely than it is known.
+    mcse_p_h1b        = sqrt(p_h1b * (1 - p_h1b) / dplyr::n()),
     .groups = "drop") |>
   dplyr::arrange(n_participants)
 readr::write_csv(pooled, file.path(opt$outdir, "pooled_power_pilot.csv"))
