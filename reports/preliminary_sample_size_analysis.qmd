@@ -925,8 +925,8 @@ slope reported as estimation, brings English to 80% on the interaction at
 `r h1b_cross("English")` participants and Norwegian at `r h1b_cross("Norwegian")`, at the
 current verb counts and at the strong threshold. Those crossing points are the smallest
 samples at which the *lower bound* of the simulated rate reaches 80%, not the first cell whose
-point estimate happens to; with a few dozen replicates per cell the two can differ by a whole
-sample size. The joint gate on both predictions is what no feasible English sample can
+point estimate happens to. With a few dozen replicates per cell the two can differ by a
+whole sample size. The joint gate on both predictions is what no feasible English sample can
 satisfy. This option does not help Turkish, whose interaction ceiling is
 `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` even on its own.
 
@@ -983,8 +983,12 @@ threshold is a Bayes factor of 6, and every team collects 80 participants.
 
 Gating on the interaction alone is what makes the design work, and the size of the gain is
 worth being precise about. It is not that the effects were too small. Requiring both focal
-predictions in the same study multiplies two probabilities that are each around 0.85, and the
-product is what no feasible sample could reach. Dropping the conjunction lifts the English
+predictions in the same study caps the result at the product of their two ceilings, and it is
+the passive-only slope that binds: it tops out at
+`r pct0(ppv("English", "ceiling_h1a_bf10"))` in English and
+`r pct0(ppv("Norwegian", "ceiling_h1a_bf10"))` in Norwegian however many participants are
+recruited, against `r pct1(ppv("English", "ceiling_h1b_bf10"))` and
+`r pct1(ppv("Norwegian", "ceiling_h1b_bf10"))` for the interaction. Dropping the conjunction lifts the English
 ceiling from `r pct0(ppv("English", "ceiling_joint_bf10"))` to
 `r pct1(ppv("English", "ceiling_h1b_bf10"))` and the Norwegian ceiling from
 `r pct0(ppv("Norwegian", "ceiling_joint_bf10"))` to
@@ -1030,13 +1034,13 @@ is reported as estimation on its own. That is not a shortfall to be fixed by rec
 is what 72 verbs buy in a language whose interaction is the weakest of the three. Turkish is
 also the one language whose passive-only slope is the better-detected of its two focal
 predictions, `r pct0(jval("Turkish", 80, "p_h1a"))` against
-`r pct0(h1bv("Turkish", 80))` at a Bayes factor of 10, which is worth saying plainly to
-anyone reading the Turkish results on their own.
+`r pct0(h1bv("Turkish", 80))` at a Bayes factor of 10. Anyone reporting Turkish on its own
+should lead on the slope rather than the interaction.
 
 Eighty participants is the recommendation, and 100 would not change it. Between those two
 samples the simulations differ by less than their own resolution, and the analytic bounds say
 the most that 20 further participants could add is a few points, because the binding
-information is in the verbs. The case for 80 is that it is the number the teams can actually
+information is in the verbs. The case for 80 is that it is the number the teams can
 collect.
 
 ## What Is Settled and What Is Still Open
