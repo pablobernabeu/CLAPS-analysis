@@ -294,8 +294,7 @@ cannot grow and the sample is fixed in advance.
 `\end{abstract}`{=latex}
 
 <!-- The body starts on its own page. Left to flow, it followed the abstract down the
-     title page and ran into the bottom margin, which is the one edge of that page
-     with no room to give. -->
+     title page and finished hard against the bottom margin. -->
 
 `\newpage`{=latex}
 
@@ -930,14 +929,14 @@ follow, in roughly increasing order of departure from the current plan. Two of t
 since been closed by the project, and are kept here because the reasoning that ruled them
 out is part of the record.
 
-The constraints are now these. The design is capped at 80 participants per language, with
-100 the absolute maximum any team would be asked for. The verb pool cannot grow beyond 72:
+The design is now capped at 80 participants per language, with 100 the absolute maximum any
+team would be asked for. The verb pool cannot grow beyond 72:
 the limit is the supply of suitable verbs in each language, not the length of a session, so
 the third option below is unavailable rather than merely expensive. Collection must be at a
 single sample size fixed and announced in advance, because the teams have to take a stated
 number to their ethics committees, which rules out the fourth option. Many of the teams have
-not run a study of this type before, and a design they cannot explain is not a design they
-can run.
+not run a study of this type before and could not defend a more elaborate protocol to their
+committees.
 
 The first option changes nothing about the materials and revisits the adequacy rule. The
 design's primary prediction is H1b, the active-by-affectedness interaction, with H1a as a
@@ -972,11 +971,11 @@ is unchanged, while the pool grows to, say, 120 to 150 verbs. At about
 `r ppv("English", "verbs_for_90")` verbs, the English joint ceiling reaches 90%, and the
 pooled cross-linguistic test gains in proportion. The cost falls on materials, namely
 affectedness norms and translations for the new verbs, rather than on participant time.
-This option is closed. It would have required the 72-verb limit to be a constraint on the
-session, which planned missingness respects, rather than on the pool. It is the pool: the
-teams are already struggling to find 72 suitable verbs in most languages, so there is no
-larger set to sample from. That matters beyond this one option, because the verb count is
-what every ceiling in this report is a ceiling on. With the pool fixed, those ceilings are
+This option is closed. Planned missingness would work if the 72-verb limit constrained the
+session, but it constrains the pool: the teams are already struggling to find 72 suitable
+verbs in most languages, so there is no larger set to sample from. That matters beyond this
+one option, because every ceiling in this report is set by the verb count. With the pool
+fixed, those ceilings are
 now permanent features of the design rather than quantities a bigger materials budget could
 move, and Turkish, which would need about `r ppv("Turkish", "verbs_for_80")` verbs to reach
 80% on its own, is out of reach for good.
@@ -989,39 +988,38 @@ same chances of reaching a decisive result
 [@schonbrodtWagenmakersZehetleitnerPerugini2017; @stefanGronauSchonbrodtWagenmakers2019].
 Optional stopping of this kind poses no problem for Bayes-factor inference [@rouder2014].
 
-This option is also closed, and for a reason worth recording, since the statistical objection
-to it is the one that does not apply. Nothing in the Bayes-factor framework penalises
+This option is also closed, though not for the reason usually given, since the statistical
+objection to it does not apply. Nothing in the Bayes-factor framework penalises
 optional stopping. The obstacle is operational: the collecting teams have to put a specific
 number of participants in front of an ethics committee, and a protocol whose sample size
 depends on interim results is one that many of them could not explain or defend, however
-sound it is. A design that cannot be administered by the people running it is not available,
-whatever its operating characteristics. The sample size below is therefore a single fixed
-number, announced in advance.
+sound it is. Operating characteristics count for nothing if the study cannot be administered
+by the people running it. The sample size below is therefore a single fixed number, announced
+in advance.
 
 The recommendation is the first two options taken together, and nothing else: the pooled
 cross-linguistic analysis is the confirmatory test, it is gated on the interaction alone, its
 threshold is a Bayes factor of 6, and every team collects 80 participants.
 
-Gating on the interaction alone is what makes the design work, and the size of the gain is
-worth being precise about. It is not that the effects were too small. Requiring both focal
-predictions in the same study caps the result at the product of their two ceilings, and it is
-the passive-only slope that binds: it tops out at
-`r pct0(ppv("English", "ceiling_h1a_bf10"))` in English and
+Gating on the interaction alone is what makes the design work, and the effects themselves
+were never the problem. When a study has to satisfy both predictions at once, its chances are
+the two ceilings multiplied together, and the passive-only slope is the one that holds them
+down. It tops out at `r pct0(ppv("English", "ceiling_h1a_bf10"))` in English and
 `r pct0(ppv("Norwegian", "ceiling_h1a_bf10"))` in Norwegian however many participants are
-recruited, against `r pct1(ppv("English", "ceiling_h1b_bf10"))` and
-`r pct1(ppv("Norwegian", "ceiling_h1b_bf10"))` for the interaction. Dropping the conjunction lifts the English
+recruited, while the interaction reaches `r pct1(ppv("English", "ceiling_h1b_bf10"))` and
+`r pct1(ppv("Norwegian", "ceiling_h1b_bf10"))`. Dropping the conjunction lifts the English
 ceiling from `r pct0(ppv("English", "ceiling_joint_bf10"))` to
 `r pct1(ppv("English", "ceiling_h1b_bf10"))` and the Norwegian ceiling from
 `r pct0(ppv("Norwegian", "ceiling_joint_bf10"))` to
-`r pct1(ppv("Norwegian", "ceiling_h1b_bf10"))`. The conjunction was never doing theoretical
-work in any case. The claim CLAPS tests is that affectedness matters *more* for passives than
-for actives, which is the interaction; the passive-only slope is a check that the interaction
-means what it is supposed to mean, and it belongs in the report as an estimate rather than in
-the gate as a second hurdle. It is reported in full below, with its own detection rate, as a
+`r pct1(ppv("Norwegian", "ceiling_h1b_bf10"))`. There was little theoretical reason for the
+conjunction either. The claim CLAPS tests is that affectedness matters *more* for passives
+than for actives, which is the interaction. The passive-only slope checks that the interaction
+means what it should, and that belongs in the report as an estimate rather than in the gate as
+a second hurdle. It is reported in full below, with its own detection rate, as a
 prespecified positive control.
 
-The threshold needs a plainer justification than its name gives it, because the Bayes factor
-used here is directional and does not mean what the conventional verbal labels mean. A
+The threshold needs justifying in plainer terms than its name suggests, because the Bayes
+factor used here is directional and does not mean what the conventional verbal labels mean. A
 directional Bayes factor of $k$ is reached exactly when the posterior probability of the
 predicted sign reaches $k/(k+1)$, so a Bayes factor of 3 is a posterior sign probability of
 `r num2(bf_sign(3))`, which is `r sprintf("%.2f", bf_z(3))` standard errors from zero and
@@ -1031,16 +1029,16 @@ an earlier draft of this report recommended it. A Bayes factor of 6 is
 `r sprintf("%.2f", bf_onep(6))` on the same scale and 10 is `r sprintf("%.3f", bf_onep(10))`;
 matching a one-sided 5% test would need about `r sprintf("%.0f", bf_for_p(0.05))`. The
 threshold is set at 6 because it is the strongest criterion the design can meet at the cap
-while leaving the confirmatory test adequately powered, and because stating its tail
-equivalent alongside it is more honest than borrowing a label from a different quantity.
+while leaving the confirmatory test adequately powered. Quoting its tail equivalent alongside
+it is clearer than borrowing a label from a different quantity.
 
 At that threshold the pooled test detects the interaction in
 `r pooled_combined("p_h1b_bf6")$txt` of simulated studies, combining the pooled cells at or
 below the cap. Cell by cell the pooled arm carries only
 `r min(pooledp$reps[pooledp$n_participants <= 100])` to
 `r max(pooledp$reps[pooledp$n_participants <= 100])` replicates and no single
-cell settles anything; combined, and given a design in which power is flat in sample size,
-that is the best estimate available. At a Bayes factor of 10 the same figure is
+cell settles anything on its own. Since power here is flat in sample size, combining them
+gives the best estimate available. At a Bayes factor of 10 the same figure is
 `r pooled_combined("p_h1b")$txt`, which is why 10 is not the recommendation.
 
 Each language is then reported against the same criterion, as an estimate with its full
@@ -1105,7 +1103,7 @@ None of these now waits on further computation. Two were closed by the project r
 the simulations, and are recorded as such. The rest follow from results already in hand, and
 the simulations have said everything they can about them.
 
-One caveat belongs with the whole table. Every rate in this report is computed over all
+One caveat applies to the whole table. Every rate in this report is computed over all
 fitted cells, whether or not they pass the convergence screen, which is the honest choice
 because a real analysis would not discard a study for imperfect sampling. The proportion
 passing that screen falls as the sample grows, so rates at different sample sizes are
