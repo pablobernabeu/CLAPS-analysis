@@ -1168,8 +1168,9 @@ runs from 50 to 150 per language, and the cells above the cap are retained for r
 interest; no further simulation is capped or queued, because none is running. The decision arm, at 70, 80 and 100 participants, carries 120 per cell, which
 brings the Monte-Carlo error near a power of 80% down to about four percentage points.
 The pooled analytic ceiling given below is computed from the fitted per-language models
-rather than from a single pooled fit. A fit of the full pooled model to the combined real pilot data, as a check that the model
-settles on real rather than simulated data, remains outstanding.
+rather than from a single pooled fit. The pooled model has separately been fitted to the
+combined real pilot data, and what that fit shows is set out in its own subsection below,
+because it qualifies the figures reported here.
 
 The simulated pooled cells, by contrast, are complete. `r pooled_interim`
 
@@ -1232,6 +1233,48 @@ the focal effects, and the pooled
 test's sensitivity to that component's prior will be examined before any recommendation is
 drawn from it.
 
+
+
+### The pooled model on real pilot data
+
+The pooled analysis model was fitted once to the combined real pilot data of all three
+languages, 75,528 ratings over 210 verbs, as a check that it behaves on real ratings before
+thousands of simulated fits assume it does. The result is reported here in full, because it
+bears on the figures above in both directions.
+
+The effects come out as expected. The focal interaction is estimated at $-0.48$, with a 95%
+credible interval from $-1.04$ to $+0.31$ and a posterior probability of 0.91 that it carries
+the predicted sign, which is a directional Bayes factor of about 10. The unweighted average of
+the three per-language estimates that the simulation draws from, $-0.57$, falls comfortably
+inside that interval, so the data-generating process the design analysis uses is consistent
+with what the pooled model recovers from real ratings.
+
+The sampling was another matter. The fit did not meet the convergence criteria, saturating the
+maximum treedepth on 5,968 of its 8,000 post-warmup iterations, alongside one divergent
+transition, an R-hat of 1.008 and a minimum bulk effective sample size of 453. Saturation on
+that scale is not a marginal miss. It means the sampler could not traverse the posterior
+within its step budget, which is the geometry problem the by-verb amendment below is meant to
+remove, appearing here on real data and more severely than in simulation.
+
+More consequential is what the fit implies about the variation between languages, the quantity
+that limits the pooled test. Its standard deviation for the focal interaction is estimated at
+0.59, with an interval from 0.07 to 1.65, where the design analysis leans on the spread of the
+three per-language point estimates, 0.30, about half as large. Were the larger value nearer
+the truth, the pooled test would be less powerful than the figures above report, since the
+precision of the cross-language average scales with it. Three things pull the other way. The
+interval is very wide and easily contains the smaller value. The simulation's own procedure
+induces more between-language spread than the raw 0.30, because each replicate draws each
+language's effects from its own posterior. And the estimate comes from the poorly sampled fit
+just described, so it is a flag rather than a correction.
+
+A refit under the amended specification was submitted on 19 August 2026 and should return
+within a week to ten days, allowing for queue time: the original fit occupied just under eight
+days of computing, and the amended model carries fewer parameters and should sample more
+easily. That refit is what will settle both questions, and until it lands the pooled figures
+above should be read as the design analysis's best estimate under a data-generating process
+the real data supports, rather than as a guarantee. None of it disturbs the sample size, which
+the verb count and the number of languages determine rather than the pooled model's sampling
+behaviour.
 
 ### The by-verb term, and why it is amended
 

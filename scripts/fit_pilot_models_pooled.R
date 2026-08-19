@@ -25,7 +25,15 @@ opt <- optparse::parse_args(optparse::OptionParser(option_list = list(
   optparse::make_option("--outdir", default = "outputs/pilot_models"),
   optparse::make_option("--iter",   default = 3000L, type = "integer"),
   optparse::make_option("--warmup", default = 1000L, type = "integer"),
-  optparse::make_option("--chains", default = 4L,    type = "integer")
+  optparse::make_option("--chains", default = 4L,    type = "integer"),
+  # Which cross-language specification to fit. The default reproduces the original
+  # run. L5_cross_verbblock_aligned is the amended confirmatory model, which drops
+  # the by-verb slope on affectedness; the first fit of the unamended model to real
+  # data saturated the treedepth on 5,968 of 8,000 iterations, which is the geometry
+  # problem that amendment is meant to remove.
+  optparse::make_option("--model_level", default = "L5_cross_maximal"),
+  # Separate output name, so a comparison fit cannot overwrite the original extract.
+  optparse::make_option("--outfile", default = "pilot_fit_pooled_extract.rds")
 )))
 dir.create(opt$outdir, recursive = TRUE, showWarnings = FALSE)
 
@@ -44,7 +52,12 @@ d$S_Type      <- factor(d$S_Type, levels = KEEP)
 d$Language    <- factor(d$Language, levels = LANGS)
 d$Response    <- as.integer(d$Response)
 
-formula   <- build_multilanguage_ladder()[["L5_cross_maximal"]]
+lad <- build_multilanguage_ladder()
+if (!opt$model_level %in% names(lad)) {
+  stop("[pooled pilot fit] unknown model level: ", opt$model_level)
+}
+message("[pooled pilot fit] model level: ", opt$model_level)
+formula   <- lad[[opt$model_level]]
 prior_obj <- align_prior_to_model(
   build_brms_prior(opt$regime, "broad", has_pseudo_passive = TRUE), formula, d)
 samp      <- production_sampling(iter = opt$iter, warmup = opt$warmup, chains = opt$chains, seed = 2026)
@@ -76,7 +89,8 @@ out <- list(
   regime            = opt$regime,
   diagnostics       = tryCatch(extract_convergence_diagnostics(fit), error = function(e) NULL)
 )
-saveRDS(out, file.path(opt$outdir, "pilot_fit_pooled_extract.rds"))
+out$model_level <- opt$model_level
+saveRDS(out, file.path(opt$outdir, opt$outfile))
 
 cat("[pooled pilot fit] saved pilot_fit_pooled_extract.rds |",
     nrow(B), "draws x", ncol(B), "coefficients\n")

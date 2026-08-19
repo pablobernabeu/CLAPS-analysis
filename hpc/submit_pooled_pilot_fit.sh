@@ -1,7 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=claps_pooledfit
-#SBATCH --partition=medium
-#SBATCH --time=1-18:00:00
+# long, not medium: the first fit of this model to the real pilot data took
+# 7 days 23 hours, far beyond medium's 48-hour cap and beyond the 42 hours this
+# script used to request. The declared limit now reflects the measured runtime.
+#SBATCH --partition=long
+#SBATCH --time=12-00:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -38,7 +41,15 @@ if [[ -z "${CMDSTAN}" || ! -x "${CMDSTAN}/bin/stanc" ]]; then
 fi
 mkdir -p "$CMDSTANR_OUTPUT_DIR" outputs/logs
 
+# MODEL_LEVEL and OUTFILE may be set on the sbatch line, exported with
+# --export=ALL,MODEL_LEVEL,OUTFILE. Naming them is required: SLURM does not pass
+# the submitting shell's variables unless it is told to.
+MODEL_LEVEL="${MODEL_LEVEL:-L5_cross_maximal}"
+OUTFILE="${OUTFILE:-pilot_fit_pooled_extract.rds}"
+echo "Model level: ${MODEL_LEVEL} | output: ${OUTFILE}"
 Rscript scripts/fit_pilot_models_pooled.R --regime primary \
+  --model_level "${MODEL_LEVEL}" \
+  --outfile "${OUTFILE}" \
   --outdir "${PROJECT_DATA}/outputs/pilot_models"
 
 echo "End $(date -Iseconds) | exit $?"
