@@ -82,15 +82,27 @@ simulate_pooled_from_pilots <- function(dgps, n_per_language, mode = "assurance"
 #'   draw_index_norwegian, prior_source, model_level, prior_regime,
 #'   threshold_mode, iter, warmup, chains, seed.
 run_pooled_cell_v2 <- function(cell, dgps, out_dir, overwrite = FALSE) {
+  # R/02 is sourced for assert_language_sum_contrasts(), used by the arm that puts
+  # Language in the fixed effects. Without it that arm dies with "could not find
+  # function", outside the fit's tryCatch, so it writes no .rds and reads as a cell
+  # that was never run rather than one that failed.
+  source("R/02_preprocess_factors.R")
   source("R/03_define_priors.R")
   source("R/04_model_formulas.R")
   source("R/05_hypothesis_tests.R")
   source("R/07_extract_diagnostics.R")
   mode <- as.character(cell$mode %||% "assurance")
   psrc <- as.character(cell$prior_source %||% "pilot")
+  # model_level is part of the identity, added 2026-08-19. Without it, a grid that
+  # fits several model specifications to the SAME simulated dataset — which is the
+  # point of a paired model comparison — gives every arm the same filename. The
+  # first arm to finish writes it and the rest take the skip branch below and
+  # return that arm's result under their own name. A 360-cell comparison would have
+  # produced 120 files, all from the control arm, and nothing would have looked
+  # wrong. Existing pooled cells were written under the older scheme and keep it.
   cell_id <- paste("pooled2", psrc, mode,
                    sprintf("N%03d", as.integer(cell$n_participants)),
-                   cell$seed, sep = "_")
+                   cell$model_level, cell$seed, sep = "_")
   out_file <- file.path(out_dir, paste0(cell_id, ".rds"))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   if (file.exists(out_file) && !overwrite) {
@@ -114,6 +126,19 @@ run_pooled_cell_v2 <- function(cell, dgps, out_dir, overwrite = FALSE) {
   # only, since Norwegian has no pseudo-passive; despite the "AllLanguages"
   # label it is a two-language estimand, mirroring the real planned analysis.
   formula   <- build_multilanguage_ladder()[[cell$model_level]]
+
+  # Language enters the fixed effects only in the lang_fixed arm. There it must
+  # carry sum-to-zero contrasts, or the focal coefficient silently becomes the
+  # interaction in the reference language instead of the average across the three.
+  # Detected from the formula rather than from the level's name, so a future level
+  # that puts Language in the fixed part is covered without anyone remembering to
+  # add it here.
+  fe_vars <- all.vars(brms::brmsterms(formula)$dpars$mu$fe)
+  if ("Language" %in% fe_vars) {
+    stats::contrasts(sim_data$Language) <- stats::contr.sum(nlevels(sim_data$Language))
+    assert_language_sum_contrasts(sim_data)
+  }
+
   prior_obj <- align_prior_to_model(
     build_brms_prior(
       regime_name = cell$prior_regime,

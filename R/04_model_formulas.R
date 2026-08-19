@@ -335,6 +335,86 @@ build_multilanguage_ladder <- function(response_var  = "Response",
 
     # L5: OSF reference model — maximal correlated random effects for all
     # three grouping factors (Participant, Verb, Language).
+    # ---------------------------------------------------------------------
+    # Two arms added 2026-08-19 to test why the pooled model underperforms.
+    #
+    # At 80 participants per language the pooled test detects the focal
+    # interaction far less often than Norwegian alone does, and roughly 40 points
+    # below the analytic ceiling implied by the between-language spread of the
+    # effect. Pooling triples the verb-level information, so it should not lose to
+    # its own best component. The suspicion falls on the by-Language random slope
+    # on the focal interaction in L5: its variance is estimated from three
+    # clusters under a half-t(3, 0, 1) prior, and uncertainty in that variance
+    # propagates into the posterior SD of the fixed interaction, which is exactly
+    # the quantity the directional Bayes factor reads.
+    #
+    # These two levels isolate that term. Both keep the participant and verb
+    # random slopes maximal, so nothing else moves.
+    # ---------------------------------------------------------------------
+
+    # Same as L5 except the by-Language term drops the interaction. The by-Language
+    # intercept and the two main-effect slopes stay, so language may still shift
+    # overall acceptability, the sentence-type effect and the affectedness slope;
+    # what it may no longer do is vary the focal interaction. One change from L5.
+    L5_cross_lang_no_interaction_slope = brms::bf(
+      as.formula(paste0(
+        fe,
+        " + (1 + S_Type * ", s, " | Participant)",
+        " + (1 + S_Type * ", s, " | Verb)",
+        " + (1 + S_Type + ", s, " | Language)"
+      )),
+      family = brms::cumulative(link = "logit", threshold = "flexible")
+    ),
+
+    # Language as a FIXED factor, fully crossed with the focal terms, and no
+    # by-Language random effects at all. This estimates the average interaction
+    # over these three specific languages rather than the mean of a distribution
+    # of languages, which is arguably the honest estimand for a three-language
+    # study in any case.
+    #
+    # REQUIRES SUM-TO-ZERO CONTRASTS ON Language. Under R's default treatment
+    # contrasts, b_S_TypeActive:<semantics> is the interaction in the REFERENCE
+    # language, not the average, and compute_all_bf() would read it without
+    # complaint because its anchored pattern still matches exactly one name. On
+    # simulated data with per-language interactions of -0.88, -0.29 and -0.53,
+    # treatment coding recovers -0.87 (English, the reference) while sum coding
+    # recovers -0.56 (the average of -0.567). The estimand therefore changes
+    # silently with the coding, which is why assert_language_sum_contrasts() in
+    # R/02_preprocess_factors.R is called before this level is fitted.
+    L5_cross_lang_fixed = brms::bf(
+      as.formula(paste0(
+        fe, " * Language",
+        " + (1 + S_Type * ", s, " | Participant)",
+        " + (1 + S_Type * ", s, " | Verb)"
+      )),
+      family = brms::cumulative(link = "logit", threshold = "flexible")
+    ),
+
+    # The pooled model with its by-Verb block aligned to the single-language one.
+    # Added 2026-08-19.
+    #
+    # L5_cross_maximal puts a by-Verb random slope on affectedness, and affectedness
+    # barely varies within a verb: each verb carries two values, one per agent
+    # gender, whose spread is about 0.6% of the spread between verbs (SD 0.18
+    # against 30.9). The slope is therefore estimated from almost nothing and
+    # behaves like a second intercept, which is funnel-prone and the leading
+    # candidate for this arm's roughly 10% convergence rate.
+    #
+    # (1 + S_Type | Verb) is what the single-language L5_correlated_maximal already
+    # uses, and sentence type genuinely does vary within verb. So this is not a new
+    # specification but the removal of an inconsistency: as things stand the pooled
+    # and single-language models differ in the by-Language block AND the by-Verb
+    # block, which makes the comparison between them not like-for-like.
+    L5_cross_verbblock_aligned = brms::bf(
+      as.formula(paste0(
+        fe,
+        " + (1 + S_Type * ", s, " | Participant)",
+        " + (1 + S_Type | Verb)",
+        " + (1 + S_Type * ", s, " | Language)"
+      )),
+      family = brms::cumulative(link = "logit", threshold = "flexible")
+    ),
+
     L5_cross_maximal = brms::bf(
       as.formula(paste0(
         fe,
@@ -416,6 +496,9 @@ multilanguage_ladder_names <- function() {
     "L7_cross_truly_maximal",
     "L6_cross_gender_maximal",
     "L5_cross_maximal",
+    "L5_cross_verbblock_aligned",
+    "L5_cross_lang_no_interaction_slope",
+    "L5_cross_lang_fixed",
     "L4_cross_uncorrelated",
     "L3_cross_no_participant_interaction",
     "L2_cross_stype_participant_verb",

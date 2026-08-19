@@ -251,7 +251,7 @@ pool50 <- if (!is.null(pooledp) && nrow(pooledp) && 50 %in% pooledp$n_participan
   pooledp[pooledp$n_participants == 50, ]
 } else NULL
 # What the pooled evidence implies about the true detection rate, and what the run
-# now under way is likely to show. A uniform prior on the rate gives a Beta
+# considered and not pursued would have shown. A uniform prior on the rate gives a Beta
 # posterior; the predictive draws a rate from that posterior and then the successes
 # among the new cells. Derived rather than asserted, so these figures move with the
 # data instead of going stale the way a written-out number would. The seed fixes
@@ -1159,7 +1159,8 @@ implemented and validated. Each simulated study draws every
 language's effects from that language's own pilot posterior, exactly as in the per-language
 assurance runs, and simulates the three datasets. It then analyses them together with the
 cross-language model used in the earlier synthesis work, which carries correlated random
-slopes by participant, by verb and by language. The evidence criteria are unchanged,
+slopes by participant, by verb and by language, with one amendment to the by-verb term set
+out below. The evidence criteria are unchanged,
 namely directional Savage-Dickey Bayes factors on the pooled focal coefficients under the
 same zero-centred priors. Under the 80-participant-per-language cap set by the project
 lead, the estimate combines the pooled cells at or below 100 participants. The grid itself
@@ -1213,7 +1214,13 @@ between languages, especially in the interaction, whose pilot values span
 deviation. That variation
 does not shrink with more verbs or more participants, and with only three languages its variance is only weakly pinned down by the data and rests partly on the prior [@gelman2006], so it is the number to
 watch in the results and in sensitivity checks. Under the pilot values, it still leaves the
-pooled ceilings near `r pct0(pooled_het_ceiling)` or higher. Third, the interpretation changes. A
+pooled ceilings near `r pct0(pooled_het_ceiling)` or higher. That figure is a
+reference rather than an attainable ceiling, and the distinction matters: it holds the
+between-language variance fixed at the spread of the three pilot values, as though it were
+known. It is not known, and with three languages it is barely identified, so the achievable
+rate is materially lower. Comparing the simulated pooled result against this number
+therefore overstates any shortfall, and the pooled arm's observed rate should be read
+against a benchmark that carries the uncertainty in that variance. Third, the interpretation changes. A
 strong pooled Bayes factor alongside a wide Turkish-specific interval is a coherent and
 likely outcome, and it is the same pattern the cross-linguistic literature shows. The
 per-language conclusions above stand unchanged. Norwegian is confirmable on its own, and
@@ -1224,6 +1231,38 @@ strongest threshold. The likely cause is the between-language variance component
 the focal effects, and the pooled
 test's sensitivity to that component's prior will be examined before any recommendation is
 drawn from it.
+
+
+### The by-verb term, and why it is amended
+
+The confirmatory model drops the by-verb random slope on affectedness, keeping
+`(1 + S_Type | Verb)`, which is the term the single-language models already use. The reason is
+that affectedness barely varies within a verb. Each verb carries two values, one for each agent
+gender, and their spread is about 0.6% of the spread between verbs, an SD of 0.18 against 30.9.
+A random slope estimated from that much variation is close to a second intercept, and the
+sampler shows it.
+
+The evidence is in the runs already completed, and it is one-sided. Across the 135 completed
+pooled fits, which carry the by-verb slope, 59% produced at least one divergent transition and
+47% saturated the treedepth. Across 360 completed single-language fits at 80 participants,
+which use the term recommended here, both figures are zero. (These come from the per-cell
+diagnostic records rather than from the summary tables this report reads, so they are quoted
+rather than derived in the text.) Divergences and
+treedepth saturation are signatures of awkward posterior geometry rather than of a sampler
+given too little time, so they do not go away with longer chains, and divergent transitions can
+bias the estimates they contribute to. The amendment removes that geometry at the cost of a
+variance component the data cannot inform.
+
+Two honest qualifications. The operating characteristics reported above were computed under the
+unamended model, so they describe a specification marginally different from the one
+recommended. The dropped component is estimated from almost no information and the focal
+interaction's precision is dominated by the by-language term, so the figures are expected to
+carry over with little change, but that expectation has not been simulated and should not be
+presented as though it had. Separately, the amendment addresses geometry and not efficiency:
+most non-convergence in both model families is failure to reach the effective-sample-size and
+R-hat thresholds, which affects the single-language models as much as the pooled one and is a
+consequence of running 3,000 iterations two thousand times over. The confirmatory analysis is
+fitted once, so it can afford a far longer run, and should have one.
 
 # Limitations and Status
 
@@ -1271,15 +1310,23 @@ pooled cells at face value under a flat prior, the true rate is most likely near
 `r pct0(pooled_post()$k / pooled_post()$n)`, with a probability of about
 `r num2(pp_atleast(0.80))` that it is at least 80%, about `r num2(pp_atleast(0.90))` that it
 reaches 90%, and about `r num2(pp_below(0.75))` that it is below 75%. A run of
-`r N_NEW_SUBMITTED` further cells at 80 participants per language is under way to tighten this.
-On present evidence it is unlikely to disturb the recommendation: the chance that it lands more
-than ten points from the current figure is about `r num2(pooled_predictive$p_beyond_10)`, and
-it should fall within five points roughly `r pct0(pooled_predictive$p_within_5)` of the time.
-What it is less likely to do is settle the matter outright. Because the rate sits so close to
-the target, the chance that the combined interval then clears 80% is about
-`r num2(pooled_predictive$p_settles)`, so the run should be expected to sharpen the estimate
-rather than to convert it into a guarantee. The design recommendation does not turn on the
-outcome; what turns on it is how firmly the confirmatory test's power can be stated.
+A run of `r N_NEW_SUBMITTED` further cells at 80 participants per language was prepared to
+tighten this, and deliberately not pursued. Its arithmetic is the reason. It would have been
+unlikely to disturb the recommendation, the chance of landing more than ten points from the
+current figure being about `r num2(pooled_predictive$p_beyond_10)`, and it would have fallen
+within five points roughly `r pct0(pooled_predictive$p_within_5)` of the time. It was also
+unlikely to settle the question: because the rate sits so close to the target, the chance that
+the combined interval would then clear 80% is about `r num2(pooled_predictive$p_settles)`.
+Several weeks of computing for an even chance of firming up a number that changes no decision
+is not a good trade.
+
+The more substantial reason is that the pooled arm does not appear to have much room to
+improve. Its rate should be read against a benchmark that treats the between-language variance
+as estimated from three languages rather than known, and on that footing the observed rate is
+close to what three languages permit. The constraint is the number of languages, which the
+project cannot change, not a defect in the model that a better specification would repair.
+Further simulation would therefore measure this design more precisely rather than produce a
+better one, and the design analysis is closed on that basis.
 
 Each data-grounded condition rests on `r min(jp_a$reps)` to `r max(jp_a$reps)` simulated
 studies, and each literature-anchored cell on 50, so the figures carry a Monte-Carlo error

@@ -239,6 +239,50 @@ preprocess_data <- function(df, has_pseudo_passive = TRUE,
 #'   Note that droplevels() discards a previously assigned contrast, so a factor
 #'   passed through drop_pseudo_passive_if_absent() arrives here carrying R's
 #'   default regardless of what it had before.
+#' Assert that Language carries sum-to-zero contrasts.
+#'
+#' Only relevant when Language enters the FIXED effects, which the
+#' L5_cross_lang_fixed arm does and no other level does. Under sum-to-zero coding
+#' the coefficient named b_S_TypeActive:<semantics> is the unweighted average of
+#' the per-language interactions, which is the estimand that arm is meant to test.
+#' Under R's default treatment coding the same name means the interaction in the
+#' reference language alone.
+#'
+#' The danger is that nothing downstream would complain. compute_all_bf() locates
+#' the focal coefficient with an end-anchored pattern that matches exactly one name
+#' under either coding, so the wrong estimand would be tested, reported and
+#' believed. Checked on simulated data with per-language interactions of -0.88,
+#' -0.29 and -0.53: treatment coding returns -0.87, sum coding -0.56 against a true
+#' average of -0.567.
+#'
+#' @param df A data frame with a Language factor.
+#' @return `df`, invisibly, or an error.
+#' @export
+assert_language_sum_contrasts <- function(df) {
+  if (!"Language" %in% names(df)) {
+    stop("[assert] no Language column; this model level needs one")
+  }
+  if (!is.factor(df$Language)) {
+    stop("[assert] Language must be a factor to carry contrasts, not ",
+         class(df$Language)[1])
+  }
+  if (nlevels(df$Language) < 2L) {
+    stop("[assert] Language has ", nlevels(df$Language),
+         " level(s); at least two are needed for a fixed-effect contrast.")
+  }
+  observed <- stats::contrasts(df$Language)
+  expected <- stats::contr.sum(levels(df$Language))
+  cmp <- all.equal(unname(observed), unname(expected))
+  if (!isTRUE(cmp)) {
+    stop("[assert] Language does not carry sum-to-zero contrasts. With Language in ",
+         "the fixed effects the focal coefficient would be the interaction in the ",
+         "reference language rather than the average across languages, and nothing ",
+         "downstream would detect it. Set contrasts(df$Language) <- contr.sum(",
+         nlevels(df$Language), ").")
+  }
+  invisible(df)
+}
+
 assert_treatment_coding <- function(df) {
   if (!is.factor(df$S_Type)) stop("[assert] S_Type must be a factor after preprocessing.")
   ref <- levels(df$S_Type)[1]
