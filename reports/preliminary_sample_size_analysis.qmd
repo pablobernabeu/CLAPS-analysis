@@ -242,13 +242,10 @@ pooledp <- if (file.exists(pooled_csv)) read_csv(pooled_csv, show_col_types = FA
 pool50 <- if (!is.null(pooledp) && nrow(pooledp) && 50 %in% pooledp$n_participants) {
   pooledp[pooledp$n_participants == 50, ]
 } else NULL
-pooled_pct <- function(col) if (!is.null(pool50)) pct0(pool50[[col]]) else "not yet estimated"
-
 pooled_interim <- if (!is.null(pooledp) && nrow(pooledp) && 50 %in% pooledp$n_participants) {
-  r <- pooledp[pooledp$n_participants == 50, ]
   h1b6 <- pooled_combined("p_h1b_bf6")
   h1b10 <- pooled_combined("p_h1b")
-  sprintf(paste("The pooled cells are in. On the criterion this report recommends, the",
+  sprintf(paste("On the criterion this report recommends, the",
                 "interaction alone at a Bayes factor of 6, the pooled test succeeds in %s of",
                 "simulated studies, combining the %d replicates at or below the cap. At a Bayes",
                 "factor of 10 the same figure is %s, which is why the stronger threshold is not",
@@ -1131,7 +1128,8 @@ brings the Monte-Carlo error near a power of 80% down to about four percentage p
 The pooled analytic ceiling given below is computed from the fitted per-language models
 rather than from a single pooled fit. A fit of the full pooled model to the combined real pilot data, as a check that the model
 settles on real rather than simulated data, remains outstanding.
-`r pooled_interim`
+
+The simulated pooled cells, by contrast, are complete. `r pooled_interim`
 
 The rationale is theoretical before it is statistical. The hypothesis CLAPS tests is
 cross-linguistic, and the evidence for it has always been read across languages, most
