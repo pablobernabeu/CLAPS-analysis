@@ -232,6 +232,14 @@ lit40_50 <- filter(foc_full, language == "English", n_verbs == 40,
 h2_72    <- filter(exc, hypothesis == "H2a_pseudo_positive", n_verbs == 72,
                    reps >= MIN_REPS)$p_bf_primary
 
+# How much simulation the report rests on, and how it is distributed across the
+# arms. Derived, because these counts move whenever a cell lands, and because the
+# distribution is the point: the arm carrying the recommendation is the smallest.
+lit_cells   <- unique(exc[, c("language", "n_verbs", "n_participants", "reps")])
+n_assurance <- sum(jp$reps[jp$mode == "assurance"])
+n_safeguard <- sum(jp$reps[jp$mode == "safeguard"])
+n_lit       <- sum(lit_cells$reps)
+
 # Pooled cross-linguistic results, aggregated by scripts/aggregate_pooled.R.
 # The pooled arm may still be pre-first-cell, so the report degrades to the
 # forward-looking wording when the file is absent or has no usable cells.
@@ -1026,9 +1034,10 @@ that lenient will not carry a confirmatory claim through review, whatever it is 
 an earlier draft of this report recommended it. A Bayes factor of 6 is
 `r sprintf("%.2f", bf_onep(6))` on the same scale and 10 is `r sprintf("%.3f", bf_onep(10))`;
 matching a one-sided 5% test would need about `r sprintf("%.0f", bf_for_p(0.05))`. The
-threshold is set at 6 because it is the strongest criterion the design can meet at the cap
-while leaving the confirmatory test adequately powered. Quoting its tail equivalent alongside
-it is clearer than borrowing a label from a different quantity.
+threshold is set at 6 because it is the strongest criterion the pooled test comes close to
+meeting at the cap, and because quoting its tail equivalent alongside it is clearer than
+borrowing a label from a different quantity. How close is a question the simulations cannot
+yet settle, and the next paragraph gives the figure with the interval it carries.
 
 At that threshold the pooled test detects the interaction in
 `r pooled_combined("p_h1b_bf6")$txt` of simulated studies, combining the pooled cells at or
@@ -1211,6 +1220,21 @@ cross-linguistic design analysis and the decision arm sample their draw indices 
 over the full pilot posteriors, so the limitation does not reach them. Replication itself is
 complete, since the original single-language grid finished all 720 of its cells and the low
 counts noticed mid-run were cells still computing.
+
+The analysis rests on `r format(n_assurance + n_safeguard + sum(pooledp$reps) + n_lit, big.mark = ",")`
+simulated studies in the cells reported here, and they are not evenly spread. The
+per-language assurance grid holds `r format(n_assurance, big.mark = ",")` and the
+literature-anchored cross-check `r format(n_lit, big.mark = ",")`, against
+`r sum(pooledp$reps)` in the pooled arm, which is
+`r sprintf("%.0f%%", 100 * sum(pooledp$reps) / (n_assurance + n_safeguard + sum(pooledp$reps) + n_lit))`
+of the total. The recommendation rests on the smallest of them, and that has a consequence
+worth stating plainly. Combining the pooled cells at or below the cap gives
+`r pooled_combined("p_h1b_bf6")$txt` for the interaction at a Bayes factor of 6, and the
+lower end of that interval falls below 80%. The single-language figures are established at
+their targets and the pooled one is not: it is the best estimate available, not a
+demonstration that the confirmatory test reaches a particular power. Settling that at the
+observed rate would take roughly 380 pooled replicates against the
+`r sum(pooledp$reps[pooledp$n_participants <= 100])` now in hand.
 
 Each data-grounded condition rests on `r min(jp_a$reps)` to `r max(jp_a$reps)` simulated
 studies, and each literature-anchored cell on 50, so the figures carry a Monte-Carlo error

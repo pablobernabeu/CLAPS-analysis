@@ -1,6 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=claps_pooled2
-#SBATCH --partition=medium
+# long, not medium. htc's medium caps at 2-00:00:00, so the 5-day request below
+# cannot be satisfied there and the job is refused at submission. Every pooled
+# array that has actually run did so on long, by overriding this line on the
+# sbatch command. Setting it correctly here removes the need for that override,
+# and removes the trap of forgetting it.
+#SBATCH --partition=long
 # 5 days. Raised from 1-18:00:00 (42 h) on 2026-07-31 after measuring what these
 # fits actually cost: across 331 completed pooled/decision cells on htc the range
 # was 1-04:37 to 4-00:00, i.e. 29 to 96 hours. A 42-hour limit therefore killed a
@@ -36,8 +41,9 @@
 # this note. Budget accordingly: at 30 concurrent tasks the 150-cell grid is a
 # multi-week run, not a multi-day one, and the expensive N=130/150 cells dominate.
 #
-# The medium partition is required for this reason; short's 12 h is nowhere near
-# enough.
+# The long partition is required for this reason. short caps at 12 h and medium at
+# 48 h, both well short of what these cells take: the 28 completed cells at 80
+# participants per language ran to a median of 65 h and a maximum of 99 h.
 #
 #   sbatch --clusters=htc --account=PROJECT_GROUP --array=1-75%20  hpc/submit_pooled_v2_array.sh
 #   sbatch --clusters=htc --account=PROJECT_GROUP    --array=76-150%20 hpc/submit_pooled_v2_array.sh
