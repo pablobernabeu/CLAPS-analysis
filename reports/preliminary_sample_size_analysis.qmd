@@ -250,6 +250,38 @@ pooledp <- if (file.exists(pooled_csv)) read_csv(pooled_csv, show_col_types = FA
 pool50 <- if (!is.null(pooledp) && nrow(pooledp) && 50 %in% pooledp$n_participants) {
   pooledp[pooledp$n_participants == 50, ]
 } else NULL
+# What the pooled evidence implies about the true detection rate, and what the run
+# now under way is likely to show. A uniform prior on the rate gives a Beta
+# posterior; the predictive draws a rate from that posterior and then the successes
+# among the new cells. Derived rather than asserted, so these figures move with the
+# data instead of going stale the way a written-out number would. The seed fixes
+# the predictive so the report renders identically twice.
+pooled_post <- function(col = "p_h1b_bf6", max_n = 100) {
+  d <- pooledp[pooledp$n_participants <= max_n, ]
+  k <- sum(round(d[[col]] * d$reps)); n <- sum(d$reps)
+  list(k = k, n = n, a = 1 + k, b = 1 + n - k)
+}
+pp_atleast <- function(x, ...) { z <- pooled_post(...); 1 - pbeta(x, z$a, z$b) }
+pp_below   <- function(x, ...) { z <- pooled_post(...); pbeta(x, z$a, z$b) }
+
+# 380 cells were submitted; about one in fifteen has been lost in this arm, so the
+# predictive assumes 355 usable.
+N_NEW_SUBMITTED <- 380L
+N_NEW_USABLE    <- 355L
+pooled_predictive <- local({
+  z  <- pooled_post()
+  set.seed(20260819)
+  th <- rbeta(200000, z$a, z$b)
+  new <- rbinom(200000, N_NEW_USABLE, th) / N_NEW_USABLE
+  ck  <- rbinom(200000, N_NEW_USABLE, th) + z$k
+  cn  <- N_NEW_USABLE + z$n
+  list(
+    p_within_5  = mean(abs(new - z$k / z$n) <= 0.05),
+    p_beyond_10 = mean(abs(new - z$k / z$n) >  0.10),
+    p_settles   = mean(qbeta(0.025, 1 + ck, 1 + cn - ck) >= 0.80)
+  )
+})
+
 pooled_interim <- if (!is.null(pooledp) && nrow(pooledp) && 50 %in% pooledp$n_participants) {
   h1b6 <- pooled_combined("p_h1b_bf6")
   h1b10 <- pooled_combined("p_h1b")
@@ -1232,9 +1264,22 @@ worth stating plainly. Combining the pooled cells at or below the cap gives
 `r pooled_combined("p_h1b_bf6")$txt` for the interaction at a Bayes factor of 6, and the
 lower end of that interval falls below 80%. The single-language figures are established at
 their targets and the pooled one is not: it is the best estimate available, not a
-demonstration that the confirmatory test reaches a particular power. Settling that at the
-observed rate would take roughly 380 pooled replicates against the
-`r sum(pooledp$reps[pooledp$n_participants <= 100])` now in hand.
+demonstration that the confirmatory test reaches a particular power.
+
+That estimate carries its own uncertainty, and the scale of it can be stated. Taking the
+pooled cells at face value under a flat prior, the true rate is most likely near
+`r pct0(pooled_post()$k / pooled_post()$n)`, with a probability of about
+`r num2(pp_atleast(0.80))` that it is at least 80%, about `r num2(pp_atleast(0.90))` that it
+reaches 90%, and about `r num2(pp_below(0.75))` that it is below 75%. A run of
+`r N_NEW_SUBMITTED` further cells at 80 participants per language is under way to tighten this.
+On present evidence it is unlikely to disturb the recommendation: the chance that it lands more
+than ten points from the current figure is about `r num2(pooled_predictive$p_beyond_10)`, and
+it should fall within five points roughly `r pct0(pooled_predictive$p_within_5)` of the time.
+What it is less likely to do is settle the matter outright. Because the rate sits so close to
+the target, the chance that the combined interval then clears 80% is about
+`r num2(pooled_predictive$p_settles)`, so the run should be expected to sharpen the estimate
+rather than to convert it into a guarantee. The design recommendation does not turn on the
+outcome; what turns on it is how firmly the confirmatory test's power can be stated.
 
 Each data-grounded condition rests on `r min(jp_a$reps)` to `r max(jp_a$reps)` simulated
 studies, and each literature-anchored cell on 50, so the figures carry a Monte-Carlo error
