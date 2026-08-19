@@ -998,7 +998,7 @@ which divides the precision floor by about the square root of three. On the pilo
 every language's focal terms point the predicted way, so the pooled test starts from a
 favourable position. Turkish then contributes fully to the confirmatory result, and its
 language-specific effects are reported as estimates with credible intervals, which reflects
-honestly what a 72-verb single-language design can support. The pooled design analysis runs on the same machinery used here, and it is now built. Its rationale and
+what a 72-verb single-language design can support. The pooled design analysis runs on the same machinery used here, and it is now built. Its rationale and
 the first results are set out below.
 
 The third option expands the verb pool without lengthening any participant's session. Verbs,
@@ -1143,7 +1143,7 @@ the simulations, and are recorded as such. The rest follow from results already 
 the simulations have said everything they can about them.
 
 One caveat applies to the whole table. Every rate in this report is computed over all
-fitted cells, whether or not they pass the convergence screen, which is the honest choice
+fitted cells, whether or not they pass the convergence screen, which is deliberate,
 because a real analysis would not discard a study for imperfect sampling. The proportion
 passing that screen falls as the sample grows, so rates at different sample sizes are
 averages over somewhat different mixtures of clean and untidy fits. On the screened subset
@@ -1296,7 +1296,7 @@ given too little time, so they do not go away with longer chains, and divergent 
 bias the estimates they contribute to. The amendment removes that geometry at the cost of a
 variance component the data cannot inform.
 
-Two honest qualifications. The operating characteristics reported above were computed under the
+Two qualifications. The operating characteristics reported above were computed under the
 unamended model, so they describe a specification marginally different from the one
 recommended. The dropped component is estimated from almost no information and the focal
 interaction's precision is dominated by the by-language term, so the figures are expected to
@@ -1341,8 +1341,8 @@ per-language assurance grid holds `r format(n_assurance, big.mark = ",")` and th
 literature-anchored cross-check `r format(n_lit, big.mark = ",")`, against
 `r sum(pooledp$reps)` in the pooled arm, which is
 `r sprintf("%.0f%%", 100 * sum(pooledp$reps) / (n_assurance + n_safeguard + sum(pooledp$reps) + n_lit))`
-of the total. The recommendation rests on the smallest of them, and that has a consequence
-worth stating plainly. Combining the pooled cells at or below the cap gives
+of the total. The recommendation rests on the smallest of them, and that has a consequence.
+Combining the pooled cells at or below the cap gives
 `r pooled_combined("p_h1b_bf6")$txt` for the interaction at a Bayes factor of 6, and the
 lower end of that interval falls below 80%. The single-language figures are established at
 their targets and the pooled one is not: it is the best estimate available, not a
