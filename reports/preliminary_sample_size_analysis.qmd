@@ -288,10 +288,10 @@ pooled_interim <- if (!is.null(pooledp) && nrow(pooledp) && 50 %in% pooledp$n_pa
   sprintf(paste("On the criterion this report recommends, the",
                 "interaction alone at a Bayes factor of 6, the pooled test succeeds in %s of",
                 "simulated studies, combining the %d replicates at or below the cap. At a Bayes",
-                "factor of 10 the same figure is %s, which is why the stronger threshold is not",
-                "recommended. No single pooled cell settles anything on its own: each holds",
+                "factor of 10 the same figure is %s, too low to carry the stronger",
+                "threshold. No single pooled cell settles anything on its own: each holds",
                 "between %d and %d replicates, and their Monte-Carlo errors run to about nine",
-                "percentage points, which is why they are combined here. Restricting the",
+                "percentage points, so they are combined here. Restricting the",
                 "estimate to fits that pass every convergence check moves it by a few points in",
                 "either direction and does not change the conclusion."),
           h1b6$txt, h1b6$n, h1b10$txt, min(pooledp$reps), max(pooledp$reps))
@@ -1184,12 +1184,11 @@ The simulated pooled cells, by contrast, are complete. `r pooled_interim`
 The rationale is theoretical before it is statistical. The hypothesis CLAPS tests is
 cross-linguistic, and the evidence for it has always been read across languages, most
 explicitly in the meta-analytic synthesis of the five earlier studies
-[@ambridgeArnonBekman2023]. The per-language analyses
-treat each language as a self-contained confirmatory study, which is exactly why each
-inherits its own verb-count ceiling. The pooled model instead tests the general claim
-directly. Its population-level affectedness slope and interaction are the cross-linguistic
-effects, and its by-language random slopes let each language depart from them, so
-generality is tested rather than assumed.
+[@ambridgeArnonBekman2023]. The per-language analyses treat each language as a
+self-contained confirmatory study, so each inherits its own verb-count ceiling. The pooled
+model instead tests the general claim directly. Its population-level affectedness slope and
+interaction are the cross-linguistic effects, and its by-language random slopes let each
+language depart from them, so generality is tested rather than assumed.
 
 Statistically, pooling eases the binding constraint identified above. The precision floor on
 the affectedness effect is set by the verb-level information, and the pooled analysis draws
@@ -1620,9 +1619,9 @@ The literature-anchored engine is
 It invents a study from assumed effect sizes taken from the published estimates, drawing
 participants, verbs and affectedness values from scratch. Because its parameters are
 stipulated, not estimated, extending it from one language to several is only a matter of
-adding a language level to the same recipe, which is why this engine covers both scopes in
-one file: `simulate_claps_data()` for a single language and
-`simulate_claps_data_multilanguage()` beside it.
+adding a language level to the same recipe, so this engine covers both scopes in one file:
+`simulate_claps_data()` for a single language and `simulate_claps_data_multilanguage()`
+beside it.
 
 The pilot-grounded engine is
 [`R/10_simulate_from_pilot.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/10_simulate_from_pilot.R).
