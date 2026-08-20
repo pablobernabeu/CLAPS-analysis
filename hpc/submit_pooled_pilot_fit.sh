@@ -4,11 +4,16 @@
 # 7 days 23 hours, far beyond medium's 48-hour cap and beyond the 42 hours this
 # script used to request. The declared limit now reflects the measured runtime.
 #SBATCH --partition=long
-#SBATCH --time=12-00:00:00
+#SBATCH --time=10-00:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
+# 4 CPUs, not the 8 this script used to ask for: brms runs one process per chain and
+# this fit uses 4 chains with no within-chain threading, so the extra cores sat idle
+# for all 7d23h of job 8377363, which came in at 45% CPU efficiency. 8G, not 32G:
+# that same run peaked at 2.23 GiB. Together these free ~838 core-hours per run and
+# leave a job the scheduler can backfill.
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=8G
 #SBATCH --output=/home/%u/design_analysis/outputs/logs/pooledfit_%j.out
 #SBATCH --error=/home/%u/design_analysis/outputs/logs/pooledfit_%j.err
 #SBATCH --mail-type=FAIL,END
