@@ -1273,7 +1273,7 @@ induces more between-language spread than the raw 0.30, because each replicate d
 language's effects from its own posterior. And the estimate comes from the poorly sampled fit
 just described, so it is a flag rather than a correction.
 
-A refit under the amended specification was submitted on 19 August 2026 and should return
+A refit under the amended specification was submitted on 20 August 2026 and should return
 within a week to ten days, allowing for queue time: the original fit occupied just under
 eight days of computing, and the amended model carries fewer parameters and should sample
 more easily. That refit is what will settle both questions, and until it lands the pooled
@@ -1315,7 +1315,7 @@ sampler the proposal sets for confirmatory fits, the sixteen chains of 5,000 ite
 given above, six times the post-warm-up draws of a replicate and enough to clear those
 thresholds. Treedepth saturation is the other mode, and a longer run does nothing for it,
 because what binds is the depth of each trajectory and not the number of them. Removing it
-is what the amendment is for, and the refit submitted on 19 August is the test of whether it
+is what the amendment is for, and the refit submitted on 20 August is the test of whether it
 succeeds. That is the one question here still open. The proposal leaves no discretion if the
 answer is no: zero divergences and zero treedepth saturations are locked acceptance criteria
 for confirmatory fits, and a fit that misses them drops to the next level of the model
