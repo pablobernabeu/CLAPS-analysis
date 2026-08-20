@@ -421,7 +421,7 @@ error rates where floor or ceiling effects are present [@liddellKruschke2018]. R
 empirical work shows that modelling them cumulatively recovers psycholinguistic effects
 more accurately [@verissimo2021; @taylorRousseletScheepersSereno2023].
 
-The expected pattern is already visible in the pilot data, which come from the sample whose
+The expected pattern is already visible in the pilot data, drawn from the sample whose
 composition by language is given in @tbl-pilot in Appendix A. @fig-pilot shows the raw
 acceptability ratings against agent semantic affectedness, separately by sentence type,
 referent gender and language. The affectedness slope is positive and steepest for the
@@ -536,14 +536,14 @@ if anything, mildly conservative.
 
 The literature-anchored grid crosses the three languages with participant counts from 50 to
 120. The output read here covers `r lit_language_text` from `r lit_n_min` to `r lit_n_max`
-participants at verb counts of 40 and 72. Each completed cell holds 50 replicates, which
-gives a Monte-Carlo standard error of about five to six percentage
-points near a power of 80%, so estimates close to the threshold are not perfectly ordered
-across adjacent sample sizes. The central code for the data-generating process, the model
-and the Bayes factor is reproduced in Appendix B. The full operating characteristics of this
-run, cell by cell, are reported in @tbl-opchar in Appendix C, and Appendix D maps the whole
-repository, including which file implements each of the two simulation engines described
-above and how the pooled analysis reuses one of them.
+participants at verb counts of 40 and 72. Each completed cell holds 50 replicates, giving a
+Monte-Carlo standard error of about five to six percentage points near a power of 80%, so
+estimates close to the threshold are not perfectly ordered across adjacent sample sizes. The
+central code for the data-generating process, the model and the Bayes factor is reproduced
+in Appendix B. The full operating characteristics of this run, cell by cell, are reported in
+@tbl-opchar in Appendix C, and Appendix D maps the whole repository, including which file
+implements each of the two simulation engines described above and how the pooled analysis
+reuses one of them.
 
 # Results
 
@@ -659,26 +659,30 @@ These bounds agree closely with the simulations. English's simulated joint power
 `r pct1(tur_max_joint)` against a ceiling of `r pct0(ppv("Turkish", "ceiling_joint_bf10"))`.
 Norwegian's simulated `r pct1(jval("Norwegian", 100, "p_joint"))` at 100 participants
 matches its ceiling of `r pct0(ppv("Norwegian", "ceiling_joint_bf10"))` within Monte-Carlo
-error. The agreement between two entirely different routes to the same
-quantities, stochastic simulation and direct calculation, is a strong check that the
-pipeline is sound. A further check makes the point starkly for English. The pilot's own posterior standard deviation for the affectedness slope, which measures how precisely the pilot pins that slope down, is `r num2(ppv("English", "slope_post_sd"))`, already close to the verb-count floor of `r num2(ppv("English", "se_floor_h1a"))`. A replication with the same 72 verbs would therefore have little room to
-estimate that slope more precisely than the pilot already has, whatever its sample size.
-The residual gap reflects the floor formula's own approximation, since it ignores some of
-the covariance in the by-verb random effects, rather than a real target that more
-participants could close.
+error. The agreement between two entirely different routes to the same quantities,
+stochastic simulation and direct calculation, is a strong check that the pipeline is sound.
+A further check makes the point starkly for English. The pilot's own posterior standard
+deviation for the affectedness slope, a measure of how precisely the pilot pins that slope
+down, is `r num2(ppv("English", "slope_post_sd"))`, already close to the verb-count floor of
+`r num2(ppv("English", "se_floor_h1a"))`. A replication with the same 72 verbs would
+therefore have little room to estimate that slope more precisely than the pilot already has,
+whatever its sample size. The residual gap reflects the floor formula's own approximation,
+since it ignores some of the covariance in the by-verb random effects, rather than a real
+target that more participants could close.
 
-The ceilings also show what would and would not help. Relaxing the evidence criterion from
-a Bayes factor of 10 to 6 or 3 lifts the English joint ceiling to
-`r pct0(ppv("English", "ceiling_joint_bf6"))` and `r pct0(ppv("English", "ceiling_joint_bf3"))`,
-but lifts Turkish only to `r pct0(ppv("Turkish", "ceiling_joint_bf6"))` and
+The ceilings also show what would and would not help. Relaxing the evidence criterion from a
+Bayes factor of 10 to 6 or 3 lifts the English joint ceiling to
+`r pct0(ppv("English", "ceiling_joint_bf6"))` and
+`r pct0(ppv("English", "ceiling_joint_bf3"))`, but lifts Turkish only to
+`r pct0(ppv("Turkish", "ceiling_joint_bf6"))` and
 `r pct0(ppv("Turkish", "ceiling_joint_bf3"))`, so a weaker threshold cannot rescue the
 Turkish test. Adding verbs raises every ceiling, because the precision floor shrinks with
 the square root of the verb count. English would reach a joint ceiling of 90% at about
 `r ppv("English", "verbs_for_90")` verbs, and Norwegian at about
 `r ppv("Norwegian", "verbs_for_90")`. Turkish would need about
-`r ppv("Turkish", "verbs_for_80")` verbs merely to reach a ceiling of 80%, which is not
-realistic within a single language, so for Turkish the remedy lies elsewhere, as taken up
-under Paths Forward below.
+`r ppv("Turkish", "verbs_for_80")` verbs merely to reach a ceiling of 80%, beyond what a
+single language can supply, so for Turkish the remedy lies elsewhere, as taken up under
+Paths Forward below.
 
 These results are preliminary in one remaining respect, since each condition rests on
 `r min(jp_a$reps)` to `r max(jp_a$reps)` simulated studies and so carries a Monte-Carlo
@@ -702,12 +706,10 @@ The grid is read as a surface over participant count and verb count, summarised 
 binding focal power, the smaller of the two focal detection probabilities, since the design
 as first specified required both to clear 80%. The recommendation now gates on the
 interaction alone, so this surface records the earlier criterion. This cross-check is the
-more optimistic of the
-two analyses, because it fixes the effects at the pooled literature values and carries no
-uncertainty about them. @fig-surface
-shows this surface for all three languages. Cells outlined in gold meet the target, and the
-blank cells are Turkish at 40 verbs, which was never run at 120 participants and holds too
-few replicates at 50 to report. The
+more optimistic of the two analyses, because it fixes the effects at the pooled literature
+values and carries no uncertainty about them. @fig-surface shows this surface for all three
+languages. Cells outlined in gold meet the target, and the blank cells are Turkish at 40
+verbs, never run at 120 participants and holding too few replicates at 50 to report. The
 pattern is clear. Power increases steeply with the number of verbs and only weakly with the
 number of participants.
 
@@ -771,10 +773,11 @@ hold too few replicates to report.
 The two axes are not equally important. At 40 verbs in English, the binding power is
 `r pct0(lit40_50)` at 50 participants and reaches the 80% target only between about 60 and
 90 participants, within Monte-Carlo noise. At 72 verbs, it is already
-`r pct0(min(lit50$binding))` to `r pct0(max(lit50$binding))` at 50 participants. Increasing the number of verbs from 40 to 72 raises power more than increasing
-the number of participants does, which follows from affectedness being a verb-level
-property. @fig-curves separates the two focal predictions and shows how each approaches the
-target as the sample grows, at each verb count.
+`r pct0(min(lit50$binding))` to `r pct0(max(lit50$binding))` at 50 participants. Increasing
+the number of verbs from 40 to 72 raises power more than increasing the number of
+participants does, as follows from affectedness being a verb-level property. @fig-curves
+separates the two focal predictions and shows how each approaches the target as the sample
+grows, at each verb count.
 
 ```{r fig-curves}
 #| fig-cap: "Detection Probability for the Focal Predictions by Verb Count and Language"
@@ -890,8 +893,8 @@ These cautions are the reason the data-grounded analysis is the primary basis fo
 recommendation. It draws the focal effects from each language's own pilot posterior, and it
 also evaluates a conservative lower bound. It therefore conditions on the effects observed
 in CLAPS and carries their uncertainty through to the reported power. Its results are
-reported above. They agree with this cross-check for Norwegian, which is powered at about
-100 participants, and they diverge from it for English and Turkish, where the weaker pilot
+reported above. They agree with this cross-check for Norwegian, powered at about 100
+participants, and they diverge from it for English and Turkish, where the weaker pilot
 effects hold the joint power below target at every sample size run.
 
 A separate point concerns the scale on which the prior sits, not the size of the assumed
@@ -932,13 +935,13 @@ above already reflect that discounting.
 
 Convergence is sound across the grid, with no divergent transitions anywhere, which are the
 warning sign of an unreliable fit. At the smaller verb count, essentially every fit meets
-the strict criteria, namely an R-hat below 1.01, which checks that the separate chains have
-settled on the same answer, together with bulk and tail effective sample sizes of at least
-400, which measure how much independent information the draws carry. At 72 verbs, the
-maximal model occasionally falls just short of these criteria, in about one fit in ten at
-the smaller samples and up to one in five at the larger ones. The failures are on the R-hat
-or effective-sample-size thresholds and not on divergences, so they reflect how efficiently
-the sampler explores the posterior, not a fault in the specification. Restricting the power
+the strict criteria: an R-hat below 1.01, the check that the separate chains have settled on
+the same answer, together with bulk and tail effective sample sizes of at least 400, which
+measure how much independent information the draws carry. At 72 verbs, the maximal model
+occasionally falls just short of these criteria, in about one fit in ten at the smaller
+samples and up to one in five at the larger ones. The failures are on the R-hat or
+effective-sample-size thresholds and not on divergences, so they reflect how efficiently the
+sampler explores the posterior, not a fault in the specification. Restricting the power
 calculation to the fully converged fits leaves the estimates essentially unchanged. For
 English at 72 verbs and 50 participants, the binding focal power is `r pct(cc$all)` over all
 50 fits and `r pct(cc$conv)` over the `r cc$n_conv` converged fits, so the recommendation
@@ -1273,13 +1276,12 @@ induces more between-language spread than the raw 0.30, because each replicate d
 language's effects from its own posterior. And the estimate comes from the poorly sampled fit
 just described, so it is a flag rather than a correction.
 
-A refit under the amended specification was submitted on 20 August 2026 and should return
-within a week to ten days, allowing for queue time: the original fit occupied just under
-eight days of computing, and the amended model carries fewer parameters and should sample
-more easily. That refit is what will settle both questions, and until it lands the pooled
-figures above should be read as the design analysis's best estimate under a data-generating
-process the real data supports, and not as a guarantee. None of it disturbs the sample size,
-which follows from the verb count and the number of languages.
+A refit under the amended specification started on 20 August 2026 and should return in about
+eight days, the time the original fit took. The amended model carries fewer parameters and
+should sample more easily. That refit is what will settle both questions, and until it lands
+the pooled figures above should be read as the design analysis's best estimate under a
+data-generating process the real data supports, and not as a guarantee. None of it disturbs
+the sample size, which follows from the verb count and the number of languages.
 
 ### The by-verb term, and why it is amended
 
@@ -1315,12 +1317,12 @@ sampler the proposal sets for confirmatory fits, the sixteen chains of 5,000 ite
 given above, six times the post-warm-up draws of a replicate and enough to clear those
 thresholds. Treedepth saturation is the other mode, and a longer run does nothing for it,
 because what binds is the depth of each trajectory and not the number of them. Removing it
-is what the amendment is for, and the refit submitted on 20 August is the test of whether it
-succeeds. That is the one question here still open. The proposal leaves no discretion if the
-answer is no: zero divergences and zero treedepth saturations are locked acceptance criteria
-for confirmatory fits, and a fit that misses them drops to the next level of the model
-ladder instead of being reported. Raising the maximum tree depth is not an available remedy,
-the configuration reserving it for diagnosis.
+is what the amendment is for, and the refit running since 20 August is the test of whether
+it succeeds. That is the one question here still open. The proposal leaves no discretion if
+the answer is no: zero divergences and zero treedepth saturations are locked acceptance
+criteria for confirmatory fits, and a fit that misses them drops to the next level of the
+model ladder instead of being reported. Raising the maximum tree depth is not an available
+remedy, the configuration reserving it for diagnosis.
 
 # Limitations and Status
 
@@ -1333,8 +1335,8 @@ cannot bring English and Turkish to target rests on the affectedness effect bein
 verb-limited. The 400-participant cells confirm that for English at
 `r jval("English", 400, "reps")` replicates, and the analytic ceilings bound it from above.
 No further simulation remains to run: recruitment is capped at 100 participants, and every
-sample at or below that cap has been simulated to full replication. The one fit still queued
-is the refit described above.
+sample at or below that cap has been simulated to full replication. The one fit still
+outstanding is the refit described above.
 
 That status statement concerns the joint criterion, which this report no longer recommends.
 Gated on the interaction alone, English and Norwegian both reach target within the cap; it is
