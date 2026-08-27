@@ -189,6 +189,32 @@ h1bci <- function(lang, N, col = "p_h1b") {
   b <- stats::binom.test(k, r$reps)$conf.int
   sprintf("[%.2f, %.2f]", b[1], b[2])
 }
+# The adequacy test above applied to one cell (exact one-sided 95% lower bound), and
+# the plateau over every cell at 80 participants and above, the best estimate of the
+# rate at the recommended sample once the curve has flattened. Both added 2026-08-27,
+# when the criterion became the interaction alone at a Bayes factor of 10 and the
+# question was whether English is at 90% or merely near it.
+h1blb <- function(lang, N, col = "p_h1b") {
+  r <- jrow(lang, N); lower95(round(r[[col]] * r$reps), r$reps)
+}
+plateau <- function(lang, col = "p_h1b", from = 80) {
+  d <- filter(jp_a, language == lang, n_participants >= from)
+  k <- sum(round(d[[col]] * d$reps)); n <- sum(d$reps)
+  b <- stats::binom.test(k, n)$conf.int
+  list(p = k / n, k = k, n = n, lo = b[1], hi = b[2],
+       txt = sprintf("%s [%.2f, %.2f]", pct0(k / n), b[1], b[2]))
+}
+eng_plateau <- plateau("English")
+# Frequentist equivalent of the directional criterion under the N(0, 0.5) prior on the
+# interaction. The simulated rate at the recommended sample implies, under a normal
+# approximation, a sampling standard error for the pilot-mean effect, and the prior's
+# shrinkage then sets how many of those standard errors a Bayes factor of 10 requires:
+# qnorm(k/(k+1)) * sqrt(1 + SE^2 / 0.5^2). bf_z() is defined in the threshold chunk
+# below; these are called from the text, after it.
+implied_se  <- function(lang, N = 80) {
+  abs(ppv(lang, "interaction_mean")) / (bf_z(10) + qnorm(h1bv(lang, N)))
+}
+bf10_z_freq <- function(lang, N = 80) bf_z(10) * sqrt(1 + implied_se(lang, N)^2 / 0.5^2)
 
 # Pooled arm, combined across sample sizes at or below the cap. The arm is flat in N,
 # which is what a verb-limited design predicts and what the cells show, so combining
@@ -285,16 +311,16 @@ pooled_predictive <- local({
 pooled_interim <- if (!is.null(pooledp) && nrow(pooledp) && 50 %in% pooledp$n_participants) {
   h1b6 <- pooled_combined("p_h1b_bf6")
   h1b10 <- pooled_combined("p_h1b")
-  sprintf(paste("On the criterion this report recommends, the",
-                "interaction alone at a Bayes factor of 6, the pooled test succeeds in %s of",
-                "simulated studies, combining the %d replicates at or below the cap. At a Bayes",
-                "factor of 10 the same figure is %s, too low to carry the stronger",
-                "threshold. No single pooled cell settles anything on its own: each holds",
-                "between %d and %d replicates, and their Monte-Carlo errors run to about nine",
-                "percentage points, so they are combined here. Restricting the",
-                "estimate to fits that pass every convergence check moves it by a few points in",
-                "either direction and does not change the conclusion."),
-          h1b6$txt, h1b6$n, h1b10$txt, min(pooledp$reps), max(pooledp$reps))
+  sprintf(paste("Judged on the interaction alone, the pooled test succeeds in %s of",
+                "simulated studies at a Bayes factor of 10, combining the %d replicates at or",
+                "below the cap, and in %s at a Bayes factor of 6. The first figure is why the",
+                "confirmatory claim rests on the per-language tests. No single pooled",
+                "cell settles anything on its own: each holds between %d and %d replicates, and",
+                "their Monte-Carlo errors run to about nine percentage points, so they are",
+                "combined here. Only %d of those replicates pass every convergence check, too",
+                "few to condition on."),
+          h1b10$txt, h1b10$n, h1b6$txt, min(pooledp$reps), max(pooledp$reps),
+          sum(pooledp$n_converged[pooledp$n_participants <= 100]))
 } else "First results are expected within days."
 ```
 
@@ -317,16 +343,21 @@ every rule, its interaction ceiling being `r pct0(ppv("Turkish", "ceiling_h1b_bf
 Earlier, more optimistic simulations had assumed less variation between verbs than the pilot
 data show.
 
-The recommendation is a single confirmatory test: the three languages analysed together,
-judged on the interaction alone, at a Bayes factor of 6, with 80 participants per language
-and the current verb pool. That test succeeds in `r pooled_combined("p_h1b_bf6")$txt` of
-simulated studies, with English at `r pct0(h1bv("English", 80, "p_h1b_bf6"))` and Norwegian
-at `r pct0(h1bv("Norwegian", 80, "p_h1b_bf6"))` individually. The threshold matters because
-this Bayes factor is directional: 3 corresponds to a one-sided tail probability of
-`r sprintf("%.2f", bf_onep(3))`, too lenient for a confirmatory claim, while 6 is
-`r sprintf("%.2f", bf_onep(6))` and is the strongest the design meets within the cap. Turkish
-contributes to the combined test and is reported on its own as estimation. The verb pool
-cannot grow and the sample is fixed in advance.
+The recommendation is a confirmatory test in each language, judged on the interaction alone
+at a Bayes factor of 10, with 80 participants per language and the current verb pool. At
+that sample English detects the interaction in `r pct0(h1bv("English", 80))` of simulated
+studies `r h1bci("English", 80)` and Norwegian in `r pct0(h1bv("Norwegian", 80))`
+`r h1bci("Norwegian", 80)`. The English figure meets a 90% target as a point estimate, and
+its plateau above 80 participants sits just below it, at `r pct0(eng_plateau$p)`. Turkish
+reaches `r pct0(h1bv("Turkish", 80))` and is reported as estimation. The three languages analysed together remain in the preregistration as the cross-linguistic
+synthesis, while the confirmatory claim rests on the per-language tests. With three
+languages that model succeeds in
+`r pooled_combined("p_h1b")$txt` of simulated studies at a Bayes factor of 10, and no
+sample size lifts it. The threshold matters because this Bayes factor is directional: 3
+corresponds to a one-sided tail probability of `r sprintf("%.2f", bf_onep(3))` and 6 to
+`r sprintf("%.2f", bf_onep(6))`, both too lenient for a confirmatory claim under review,
+while 10 is `r sprintf("%.3f", bf_onep(10))` on that scale and stricter once the prior's
+shrinkage is allowed for. The verb pool cannot grow and the sample is fixed in advance.
 `\end{abstract}`{=latex}
 
 <!-- The body starts on its own page. Left to flow, it followed the abstract down the
@@ -512,18 +543,25 @@ Evidence for each prediction is summarised by a directional Savage-Dickey Bayes 
 number that weighs how strongly the data favour the predicted direction of the effect over
 there being no effect, obtained by sampling the prior alongside the posterior
 [@wagenmakersLodewyckxKuriyalGrasman2010]. A simulated study counts as a detection when its
-Bayes factor reaches 10, the threshold the project initially set for strong evidence. Under
-the zero-centred prior, this is not a stringent bar. The Bayes factor used here is
-directional, meaning the posterior odds that the coefficient carries the predicted sign
-divided by the same odds under the prior, so under a symmetric prior a value of 10 is odds
-of 10 to 1 on the direction. That is a posterior probability of 0.91, or about 1.34 standard
-errors from zero, whereas a one-sided *p* < .05 requires 1.64, so the Bayesian criterion is
-if anything the less demanding of the two. It is not the point-null Bayes factor of a
-default two-sided test, which is a different quantity on a different scale. Power is the
+Bayes factor reaches 10, the threshold the project set for strong evidence. The Bayes factor
+used here is directional, meaning the posterior odds that the coefficient carries the
+predicted sign divided by the same odds under the prior, so under a symmetric prior a value
+of 10 is odds of 10 to 1 on the direction. That is a posterior probability of 0.91, or
+about 1.34 posterior standard deviations from zero. It is not the point-null Bayes factor
+of a default two-sided test, which is a different quantity on a different scale. Nor is
+1.34 the frequentist equivalent, because the zero-centred prior shrinks the estimate
+towards zero, so the sampling estimate has to sit further from zero than the posterior
+does, by a factor of $\sqrt{1 + \mathrm{SE}^2 / 0.5^2}$. For English at 80 participants,
+where the simulated detection rate implies under a normal approximation a standard error
+of about `r num2(implied_se("English"))` on the model scale, a Bayes factor of 10 needs an
+estimate about `r num2(bf10_z_freq("English"))` standard errors from zero, close to the
+1.64 of a one-sided *p* < .05. For Norwegian and Turkish, whose standard errors are
+smaller, the equivalent is nearer `r num2(bf10_z_freq("Norwegian"))`, a one-sided tail of
+about .08. Power is the
 proportion of simulated studies that reach it. Results are reported at Bayes factors of 10,
 6 and 3 throughout, since the stored per-cell Bayes factors allow any threshold to be scored
 without re-running anything. The recommendation, set out below, is judged on the interaction
-alone at a Bayes factor of 6, and fixes a single sample size in advance instead of taking
+alone at a Bayes factor of 10, and fixes a single sample size in advance instead of taking
 the smallest one that meets a power target.
 
 Each replicate is fitted with four Markov chains of 3,000 iterations, 1,000 of them warm-up,
@@ -649,7 +687,11 @@ kable(ce, align = "lrrrrr")
 participants, from the `r format(ppv("English", "ndraws"), big.mark = ",")` pilot posterior
 draws and the fitted by-verb covariance at 72 verbs and 66 for Norwegian. The last columns
 give the verbs needed for an 80% and 90% joint ceiling. A ceiling just above target, as for
-English, still leaves it out of reach, since any finite sample sits below its ceiling.
+English, still leaves it out of reach, since any finite sample sits below its ceiling. The
+English interaction ceiling of `r pct1(ppv("English", "ceiling_h1b_bf10"))` is likewise the
+limit of an approximate formula: over the `r eng_plateau$n` replicates at 80 participants
+and above, the interaction is detected in `r eng_plateau$txt`, and the gap is the
+formula's, which ignores some of the covariance among the by-verb effects.
 
 `\vspace{12pt}`{=latex}
 
@@ -1030,9 +1072,11 @@ sound it is. Operating characteristics count for nothing if the study cannot be 
 by the people running it. The sample size below is therefore a single fixed number, announced
 in advance.
 
-The recommendation is the first two options taken together, and nothing else: the pooled
-cross-linguistic analysis is the confirmatory test, it is gated on the interaction alone, its
-threshold is a Bayes factor of 6, and every team collects 80 participants.
+The recommendation is the first option, with the second kept as the synthesis: each language
+is tested on its own, gated on the interaction alone, at a Bayes factor of 10, and every
+team collects 80 participants. The pooled cross-linguistic analysis is preregistered
+alongside, as the test of the general claim, and its figures are reported below without
+its being the confirmatory test.
 
 Gating on the interaction alone makes the design work, and the effects themselves were never
 the problem. When a study has to satisfy both predictions at once, its chances are the two
@@ -1063,42 +1107,54 @@ an earlier draft of this report recommended it. A Bayes factor of 6 is
 `r sprintf("%.3f", bf_onep(10))`; matching a one-sided 5% test would need about
 `r sprintf("%.0f", bf_for_p(0.05))`.
 
-The project's own starting point was a Bayes factor of 10, which the internal record of
+The project's starting point was a Bayes factor of 10, which the internal record of
 decisions carries as the primary criterion for the focal interaction, with 3 as a secondary
-one. Those figures were entered as a working placeholder pending this design analysis, not
-as a settled choice, and this is the analysis they were waiting for. It does not support 10.
-At the feasible cap the pooled test detects the interaction in
-`r pooled_combined("p_h1b")$txt` of simulated studies at that threshold, against
-`r pooled_combined("p_h1b_bf6")$txt` at a Bayes factor of 6. No amount of recruiting closes
-that gap, for the reason the rest of this report sets out: the affectedness effect is
-bounded by the number of verbs. Holding to 10 would mean preregistering a confirmatory test
-this design cannot pass, which is the outcome a design analysis exists to prevent. The
-revision to 6 is therefore forced by the evidence.
+one, and 10 is the criterion this report recommends. An interim version of this analysis
+recommended 6, because the pooled cross-language test was then the confirmatory test and 6
+was the strongest criterion it came close to meeting. At the feasible cap the pooled test
+detects the interaction in `r pooled_combined("p_h1b")$txt` of simulated studies at a Bayes
+factor of 10, against `r pooled_combined("p_h1b_bf6")$txt` at 6, and no amount of
+recruiting closes that gap, for the reason the rest of this report sets out: the
+affectedness effect is bounded by the number of verbs. Judged language by language, the
+design does not need the concession. A Bayes factor of 6 is a one-sided tail of
+`r sprintf("%.2f", bf_onep(6))`, which reviewers of a registered report will read as lenient
+whatever it is called, and the single-language tests give up little by holding to 10. At 80
+participants the move from 6 to 10 costs English `r pct0(h1bv("English", 80, "p_h1b_bf6"))`
+to `r pct0(h1bv("English", 80))` and Norwegian `r pct0(h1bv("Norwegian", 80, "p_h1b_bf6"))`
+to `r pct0(h1bv("Norwegian", 80))`. The pooled test is the one that pays, which is why its role is the synthesis.
 
-The threshold is set at 6 because it is the strongest criterion the pooled test comes close
-to meeting at the cap, and because quoting its tail equivalent alongside it is clearer than
-borrowing a label from a different quantity. How close is a question the simulations cannot
-yet settle, and the next paragraph gives the figure with the interval it carries.
 
-At that threshold the pooled test detects the interaction in
-`r pooled_combined("p_h1b_bf6")$txt` of simulated studies, combining the pooled cells at or
-below the cap. Cell by cell the pooled arm carries only
+
+The pooled model keeps its place as the preregistered cross-linguistic synthesis, the one
+analysis that tests the general claim directly and the one whose evidence grows with every
+language recruited. Its operating characteristics at three languages are what the
+simulations give: `r pooled_combined("p_h1b")$txt` at a Bayes factor of 10 and
+`r pooled_combined("p_h1b_bf6")$txt` at 6, combining the pooled cells at or below the cap,
+since cell by cell the arm carries only
 `r min(pooledp$reps[pooledp$n_participants <= 100])` to
-`r max(pooledp$reps[pooledp$n_participants <= 100])` replicates and no single
-cell settles anything on its own. Since power here is flat in sample size, combining them
-gives the best estimate available. At a Bayes factor of 10 the same figure is
-`r pooled_combined("p_h1b")$txt`, which is why 10 is not the recommendation.
+`r max(pooledp$reps[pooledp$n_participants <= 100])` replicates and no single cell settles
+anything on its own. Those figures are not a power claim for the study as it will be run.
+The number of languages is not known, and a claim conditional on it would need a
+simulation with synthetic languages, which has not been done. They are reported as the
+sensitivity the synthesis would have with three languages, and the per-language tests
+carry the confirmatory claim.
 
-Each language is then reported against the same criterion, as an estimate with its full
-posterior. English reaches `r pct0(h1bv("English", 80, "p_h1b_bf6"))`
-`r h1bci("English", 80, "p_h1b_bf6")` on the interaction at 80 participants and Norwegian
-`r pct0(h1bv("Norwegian", 80, "p_h1b_bf6"))` `r h1bci("Norwegian", 80, "p_h1b_bf6")`, so a
-team publishing a single-language study in either can state a conventional power figure for
-the confirmatory prediction and defend it. Turkish reaches
-`r pct0(h1bv("Turkish", 80, "p_h1b_bf6"))` `r h1bci("Turkish", 80, "p_h1b_bf6")`, and its
-ceiling on the interaction is `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` at a Bayes factor
-of 10 however many participants are recruited. Turkish contributes fully to the pooled
-confirmatory result and is reported as estimation on its own. That is not a shortfall to be
+Each language is therefore tested on its own against a Bayes factor of 10. English reaches
+`r pct0(h1bv("English", 80))` `r h1bci("English", 80)` on the interaction at 80 participants
+and Norwegian `r pct0(h1bv("Norwegian", 80))` `r h1bci("Norwegian", 80)`. The Norwegian
+figure clears a 90% target by the rule this report uses for adequacy, the exact one-sided
+lower bound, which is `r pct0(h1blb("Norwegian", 80))`. The English figure does not. Its
+point estimate is at the target, its lower bound is `r pct0(h1blb("English", 80))`, and over
+the `r eng_plateau$n` replicates at 80 participants and above the rate is
+`r eng_plateau$txt`, so English should be described as powered at about 90%, a figure the simulation cannot
+certify above the target. Stricter criteria are recorded for reference. At a Bayes factor of 19,
+a posterior sign probability of 0.95 and the equivalent of a one-sided 5% test on the
+posterior scale, English reaches `r pct0(h1bv("English", 80, "p_h1b_bf19"))` and Norwegian
+`r pct0(h1bv("Norwegian", 80, "p_h1b_bf19"))`. Turkish reaches `r pct0(h1bv("Turkish", 80))`
+`r h1bci("Turkish", 80)`, and its ceiling on the interaction is
+`r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` at a Bayes factor of 10 however many
+participants are recruited. Turkish contributes fully to the pooled synthesis and is
+reported as estimation on its own. That is not a shortfall to be
 fixed by recruitment; it is what 72 verbs buy in a language whose interaction is the weakest
 of the three. Turkish is also the one language whose passive-only slope is the
 better-detected of its two focal predictions, `r pct0(jval("Turkish", 80, "p_h1a"))` against
@@ -1106,10 +1162,12 @@ better-detected of its two focal predictions, `r pct0(jval("Turkish", 80, "p_h1a
 should lead on the slope rather than the interaction.
 
 Eighty participants is the recommendation, and 100 would not change it. Between those two
-samples the simulations differ by less than their own resolution, and the analytic bounds say
-the most that 20 further participants could add is a few points, because the binding
-information is in the verbs. The case for 80 is that it is the number the teams can
-collect.
+samples the simulations differ by less than their own resolution, and the analytic bounds
+say the most that 20 further participants could add is a few points, because the binding
+information is in the verbs. Seventy would change it. At 70 the English rate falls to
+`r pct0(h1bv("English", 70))`, a drop larger than the Monte-Carlo error, so 80 is the
+smallest sample at which English sits at the target and the figure has no slack below it.
+The case for 80 is that it is the number the teams can collect.
 
 ## What Is Settled and What Is Still Open
 
@@ -1118,9 +1176,10 @@ the results have answered from those that remain a matter of judgement. Three fi
 settled and no further simulation will overturn them. Power for the affectedness effect is
 governed by the verb count, so recruitment alone cannot rescue a language that is short of
 target. English and Turkish do not reach the conventional target on both focal predictions
-at any feasible per-language sample, whereas Norwegian does. Pooling the three languages
-multiplies the verb-level information the estimate rests on and is the only remedy that
-stays inside the agreed cap without changing the materials.
+at any feasible per-language sample, whereas Norwegian does. Pooling the three languages multiplies the verb-level information the estimate rests on,
+and it is the only lever that stays inside the agreed cap without changing the materials,
+but with three languages its evidence is limited by the variation between them, which
+neither verbs nor participants reduce.
 
 The choices that follow from this are set out in @tbl-choices. Each row is a decision for the
 collaborators, with what the evidence says about it and what, if anything, is still
@@ -1135,9 +1194,9 @@ outstanding.
 | Choice | Decision | What settled it |
 |:-----------------|:----------------------|:-----------------------------------------------|
 | Adequacy rule | The interaction alone | No feasible sample reaches the conjunction of both focal predictions; dropping it lifts the English ceiling from `r pct0(ppv("English", "ceiling_joint_bf10"))` to `r pct0(ppv("English", "ceiling_h1b_bf10"))`. The passive-only slope is reported as a positive control |
-| Evidence threshold | Bayes factor of 6 | Revised from the 10 first intended, which leaves the pooled test at `r pct0(pooled_combined("p_h1b")$p)` and no sample can lift. A directional Bayes factor of 3 is a one-sided tail probability of `r sprintf("%.2f", bf_onep(3))`, too lenient to carry a confirmatory claim |
-| Sample size | 80 per language | Between 80 and 100 the simulations differ by less than their own resolution, and the verb count binds. 80 is the number the teams can collect |
-| Confirmatory test | Pooled cross-linguistic | The theoretical claim is cross-linguistic, and the verb-level information is greatest there |
+| Evidence threshold | Bayes factor of 10 | The project's criterion, kept. Per language it costs little: English `r pct0(h1bv("English", 80, "p_h1b_bf6"))` at 6 against `r pct0(h1bv("English", 80))` at 10. An interim recommendation of 6 was made for the pooled test, which sits at `r pct0(pooled_combined("p_h1b")$p)` at 10 and no sample can lift, and that test is no longer the confirmatory one |
+| Sample size | 80 per language | Between 80 and 100 the simulations differ by less than their own resolution, and the verb count binds. At 70 English falls to `r pct0(h1bv("English", 70))`, so 80 has no slack below it. 80 is the number the teams can collect |
+| Confirmatory test | Per language, interaction alone | Each language is powered and judged on its own. The pooled model is kept as the preregistered synthesis: with three languages it reaches `r pct0(pooled_combined("p_h1b")$p)` at a Bayes factor of 10, and its evidence grows with the number of languages, which is not yet known |
 | Turkish | Estimation only | Its ceiling on the interaction is `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` at a Bayes factor of 10 whatever the sample. Settled; further cells will not change it |
 | Verb pool | `r ppv("English", "n_verbs")` verbs, fixed | Closed by the project: the limit is the supply of suitable verbs, not session length, so the pool cannot be enlarged |
 | Stopping rule | Fixed sample, announced in advance | Closed by the project: teams must take a stated sample size to their ethics committees. The statistical objection to sequential testing does not apply, but the operational one does |
@@ -1147,21 +1206,32 @@ outstanding.
 `\vspace{12pt}`{=latex}
 
 None of these now waits on further computation. The project closed two of them, and the
-simulations the rest; both are recorded as such. The rest follow from results already in
-hand, and the simulations have said everything they can about them.
+simulations the rest; both are recorded as such. The rest follow from results already in hand, and the simulations have said everything they
+can about them. The internal record of decisions still states the success criterion for
+both focal predictions together, and will be amended to the interaction alone once the
+collaborators confirm the criterion.
 
 One caveat applies to the whole table. Every rate in this report is computed over all fitted
 cells, whether or not they pass the convergence screen, which is deliberate, because a real
 analysis would not discard a study for imperfect sampling. The proportion passing that
 screen falls as the sample grows, so rates at different sample sizes are averages over
 somewhat different mixtures of clean and untidy fits. On the screened subset the ordering of
-adjacent sample sizes sometimes reverses. This does not affect the recommendation, which
-rests on a criterion the design clears with room to spare and on a sample size chosen for
-feasibility, but it is a reason to treat small differences between adjacent cells as noise.
+adjacent sample sizes sometimes reverses. This does not affect the recommendation, which rests on the plateau across sample sizes
+and on a sample size chosen for feasibility, but it is a reason to treat small differences
+between adjacent cells as noise. At 80 participants the screen is passed by
+`r jval("English", 80, "n_converged")` of `r jval("English", 80, "reps")` English fits,
+`r jval("Norwegian", 80, "n_converged")` of `r jval("Norwegian", 80, "reps")` Norwegian and
+`r jval("Turkish", 80, "n_converged")` of `r jval("Turkish", 80, "reps")` Turkish. The
+failures are on effective sample size and R-hat under the light replicate sampler, with no
+divergent transitions or treedepth saturations in any of them, and the confirmatory fits
+use a sampler six times heavier. Over the passing fits alone the interaction rate is
+`r pct0(h1bv("English", 80, "p_h1b_converged"))` for English and
+`r pct0(h1bv("Norwegian", 80, "p_h1b_converged"))` for Norwegian, and the English
+difference is within what a subset of that size would show by chance.
 
 ## The Pooled Analysis: Rationale and Expectations
 
-Following the recommendation above, the pooled cross-linguistic design analysis has been
+The pooled cross-linguistic design analysis, retained above as the synthesis, has been
 implemented and validated. Each simulated study draws every language's effects from that
 language's own pilot posterior, exactly as in the per-language assurance runs, and simulates
 the three datasets. It then analyses them together with the cross-language model used in the
@@ -1210,11 +1280,10 @@ The expected differences from the per-language results follow from this. First, 
 should effectively disappear as constraints. With the pooled effects near the averages
 above, and a precision floor of about `r num2(pooled_floor_per_sd)` logits per standard
 deviation, both pooled focal ceilings sit near 100%. The pooled test should therefore be
-limited by ordinary sampling noise alone. That expectation was formed before the pooled
-cells returned, and the results reported above are what it should be read against: on the
-criterion now recommended, the pooled interaction reaches
-`r pooled_combined("p_h1b_bf6")$txt` and is flat in sample size, as a verb-limited design
-predicts. Second, the limiting quantity changes. It is no longer the verb count but the
+limited by ordinary sampling noise alone. That expectation was formed before the pooled cells returned, and the results reported
+above are what it should be read against: at a Bayes factor of 6 the pooled interaction
+reaches `r pooled_combined("p_h1b_bf6")$txt`, at 10 `r pooled_combined("p_h1b")$txt`, and
+both are flat in sample size, as a verb-limited design predicts. Second, the limiting quantity changes. It is no longer the verb count but the
 variation between languages, especially in the interaction, whose pilot values span
 `r mnum2(min(pp$interaction_per_sd))` to `r mnum2(max(pp$interaction_per_sd))` per standard
 deviation. That variation does not shrink with more verbs or more participants, and with
@@ -1242,8 +1311,9 @@ examined before any recommendation is drawn from it.
 
 ### The pooled model on real pilot data
 
-The pooled analysis model was fitted once to the combined real pilot data of all three
-languages, 75,528 ratings over 210 verbs, as a check that it behaves on real ratings before
+The pooled analysis model has been fitted to the combined real pilot data of all three
+languages, 75,528 ratings over 210 verbs, once in its original form and once under the
+amendment set out in the next subsection, as a check that it behaves on real ratings before
 thousands of simulated fits assume it does. The result is reported here in full, because it
 bears on the figures above in both directions.
 
@@ -1272,12 +1342,22 @@ simulation's own procedure induces more between-language spread than the raw 0.3
 each replicate draws each language's effects from its own posterior. And the estimate comes
 from the poorly sampled fit just described, so it is a flag rather than a correction.
 
-A refit under the amended specification started on 20 August 2026 and should return in about
-eight days, the time the original fit took. The amended model carries fewer parameters and
-should sample more easily. That refit will settle both questions, and until it lands the
-pooled figures above should be read as the design analysis's best estimate under a
-data-generating process the real data supports, and not as a guarantee. None of it disturbs
-the sample size, which follows from the verb count and the number of languages.
+A refit under the amended specification, started on 20 August 2026, returned on 27 August
+after 6 days and 21 hours, close to the time the original fit took. The effects are
+unchanged to two decimal places. The focal interaction is $-0.48$, with a 95% credible
+interval from $-1.01$ to $+0.30$ and a posterior probability of 0.92 that it carries the
+predicted sign, a directional Bayes factor of about 11, and the standard deviation of the
+interaction across languages is 0.57, with an interval from 0.09 to 1.59. The larger
+between-language spread therefore survives the amendment, and with it the qualification
+above. The sampling improved in one respect only. The divergent transition is gone, but
+the sampler saturated the maximum treedepth on 6,000 of its 8,000 post-warm-up iterations,
+with an R-hat of 1.010 and a minimum bulk effective sample size of 393, so the geometry the
+amendment was meant to remove does not lie in the by-verb term. The likelier seat is the
+by-language term, whose standard deviations are estimated from three groups and barely
+identified, the funnel a hierarchical model shows when a group-level variance is left
+unconstrained by the data. None of this disturbs the sample size, which follows from the
+verb count and the number of languages, but it bears on the synthesis, as the next
+subsection sets out.
 
 ### The by-verb term, and why it is amended
 
@@ -1313,12 +1393,21 @@ heavier sampler the proposal sets for confirmatory fits, the sixteen chains of 5
 iterations given above, six times the post-warm-up draws of a replicate and enough to clear
 those thresholds. Treedepth saturation is the other mode, and a longer run does nothing for
 it, because the binding constraint is the depth of each trajectory, not how many there are.
-The amendment exists to remove it, and the refit running since 20 August is the test of
-whether it succeeds. That is the one question here still open. The proposal leaves no
-discretion if the answer is no: zero divergences and zero treedepth saturations are locked
-acceptance criteria for confirmatory fits, and a fit that misses them falls to the next
-level of the model ladder, its result set aside. Raising the maximum tree depth is not an
-available remedy, the configuration reserving it for diagnosis.
+The amendment exists to remove it, and the refit was the test of whether it succeeds. The
+answer is no: on the real pilot data the amended model saturated the treedepth on three
+quarters of its iterations, as the unamended one had. The proposal leaves no discretion on
+the consequence. Zero divergences and zero treedepth saturations are locked acceptance
+criteria for confirmatory fits, and a fit that misses them falls to the next level of the
+model ladder, its result set aside. Raising the maximum tree depth is not an available
+remedy, the configuration reserving it for diagnosis. For the pooled model the next level
+is the uncorrelated cross-language model, which the record of decisions names for the
+pooled design analysis and which no pooled cell has simulated. Its operating
+characteristics are expected to be close to those reported above, since the focal
+interaction's precision is set by the by-language term and hardly by the correlations, but
+that is an expectation and has not been simulated. This is a further reason the pooled
+analysis is preregistered as the synthesis, with the confirmatory claim carried by the
+per-language tests, whose fits at 80 participants show no divergences and no saturations
+in any of the 360 replicates.
 
 # Limitations and Status
 
@@ -1331,12 +1420,13 @@ cannot bring English and Turkish to target rests on the affectedness effect bein
 verb-limited. The 400-participant cells confirm that for English at
 `r jval("English", 400, "reps")` replicates, and the analytic ceilings bound it from above.
 No further simulation remains to run: recruitment is capped at 100 participants, and every
-sample at or below that cap has been simulated to full replication. The one fit still
-outstanding is the refit described above.
+sample at or below that cap has been simulated to full replication. No fit is outstanding
+either, the refit described above having returned on 27 August.
 
 That status statement concerns the joint criterion, which this report no longer recommends.
-Gated on the interaction alone, English and Norwegian both reach target within the cap; it is
-Turkish that remains short, and permanently so.
+Gated on the interaction alone at a Bayes factor of 10, Norwegian clears a 90% target
+within the cap and English sits at it, with a plateau just below. Turkish remains short,
+and permanently so.
 
 Two aspects of the simulation record qualify how far these figures can be pressed. Each
 assurance replicate reuses one of the first 24 to 40 saved posterior draws instead of draws
@@ -1355,12 +1445,12 @@ per-language assurance grid holds `r format(n_assurance, big.mark = ",")` and th
 literature-anchored cross-check `r format(n_lit, big.mark = ",")`, against
 `r sum(pooledp$reps)` in the pooled arm, which is
 `r sprintf("%.0f%%", 100 * sum(pooledp$reps) / (n_assurance + n_safeguard + sum(pooledp$reps) + n_lit))`
-of the total. The recommendation rests on the smallest of them, and that has a consequence.
-Combining the pooled cells at or below the cap gives
-`r pooled_combined("p_h1b_bf6")$txt` for the interaction at a Bayes factor of 6, and the
-lower end of that interval falls below 80%. The single-language figures are established at
-their targets and the pooled one is not: it is the best estimate available, not a
-demonstration that the confirmatory test reaches a particular power.
+of the total. The synthesis rests on the smallest of them, and that has a consequence. Combining the
+pooled cells at or below the cap gives `r pooled_combined("p_h1b")$txt` for the interaction
+at a Bayes factor of 10 and `r pooled_combined("p_h1b_bf6")$txt` at 6. The single-language
+figures rest on `r jval("English", 80, "reps")` replicates per cell at the decision sample
+sizes and the pooled one does not: it is the best estimate available of the synthesis's sensitivity at three languages, and
+it does not demonstrate its power in the study as it will be run.
 
 That estimate carries its own uncertainty, and the scale of it can be stated. Taking the
 pooled cells at face value under a flat prior, the true rate is most likely near

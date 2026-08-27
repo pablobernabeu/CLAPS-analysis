@@ -4,7 +4,8 @@
 # Aggregate the pooled cross-language design analysis (design_pooled_v2) into
 # a tidy summary CSV the report can read, mirroring aggregate_pilot.R.
 # One row per per-language sample size, with detection rates for the two focal
-# predictions and their joint at Bayes-factor thresholds 10, 6 and 3. The
+# predictions and their joint at Bayes-factor thresholds 10, 6 and 3, the
+# interaction alone at 19, and the rates over the converged subset. The
 # language label on every cell is "AllLanguages"; n_participants is per
 # language (total sample is three times that).
 #
@@ -85,6 +86,12 @@ pooled <- cells |>
     p_joint_converged = if (any(converged %in% TRUE)) {
       mean(bf_h1a[converged %in% TRUE] >= 10 & bf_h1b[converged %in% TRUE] >= 10)
     } else NA_real_,
+    # The interaction alone over the converged subset, and at a Bayes factor of
+    # 19 (posterior sign probability 0.95). Added 2026-08-27; see aggregate_pilot.R.
+    p_h1b_converged   = if (any(converged %in% TRUE)) {
+      mean(bf_h1b[converged %in% TRUE] >= 10)
+    } else NA_real_,
+    p_h1b_bf19        = mean(bf_h1b >= 19),
     # Monte-Carlo standard error of the headline joint rate, so that readers of
     # the CSV are not left to infer the precision from the replicate count.
     mcse_p_joint      = sqrt(p_joint * (1 - p_joint) / dplyr::n()),

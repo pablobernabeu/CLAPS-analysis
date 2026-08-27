@@ -8,7 +8,10 @@
 # Outputs (to --outdir):
 #   joint_power_pilot.csv   One row per language x mode x N: replicate
 #     count, marginal detection rates for H1a and H1b, and the joint rate
-#     (both focal predictions clear BF >= 10 in the same simulated study).
+#     (both focal predictions clear BF >= 10 in the same simulated study),
+#     the same at BF >= 6 and 3, the interaction alone at BF >= 19, and the
+#     rates over the converged subset (n_converged, p_joint_converged,
+#     p_h1b_converged).
 #   pilot_params_ceilings.csv      One row per language: fitted pilot
 #     quantities (verb count, affectedness spread, by-verb SDs, focal
 #     posterior means and per-SD values, the slope's posterior SD, the joint
@@ -119,6 +122,16 @@ joint <- cells |>
     p_joint_converged = if (any(converged %in% TRUE)) {
       mean(bf_h1a[converged %in% TRUE] >= 10 & bf_h1b[converged %in% TRUE] >= 10)
     } else NA_real_,
+    # The interaction alone over the same subset, and at a Bayes factor of 19,
+    # which is a posterior sign probability of 0.95 (a one-sided tail of .05).
+    # Added 2026-08-27, when the confirmatory criterion became the interaction
+    # alone at a Bayes factor of 10 and the collaborators asked what the stricter
+    # criterion and the converged subset would show. Both are re-scores of the
+    # stored Bayes factors, not new simulation.
+    p_h1b_converged = if (any(converged %in% TRUE)) {
+      mean(bf_h1b[converged %in% TRUE] >= 10)
+    } else NA_real_,
+    p_h1b_bf19   = mean(bf_h1b >= 19),
     # Monte-Carlo standard errors, added 2026-08-12. Every rate above is a mean
     # of `reps` Bernoulli outcomes, so its own sampling error is sqrt(p(1-p)/reps),
     # and reading the table without it invites the conclusion that power falls
