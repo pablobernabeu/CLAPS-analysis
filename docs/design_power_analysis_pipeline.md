@@ -57,7 +57,7 @@ and `tests/testthat/test-seed-disjointness.R` fails if that ever stops being tru
 
 | Base | Range | Generator / grid |
 |------|-------|------------------|
-| 1e5 | 100000–101799 | `generate_design_grid.R` power curves → `design_grid_single.csv` |
+| 1e5 | 100000–102399 | `generate_design_grid.R` power curves → `design_grid_single.csv` |
 | 2e5 | 200000–201799 | `generate_design_grid.R` prior sensitivity → `design_grid_single.csv` |
 | 3e5 | 300000–302399 | `generate_design_grid.R` gender → `design_grid_gender.csv` |
 | 4e5 | 400000–402399 | `generate_design_grid.R` extended N → `design_grid_extend.csv` |
@@ -67,16 +67,39 @@ and `tests/testthat/test-seed-disjointness.R` fails if that ever stops being tru
 | 8e5 | 800000–… | `generate_databased_grid.R` |
 | 9e5 | 900000–900199 | `generate_design_grid.R` cross → `design_grid_cross.csv` |
 | 9.1e5 | 910000–… | `generate_databased_v2_extendedN_grid.R` |
-| 9.29e5 | 929000 | `design_grid_pooled_v2_TEST.csv` (smoke test) |
+| 9.29e5 | 929000 | `generate_pooled_v2_grid.R` smoke test → `design_grid_pooled_v2_TEST.csv` |
 | 9.3e5 | 930000–931490 | `generate_pooled_v2_grid.R` |
 | 9.32e5 | 932000–932290 | `generate_pooled_v2_N80_grid.R` |
 | 9.4e5 | 940000–941079 | `generate_databased_v2_decision_grid.R` |
+| 9.49e5 | 949000 | `generate_pooled_model_comparison_grid.R --smoke` → `design_grid_pooled_modelcmp_SMOKE.csv` |
+| 9.5e5 | 950000–951190 | `generate_pooled_model_comparison_grid.R` |
+| 9.59e5 | 959000 | `generate_pooled_model_comparison_grid.R --smoke --verbblock` → `design_grid_pooled_verbblock_SMOKE.csv` (not committed) |
+| 9.6e5 | 960000–960490 | `generate_pooled_model_comparison_grid.R 50 --verbblock`; at the default 120 groups it would reach 961190 |
 | 1.0e6 | 1000000–1002099 | `generate_corrected_scale_grid.R` — superseded arm, see below |
 | 1.1e6 | 1100000–1100439 | `generate_safeguard_grid.R` — superseded arm, see below |
 | 1.2e6 | 1200000–1200719 | `generate_databased_v2_grid.R` |
+| 1.3e6 | 1300000–1303790 | `generate_pooled_v2_N80_precision_grid.R` |
 
-Bases from 1.3e6 upward are free. Leave a gap of at least 1e5 above a new base, so
+Bases from 1.4e6 upward are free. Leave a gap of at least 1e5 above a new base, so
 that raising a grid's replicate count later cannot run it into its neighbour.
+
+Smoke grids are the one exception, sitting 1000 below the production base they
+rehearse (9.29e5 under 9.3e5, 9.49e5 under 9.5e5, 9.59e5 under 9.6e5), so that a
+smoke cell and the real cell it rehearses are never confused. A smoke grid is one
+group by construction and cannot grow into its neighbour. The grids that can grow
+are the production ones, upward into whichever base sits next above them, and two
+of those have less headroom than the 1e5 rule implies. At spacing 10 the 9.5e5
+block fits 900 groups before it reaches the 9.59e5 smoke base, which leaves 780
+beyond its current default of 120; the 9.3e5 block fits 200 before it reaches
+9.32e5, and 150 are already committed. Raising either replicate count near those
+limits means allocating a fresh base rather than extending in place.
+
+Two early grids predate the scheme and allocate below 1e5. `design_grid.csv` holds
+59 seeds scattered between 1001 and 9012, and `design_grid_fast.csv` 39 between
+11001 and 13005, in small per-condition blocks rather than the dense runs above.
+Both were written by hand rather than by a generator. They are recorded here
+because the test compares every committed grid, not only those with a base in the
+table.
 
 ### Two superseded arms
 
@@ -131,6 +154,52 @@ committed. Orphaned outputs are not deleted, only no longer matched by the
 resume-by-existing-output check, so regenerating either grid and resubmitting
 recomputes those cells under the new seeds. The 374 extended-N cells sharing the
 `design_databased_v2` directory use base 9.1e5 and are unaffected.
+
+### The 2026-09-02 re-basing
+
+The test that the 2026-07-30 work introduced had been failing on two further
+collisions since 2026-08-19. `main` was red throughout, and the failure went unread.
+
+`generate_pooled_v2_N80_precision_grid.R`, added on 2026-08-19, took base 9.4e5,
+which the table above had already assigned to `generate_databased_v2_decision_grid.R`.
+The decision grid runs consecutively over 940000–941079, so 108 of the precision
+grid's 380 rows fell inside it. Each row hands seed, seed+1 and seed+2 to the three
+languages, so 324 distinct seed values collided. The precision generator's comment
+described its base as clear of the pooled grids, which it was; what it did not do
+was consider the decision grid.
+
+`generate_pooled_model_comparison_grid.R` applied its `--smoke` branch to the group
+count and the sampler budget but not to the seed base, so the single smoke group took
+950000, which is group 1 of the committed full grid. That mattered more than the
+count of one shared seed suggests. `R/11_simulate_pooled_v2.R` builds the output name
+from the prior source, mode, sample size, model level and seed, so a smoke fit at 500
+iterations and the real 3000-iteration cell resolve to the same file, and the
+resume-by-existing-output check would have accepted whichever was written first.
+
+No published result was affected, and nothing was orphaned: neither arm had been run.
+
+| Generator | Old base | New base | Computed cells | Orphaned |
+|---|---|---|---|---|
+| `generate_databased_v2_decision_grid.R` | 9.4e5 | 9.4e5 (kept) | 1080, on ARC under `$DATA/outputs/design_databased_v2`; none held locally | 0 |
+| `generate_pooled_v2_N80_precision_grid.R` | 9.4e5 | 1.3e6 | 0, arrays 8607044 and 8607045 cancelled before any task started | 0 |
+| `generate_pooled_model_comparison_grid.R --smoke` | 9.5e5 | 9.49e5 | 0, never run; the one matching three-task array was cancelled the same day, before any task started | 0 |
+
+The direction was decided by the rule applied on 2026-07-30, that the grid with fewer
+computed cells moves. The decision arm supplies all of the 80-participant cell the
+recommendation rests on and 120 of the 144 replicates at 70 and 100, while the
+precision arm has produced nothing.
+
+Both generators previously restated other grids' ranges in a hand-copied list. Every
+range in those lists was correct; what neither covered was the whole registry, and the
+precision generator's omission of the decision grid is what let the collision through.
+Those two comments now point at the table above instead of restating it.
+`generate_databased_v2_decision_grid.R`, `generate_pooled_v2_grid.R` and
+`generate_pooled_v2_N80_grid.R` still carry lists of their own, and are worth the same
+treatment when they are next touched.
+
+The same commit gave `--smoke --verbblock` its own output path. It had shared the
+`--smoke` path, so running both flags overwrote the committed model-comparison smoke
+grid with verbblock arms.
 
 ## Step 2 — submit the chained pipeline
 
