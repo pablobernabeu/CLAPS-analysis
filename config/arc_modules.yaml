@@ -66,7 +66,14 @@ os:
   # Recorded because Stan compiles C++ against the system toolchain, so the OS is
   # part of what determines whether a fit reproduces bit for bit.
   observed: "AlmaLinux 9.8 (Olive Jaguar)"
-  kernel: "5.14.0-687.29.1.el9_8.x86_64"
+  # Re-checked 2026-09-02: the distribution is unchanged and the kernel has taken a
+  # patch update, from 687.29.1 to 687.42.1. The package set is untouched by it,
+  # verified the same day by re-running scripts/record_environment.R on ARC and
+  # diffing against config/arc_environment_recorded.csv: 190 packages both sides,
+  # none added, none removed, no version drift, and renv.lock agreeing with every
+  # installed version.
+  kernel: "5.14.0-687.42.1.el9_8.x86_64"
+  kernel_previously_recorded: "5.14.0-687.29.1.el9_8.x86_64"
 
 containers:
   # Checked on 2026-07-30: apptainer, singularity, podman and docker are absent from
