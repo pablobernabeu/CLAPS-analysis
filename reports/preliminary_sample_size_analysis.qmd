@@ -295,8 +295,9 @@ pp_atleast <- function(x, ...) { z <- pooled_post(...); 1 - pbeta(x, z$a, z$b) }
 prob_txt   <- function(x) if (x < 0.01) "less than 0.01" else num2(x)
 pp_below   <- function(x, ...) { z <- pooled_post(...); pbeta(x, z$a, z$b) }
 
-# 380 cells were submitted; about one in fifteen has been lost in this arm, so the
-# predictive assumes 355 usable.
+# 380 cells were submitted and then cancelled before any started, so this arm has no loss
+# rate of its own. The predictive allows for some attrition anyway, at 355 of 380 usable.
+# The choice does not matter: at 380 both quoted figures still render as 65% and 0.06.
 N_NEW_SUBMITTED <- 380L
 N_NEW_USABLE    <- 355L
 pooled_predictive <- local({
@@ -548,9 +549,8 @@ sign divided by the same odds under the prior, so under a symmetric prior a valu
 of 10 to 1 on the direction. That is a posterior probability of 0.91, or about 1.34 posterior
 standard deviations from zero. It is not the point-null Bayes factor of a default two-sided
 test, which is a different quantity on a different scale, and under the same $N(0, 0.5)$
-prior a directional 10 is worth a point-null 1 at each language's precision. What that
-distinction costs, and what it means for the target venue's own threshold, is taken up under
-Limitations. The frequentist equivalent is larger
+prior a directional 10 is worth a point-null 1 at each language's precision. The
+frequentist equivalent is larger
 than 1.34, because the zero-centred prior shrinks the estimate towards zero, so the sampling
 estimate has to sit further from zero than the posterior does, by a factor of $\sqrt{1 +
 \mathrm{SE}^2 / 0.5^2}$. For English at 80 participants, where the simulated detection rate
@@ -1230,7 +1230,10 @@ unchanged, namely directional Savage-Dickey Bayes factors on the pooled focal co
 under the same zero-centred priors. The recommendation is 80 participants per language, with
 100 the most any team would be asked for, so the estimate combines the pooled cells at or
 below 100. The grid itself runs from 50 to 150 per language, and the cells above 100 are
-retained for record interest. No further simulation is queued or running. The per-language decision arm, at 70, 80 and 100 participants, carries 120 replicates per
+retained for record interest. No further simulation is running, and none is scheduled to
+run. The only CLAPS tasks still in the queue are administratively held remnants of an
+earlier array that will not execute. The per-language decision arm, at 70, 80 and 100
+participants, carries 120 replicates per
 cell, which brings its Monte-Carlo error near a power of 80% down to about four percentage
 points. The pooled cells hold far fewer, as the next paragraph says. The pooled analytic ceiling given
 below is computed from the fitted per-language models, not from a single pooled fit. The
@@ -1238,7 +1241,8 @@ pooled model has separately been fitted to the combined real pilot data, and wha
 shows is set out in its own subsection below, because it qualifies the figures reported
 here.
 
-The simulated pooled cells are complete. `r pooled_interim`
+The pooled arm has finished computing. Of the 180 cells submitted, 135 returned, the rest
+lost to the ten-day wall, and nothing is still running. `r pooled_interim`
 
 The rationale is theoretical before it is statistical. The hypothesis CLAPS tests is
 cross-linguistic, and the evidence for it has always been read across languages, most
@@ -1433,6 +1437,14 @@ the full pilot posteriors, so the limitation does not reach them. Replication it
 complete, since the original single-language grid finished all 720 of its cells and the low
 counts noticed mid-run were cells still computing.
 
+An audit of seed allocation, prompted by a failing continuous-integration check, found two
+grids sharing a seed base and a smoke grid sharing a seed with a production cell. Both are
+fixed. Neither touched a reported figure, because the two arms concerned produced no output
+at all, their arrays having been cancelled before any task started. The arm the
+recommendation rests on was checked directly. Its 1,080 cells carry 1,080 distinct seeds,
+contiguous over 940000 to 941079, disjoint from every other committed grid once the
+per-language offsets are expanded, and each resolves to its own output file.
+
 The analysis rests on
 `r format(n_assurance + n_safeguard + sum(pooledp$reps) + n_lit, big.mark = ",")` simulated
 studies in the cells reported here, and they are not evenly spread. The per-language assurance
@@ -1452,7 +1464,8 @@ cells at face value under a flat prior, the true rate at a Bayes factor of 10 is
 near `r pct0(pooled_post("p_h1b")$k / pooled_post("p_h1b")$n)`, with an exact interval from
 `r pct0(pooled_combined("p_h1b")$lo)` to `r pct0(pooled_combined("p_h1b")$hi)` and a
 probability of `r prob_txt(pp_atleast(0.70, "p_h1b"))` that it is as high as 70%. A run of
-`r N_NEW_SUBMITTED` further cells at 80 participants per language was prepared to tighten this,
+`r N_NEW_SUBMITTED` further cells at 80 participants per language was submitted to tighten this
+and cancelled before any of them started,
 and then set aside on the strength of its own arithmetic. The chance of landing more than ten
 points from the current figure is about `r num2(pooled_predictive$p_beyond_10)`, and the new
 figure would have fallen within five points of the current one roughly
@@ -1473,42 +1486,18 @@ Individual cells close to the threshold should be read as near target, since eac
 `r min(jp_a$reps)` to `r max(jp_a$reps)` simulated studies, and the conclusions rest on the
 pattern across sample sizes.
 
-Every power figure in this report is directional, and a point-null criterion would give
-different ones. The order-restricted and point-null Bayes factors are connected by a simple
-identity, the first being the second scaled by the ratio of the posterior to the prior
-probability of the restriction [@moreyWagenmakers2014]. The factor used here is a ratio of
-two such quantities, one for each sign. Converting it needs the posterior density at
-zero, and the per-replicate records retain only the directional factor with its tail
-probabilities and convergence diagnostics. A detection rate under a point null therefore
-cannot be recovered from the stored output, and producing one would mean re-running a
-simulation programme that is now closed. A design analysis is specific to the criterion it
-targets [@schonbrodtWagenmakers2018], so the rates above should not be read across to a
-point-null test.
-
-The pilot posteriors do survive, and they give an indication. Against the same $N(0, 0.5)$
-prior, the interaction's point-null Bayes factor on the real pilot data is about 1,300 for
-English, 4,400 for Norwegian and 2 for Turkish, the ordering the directional criterion also
-gives. The design assumes smaller effects than those pilot means, and there the margin is
-thin. At the effects behind the rates above, and with the alternative as a half-normal on
-the predicted side, the three factors are 11.0, 51.4 and 1.8, so English clears a threshold
-of 10 by almost nothing.
-
-Carrying the same normal approximation through to a detection rate sets out what that costs.
-Under a point-null criterion the three languages fall to roughly a half, seven in ten and
-one in eight, against the `r pct0(h1bv("English", 80))`, `r pct0(h1bv("Norwegian", 80))` and
-`r pct0(h1bv("Turkish", 80))` the directional criterion gives at the same sample. Those
-three are approximate figures with no simulation behind them, and they move with the assumed
-effect, English ranging from about a third to about three fifths across the pilot effects
-the design draws from. The conclusion holds across that whole range. Under a point-null
-reading no language in the design reaches 90%, recruiting further does not repair it because
-the verb pool is what binds, and the recommendation would not stand in its present form.
-
-The point-null factor is also sensitive to the width of the alternative prior
-[@jeffreys1961; @vanpaemel2010], so a criterion stated against a point null commits the
-protocol to defending that width. The directional factor carries no comparable dependence,
-and it is the criterion the design was sized for and the one recommended here. Which of the
-two the journal intends is a question Stage 1 has to settle. The answer bears on whether the
-design is viable at all, the participant number being fixed by the verb pool either way.
+Every power figure in this report is directional. The Bayes factor weighs the predicted
+sign against the opposite one, and no null hypothesis enters it [@moreyWagenmakers2014].
+Nature Human Behaviour asks for a factor of at least 10 in favour of the experimental
+hypothesis over the null. It also asks authors to state the distribution representing the
+theory's prediction, and it names a half-normal on the likely effect size as one acceptable
+form. Stage 1 will declare that form. At the effects behind the rates above, and with the
+alternative as a half-normal on the predicted side, the interaction's factor against a point
+null is about 11 for English, 51 for Norwegian and 2 for Turkish, the ordering the
+directional criterion also gives. English clears 10 by little. A simulated detection rate
+under that criterion cannot be recovered from the stored records, which keep only the
+directional factor, and a design analysis is specific to the criterion it targets
+[@schonbrodtWagenmakers2018].
 
 This is an a-priori power analysis, a simulation under assumed effects to size the study, and
 it is distinct from the confirmatory analysis of the real ratings that will be run once data

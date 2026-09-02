@@ -46,10 +46,31 @@ for (i in seq_along(files)) {
   }
   dg <- d$diagnostics
   ok <- if (!is.null(dg) && !is.null(dg$convergence_ok)) isTRUE(dg$convergence_ok[[1]]) else NA
+  # model_level is carried through so that cells from different arms of the model
+  # ladder cannot be pooled into one row. R/11_simulate_pooled_v2.R writes it into
+  # every summary. The guard below is the reason it is read: the submission script
+  # defaults OUTPUT_DIR to design_pooled_v2 whatever GRID it is given, so a
+  # model-comparison run that sets only GRID would otherwise deposit its arms in the
+  # directory this script aggregates, and they would be averaged in silently.
+  ml <- if (is.null(s$model_level)) {
+    NA_character_
+  } else {
+    as.character(s$model_level)[[1]]
+  }
   rows[[i]] <- data.frame(n_participants = as.integer(s$n_participants),
+                          model_level = ml,
                           bf_h1a = h1a, bf_h1b = h1b, converged = ok)
 }
 cells <- dplyr::bind_rows(rows)
+
+# Refuse to summarise a mixture of model levels rather than average across them.
+lv <- unique(stats::na.omit(cells$model_level))
+if (length(lv) > 1L) {
+  stop(sprintf(paste("[aggregate pooled] %d model levels present in %s (%s).",
+                     "Aggregating them together would mix arms of the model ladder.",
+                     "Re-run with --cells pointing at a single arm's directory."),
+               length(lv), opt$cells, paste(sort(lv), collapse = ", ")), call. = FALSE)
+}
 
 if (sum(skipped) > 0) {
   message(sprintf("[aggregate pooled] skipped %d of %d files (%s)", sum(skipped), length(files),

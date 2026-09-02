@@ -83,6 +83,13 @@ and `tests/testthat/test-seed-disjointness.R` fails if that ever stops being tru
 Bases from 1.4e6 upward are free. Leave a gap of at least 1e5 above a new base, so
 that raising a grid's replicate count later cannot run it into its neighbour.
 
+Four of the rows above name files kept only in the private repository, so a reader of
+the public mirror will not find them there. They are `generate_pooled_model_comparison_grid.R`
+with its two committed grids, and the two smoke grids at 9.29e5 and 9.49e5. The
+model-comparison arm has never run and no figure in the report comes from it. Its ranges are
+recorded here because the registry has to reserve every base that is already spoken for,
+whether or not the grid holding it is published.
+
 Smoke grids are the one exception, sitting 1000 below the production base they
 rehearse (9.29e5 under 9.3e5, 9.49e5 under 9.5e5, 9.59e5 under 9.6e5), so that a
 smoke cell and the real cell it rehearses are never confused. A smoke grid is one
@@ -180,7 +187,7 @@ No published result was affected, and nothing was orphaned: neither arm had been
 
 | Generator | Old base | New base | Computed cells | Orphaned |
 |---|---|---|---|---|
-| `generate_databased_v2_decision_grid.R` | 9.4e5 | 9.4e5 (kept) | 1080, on ARC under `$DATA/outputs/design_databased_v2`; none held locally | 0 |
+| `generate_databased_v2_decision_grid.R` | 9.4e5 | 9.4e5 (kept) | 1080, on ARC under `$DATA/outputs/design_databased_v2_decision`; none held locally | 0 |
 | `generate_pooled_v2_N80_precision_grid.R` | 9.4e5 | 1.3e6 | 0, arrays 8607044 and 8607045 cancelled before any task started | 0 |
 | `generate_pooled_model_comparison_grid.R --smoke` | 9.5e5 | 9.49e5 | 0, never run; the one matching three-task array was cancelled the same day, before any task started | 0 |
 
