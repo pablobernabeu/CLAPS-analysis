@@ -347,13 +347,13 @@ data show.
 
 The recommendation is a confirmatory test in each language, judged on the interaction alone
 at a Bayes factor of 10, with 80 participants per language and the current verb pool. At
-that sample English detects the interaction in `r pct0(h1bv("English", 80))` of simulated
+that sample, English detects the interaction in `r pct0(h1bv("English", 80))` of simulated
 studies `r h1bci("English", 80)` and Norwegian in `r pct0(h1bv("Norwegian", 80))`
 `r h1bci("Norwegian", 80)`. The English figure meets a 90% target as a point estimate, and
 its plateau above 80 participants sits just below it, at `r pct0(eng_plateau$p)`. Turkish
 reaches `r pct0(h1bv("Turkish", 80))` and is reported as estimation. The three languages analysed together remain in the preregistration as the cross-linguistic
 synthesis, while the confirmatory claim rests on the per-language tests. With three
-languages that model succeeds in
+languages, that model succeeds in
 `r pooled_combined("p_h1b")$txt` of simulated studies at a Bayes factor of 10, and no
 sample size lifts it. The threshold matters because this Bayes factor is directional: 3
 corresponds to a one-sided tail probability of `r sprintf("%.2f", bf_onep(3))` and 6 to
@@ -540,14 +540,17 @@ on the correlations among those random effects [@gelman2006; @lewandowskiKurowic
 
 Evidence for each prediction is summarised by a directional Savage-Dickey Bayes factor, a
 number that weighs how strongly the data favour the predicted direction of the effect over
-there being no effect, obtained by sampling the prior alongside the posterior
+the opposite direction, obtained by sampling the prior alongside the posterior
 [@wagenmakersLodewyckxKuriyalGrasman2010]. A simulated study counts as a detection when its
 Bayes factor reaches 10, the threshold the project set for strong evidence. The Bayes factor
 used here is directional, meaning the posterior odds that the coefficient carries the predicted
 sign divided by the same odds under the prior, so under a symmetric prior a value of 10 is odds
 of 10 to 1 on the direction. That is a posterior probability of 0.91, or about 1.34 posterior
 standard deviations from zero. It is not the point-null Bayes factor of a default two-sided
-test, which is a different quantity on a different scale. The frequentist equivalent is larger
+test, which is a different quantity on a different scale, and under the same $N(0, 0.5)$
+prior a directional 10 is worth a point-null 1 at each language's precision. What that
+distinction costs, and what it means for the target venue's own threshold, is taken up under
+Limitations. The frequentist equivalent is larger
 than 1.34, because the zero-centred prior shrinks the estimate towards zero, so the sampling
 estimate has to sit further from zero than the posterior does, by a factor of $\sqrt{1 +
 \mathrm{SE}^2 / 0.5^2}$. For English at 80 participants, where the simulated detection rate
@@ -586,7 +589,7 @@ reuses one of them.
 ## Data-grounded results
 
 The data-grounded analysis is the primary basis for the recommendation, and it is now
-substantially complete. In its assurance form it draws the focal effects afresh from each
+substantially complete. In its assurance form, it draws the focal effects afresh from each
 language's pilot posterior on every simulated study, so the reported power carries the
 pilot's own uncertainty about the size of those effects. @tbl-pilot-joint reports the joint
 power, the proportion of simulated studies in which both focal predictions clear the
@@ -1015,20 +1018,17 @@ passive slope reported as estimation, brings English to 80% on the interaction a
 `r h1b_cross("English")` participants and Norwegian at `r h1b_cross("Norwegian")`, at the
 current verb counts and at the strong threshold. Those crossing points are the smallest
 samples at which the *lower bound* of the simulated rate reaches 80%, not the first cell
-whose point estimate happens to. With a few dozen replicates per cell the two can differ by a whole sample size. Against the
-90% target the recommendation adopts, the level registered reports are held to, Norwegian
+whose point estimate happens to. With a few dozen replicates per cell, the two can differ by a whole sample size. Against the
+90% target the recommendation adopts, Norwegian
 crosses at `r cross_txt("Norwegian", 0.90)` and English at `r cross_txt("English", 0.90)`,
 its lower bound within the cap peaking at `r pct0(h1blb("English", 80))`, at 80. No
 feasible English sample can satisfy the joint gate on both predictions. This option does not help Turkish, whose interaction ceiling is
 `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` even on its own.
 
-The second option makes the cross-linguistic claim the primary confirmatory test. The
-theoretical claim CLAPS addresses is explicitly cross-linguistic, that affectedness structures
-passive acceptability across languages, and the meta-analytic synthesis of the earlier studies
-frames the evidence in exactly those terms [@ambridgeArnonBekman2023]. A hierarchical model
-fitted to all three languages jointly tests that claim directly. It also multiplies the
-verb-level information, some 210 verb-by-language units in place of 72, which divides the
-precision floor by about the square root of three. On the pilot effects, every language's focal
+The second option makes the cross-linguistic claim the primary confirmatory test. A
+hierarchical model fitted to all three languages jointly tests that claim directly, and it
+multiplies the verb-level information, some 210 verb-by-language units in place of 72, which
+divides the precision floor by about the square root of three. On the pilot effects, every language's focal
 terms point the predicted way, so the pooled test starts from a favourable position. Turkish
 then contributes fully to the confirmatory result, and its language-specific effects are
 reported as estimates with credible intervals, which reflects what a 72-verb single-language
@@ -1104,14 +1104,14 @@ The project's starting point was a Bayes factor of 10, which the internal record
 carries as the primary criterion for the focal interaction, with 3 as a secondary one, and 10
 is the criterion this report recommends. An interim version of this analysis recommended 6,
 because the pooled cross-language test was then the confirmatory test and 6 was the strongest
-criterion it came close to meeting. At the feasible cap the pooled test detects the interaction
+criterion it came close to meeting. At the feasible cap, the pooled test detects the interaction
 in `r pooled_combined("p_h1b")$txt` of simulated studies at a Bayes factor of 10, against
 `r pooled_combined("p_h1b_bf6")$txt` at 6, and no amount of recruiting closes that gap, for the
 reason the rest of this report sets out: the affectedness effect is bounded by the number of
 verbs. Judged language by language, the design does not need the concession. A Bayes factor of
 6 is a one-sided tail of `r sprintf("%.2f", bf_onep(6))`, a figure reviewers of a registered
 report will read as lenient, and the single-language tests give up little by holding to 10. At
-80 participants the move from 6 to 10 costs English `r pct0(h1bv("English", 80, "p_h1b_bf6"))`
+80 participants, the move from 6 to 10 costs English `r pct0(h1bv("English", 80, "p_h1b_bf6"))`
 to `r pct0(h1bv("English", 80))` and Norwegian `r pct0(h1bv("Norwegian", 80, "p_h1b_bf6"))` to
 `r pct0(h1bv("Norwegian", 80))`. The pooled test is the one that pays, which is why its role is
 the synthesis.
@@ -1150,9 +1150,9 @@ two focal predictions, `r pct0(jval("Turkish", 80, "p_h1a"))` against
 should lead on the slope.
 
 Eighty participants is the recommendation, and 100 would not change it. Between those two
-samples the simulations differ by less than their own resolution, and the analytic bounds
+samples, the simulations differ by less than their own resolution, and the analytic bounds
 say the most that 20 further participants could add is a few points, because the binding
-information is in the verbs. Seventy would change it. At 70 the English rate falls to
+information is in the verbs. Seventy would change it. At 70, the English rate falls to
 `r pct0(h1bv("English", 70))`, a drop larger than the Monte-Carlo error, so 80 is the
 smallest sample at which English sits at the target and the figure has no slack below it.
 The case for 80 is that it is the number the teams can collect.
@@ -1183,7 +1183,7 @@ outstanding.
 |:-----------------|:----------------------|:-----------------------------------------------|
 | Adequacy rule | The interaction alone | No feasible sample reaches the conjunction of both focal predictions; dropping it lifts the English ceiling from `r pct0(ppv("English", "ceiling_joint_bf10"))` to `r pct0(ppv("English", "ceiling_h1b_bf10"))`. The passive-only slope is reported as a positive control |
 | Evidence threshold | Bayes factor of 10 | The project's criterion, kept. Per language it costs little: English `r pct0(h1bv("English", 80, "p_h1b_bf6"))` at 6 against `r pct0(h1bv("English", 80))` at 10. An interim recommendation of 6 was made for the pooled test, which sits at `r pct0(pooled_combined("p_h1b")$p)` at 10 and no sample can lift, and that test is no longer the confirmatory one |
-| Power target | 90% per language | The level registered reports are held to. Norwegian clears it by the lower-bound rule, at `r pct0(h1blb("Norwegian", 80))`. English meets it as a point estimate, with a plateau of `r pct0(eng_plateau$p)` above 80 participants |
+| Power target | 90% per language | What the design supports at `r ppv("English", "n_verbs")` verbs. Nature Human Behaviour, the target venue, sets its 0.95 requirement for frequentist analysis plans. Of a Bayesian plan it asks either sampling until a Bayes factor of 10, or a stated maximum feasible sample at which an inconclusive result would still matter, and it attaches no power threshold to the second. Norwegian clears 90% by the lower-bound rule, at `r pct0(h1blb("Norwegian", 80))`. English meets it as a point estimate, with a plateau of `r pct0(eng_plateau$p)` above 80 participants |
 | Sample size | 80 per language | Between 80 and 100 the simulations differ by less than their own resolution, and the verb count binds. At 70 English falls to `r pct0(h1bv("English", 70))`, so 80 has no slack below it. 80 is the number the teams can collect |
 | Confirmatory test | Per language, interaction alone | Each language is powered and judged on its own. The pooled model is kept as the preregistered synthesis: with three languages it reaches `r pct0(pooled_combined("p_h1b")$p)` at a Bayes factor of 10, and its evidence grows with the number of languages, which is not yet known |
 | Turkish | Estimation only | Its ceiling on the interaction is `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` at a Bayes factor of 10 whatever the sample. Settled; further cells will not change it |
@@ -1204,16 +1204,16 @@ One caveat applies to the whole table. Every rate in this report is computed ove
 cells, whether or not they pass the convergence screen, since a real analysis would not discard
 a study for imperfect sampling. The proportion passing that screen falls as the sample grows,
 so rates at different sample sizes are averages over somewhat different mixtures of converged
-and unconverged fits. On the screened subset the ordering of adjacent sample sizes sometimes
+and unconverged fits. On the screened subset, the ordering of adjacent sample sizes sometimes
 reverses. This does not affect the recommendation, which rests on the plateau across sample
 sizes and on a sample size chosen for feasibility, but it is a reason to treat small
-differences between adjacent cells as noise. At 80 participants the screen is passed by
+differences between adjacent cells as noise. At 80 participants, the screen is passed by
 `r jval("English", 80, "n_converged")` of `r jval("English", 80, "reps")` English fits,
 `r jval("Norwegian", 80, "n_converged")` of `r jval("Norwegian", 80, "reps")` Norwegian and
 `r jval("Turkish", 80, "n_converged")` of `r jval("Turkish", 80, "reps")` Turkish. The failures
 are on effective sample size and R-hat under the light replicate sampler, with no divergent
 transitions or treedepth saturations in any of them, and the confirmatory fits use a sampler
-six times heavier. Over the passing fits alone the interaction rate is
+six times heavier. Over the passing fits alone, the interaction rate is
 `r pct0(h1bv("English", 80, "p_h1b_converged"))` for English and
 `r pct0(h1bv("Norwegian", 80, "p_h1b_converged"))` for Norwegian, and the English difference is
 within what a subset of that size would show by chance.
@@ -1382,13 +1382,13 @@ sampler the proposal sets for confirmatory fits, the sixteen chains of 5,000 ite
 above, six times the post-warm-up draws of a replicate and enough to clear those thresholds.
 Treedepth saturation is the other mode, and a longer run does nothing for it, because the
 binding constraint is the depth of each trajectory. The amendment exists to remove it, and the
-refit was the test of whether it succeeds. It does not. On the real pilot data the amended
+refit was the test of whether it succeeds. It does not. On the real pilot data, the amended
 model saturated the treedepth on three quarters of its iterations, as the unamended one had.
 The proposal leaves no discretion on the consequence. Zero divergences and zero treedepth
 saturations are locked acceptance criteria for confirmatory fits, and a fit that misses them
 falls to the next level of the model ladder, its result set aside. Raising the maximum tree
 depth is not an available remedy, the configuration reserving it for diagnosis. For the pooled
-model the next level is the uncorrelated cross-language model, which the record of decisions
+model, the next level is the uncorrelated cross-language model, which the record of decisions
 names for the pooled design analysis and which no pooled cell has simulated. Its operating
 characteristics are expected to be close to those reported above, since the focal interaction's
 precision is set by the by-language term and hardly by the correlations, but that is an
@@ -1472,6 +1472,43 @@ analysis is closed on that basis.
 Individual cells close to the threshold should be read as near target, since each rests on
 `r min(jp_a$reps)` to `r max(jp_a$reps)` simulated studies, and the conclusions rest on the
 pattern across sample sizes.
+
+Every power figure in this report is directional, and a point-null criterion would give
+different ones. The order-restricted and point-null Bayes factors are connected by a simple
+identity, the first being the second scaled by the ratio of the posterior to the prior
+probability of the restriction [@moreyWagenmakers2014]. The factor used here is a ratio of
+two such quantities, one for each sign. Converting it needs the posterior density at
+zero, and the per-replicate records retain only the directional factor with its tail
+probabilities and convergence diagnostics. A detection rate under a point null therefore
+cannot be recovered from the stored output, and producing one would mean re-running a
+simulation programme that is now closed. A design analysis is specific to the criterion it
+targets [@schonbrodtWagenmakers2018], so the rates above should not be read across to a
+point-null test.
+
+The pilot posteriors do survive, and they give an indication. Against the same $N(0, 0.5)$
+prior, the interaction's point-null Bayes factor on the real pilot data is about 1,300 for
+English, 4,400 for Norwegian and 2 for Turkish, the ordering the directional criterion also
+gives. The design assumes smaller effects than those pilot means, and there the margin is
+thin. At the effects behind the rates above, and with the alternative as a half-normal on
+the predicted side, the three factors are 11.0, 51.4 and 1.8, so English clears a threshold
+of 10 by almost nothing.
+
+Carrying the same normal approximation through to a detection rate sets out what that costs.
+Under a point-null criterion the three languages fall to roughly a half, seven in ten and
+one in eight, against the `r pct0(h1bv("English", 80))`, `r pct0(h1bv("Norwegian", 80))` and
+`r pct0(h1bv("Turkish", 80))` the directional criterion gives at the same sample. Those
+three are approximate figures with no simulation behind them, and they move with the assumed
+effect, English ranging from about a third to about three fifths across the pilot effects
+the design draws from. The conclusion holds across that whole range. Under a point-null
+reading no language in the design reaches 90%, recruiting further does not repair it because
+the verb pool is what binds, and the recommendation would not stand in its present form.
+
+The point-null factor is also sensitive to the width of the alternative prior
+[@jeffreys1961; @vanpaemel2010], so a criterion stated against a point null commits the
+protocol to defending that width. The directional factor carries no comparable dependence,
+and it is the criterion the design was sized for and the one recommended here. Which of the
+two the journal intends is a question Stage 1 has to settle. The answer bears on whether the
+design is viable at all, the participant number being fixed by the verb pool either way.
 
 This is an a-priori power analysis, a simulation under assumed effects to size the study, and
 it is distinct from the confirmatory analysis of the real ratings that will be run once data
