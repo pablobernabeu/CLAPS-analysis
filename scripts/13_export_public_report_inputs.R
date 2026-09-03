@@ -111,7 +111,13 @@ figure <- ggplot(
     width = 0.04, height = 0.20, alpha = 0.05, size = 0.45,
     show.legend = FALSE
   ) +
-  geom_smooth(method = "lm", formula = y ~ x, se = TRUE, linewidth = 1) +
+  # key_glyph = "path" draws the key as a bare line. The default glyph for a
+  # ribbon-bearing smooth paints the confidence band into the key too, in the
+  # band's own grey, which showed as a grey swatch behind each coloured line.
+  geom_smooth(
+    method = "lm", formula = y ~ x, se = TRUE, linewidth = 1,
+    key_glyph = "path"
+  ) +
   facet_grid(Language ~ Gender) +
   scale_colour_manual(values = pal_stype) +
   scale_fill_manual(values = pal_stype) +
@@ -119,8 +125,17 @@ figure <- ggplot(
   labs(
     x = "Agent semantic affectedness (z-scored within language)",
     y = "Acceptability rating (1 to 7)",
-    colour = "Sentence type",
-    fill = "Sentence type"
+    colour = "Sentence type"
+  ) +
+  # Passive leads the legend because it is the model's reference level, set in
+  # R/02_preprocess_factors.R, so the reading order matches the contrast the
+  # coefficients answer. Do not reorder it to put Active first.
+  # The key carries the trend line alone. Mapping fill as well drew a confidence
+  # band behind each key, which at this size read as a colour patch, and the note
+  # in the report already explains what the bands are.
+  guides(
+    colour = guide_legend(override.aes = list(linewidth = 1.8, alpha = 1)),
+    fill = "none"
   ) +
   theme_bw(base_size = 10) +
   # Kept deliberately identical to the fig-pilot chunk in
@@ -133,7 +148,12 @@ figure <- ggplot(
     strip.text = element_text(face = "bold", size = 8.5),
     strip.text.y = element_text(margin = margin(l = 3, r = 3)),
     axis.text.y = element_text(size = 8),
-    panel.spacing.y = grid::unit(5, "pt")
+    panel.spacing.y = grid::unit(5, "pt"),
+    # Wider keys, on no background, so each one reads as a line. The grey key
+    # panel was legible while a confidence band tinted it, but with the band
+    # dropped from the key it became a swatch behind the line.
+    legend.key = element_blank(),
+    legend.key.width = grid::unit(22, "pt")
   )
 
 # geom_jitter draws its offsets when the plot is built. Fixing the RNG state

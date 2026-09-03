@@ -1201,11 +1201,12 @@ The choices that follow from this are set out in @tbl-choices. Each row is a dec
 collaborators, with what the evidence says about it and what, if anything, is still
 outstanding.
 
-<!-- This table is tall enough to break across a page, which strands a single row
-     under the caption and repeats the header. The break below keeps it whole. If the
-     text above is substantially rewritten, check the rendered page and adjust. -->
-
-`\newpage`{=latex}
+<!-- The table is tall enough to break across a page. A \newpage sat here to keep it
+     whole, on the reasoning that a break strands a row under the caption and repeats
+     the header. The text above it has since shrunk to three lines, so the break was
+     leaving a page holding nothing else, which is the worse of the two. The table is
+     a longtable and repeats its header on the continuation. If the text above grows
+     again, check the rendered pages before restoring the break. -->
 
 | Choice | Decision | What settled it |
 |:-----------------|:----------------------|:-----------------------------------------------|
