@@ -155,10 +155,12 @@ figure <- ggplot(
     legend.key = element_blank(),
     legend.key.width = grid::unit(22, "pt"),
     # The entries sat close enough that each label was as near the next key as to
-    # its own, so the pairing had to be guessed. Widening the gap between entries
-    # is preferred to stacking them, which would take three rows of height from a
-    # figure that has little to spare.
-    legend.key.spacing.x = grid::unit(18, "pt")
+    # its own, so the pairing had to be guessed. A modest gap settles it, and is
+    # preferred to stacking, which would take three rows of height from a figure
+    # that has little to spare. The title takes a gap of its own so it does not
+    # read as the first entry's label.
+    legend.key.spacing.x = grid::unit(10, "pt"),
+    legend.title = element_text(margin = margin(r = 8))
   )
 
 # geom_jitter draws its offsets when the plot is built. Fixing the RNG state

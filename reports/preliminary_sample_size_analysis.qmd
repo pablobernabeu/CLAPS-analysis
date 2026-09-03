@@ -684,7 +684,9 @@ kable(ce, align = "lrrrrr")
 
 *Note.* Ceilings are the probability of a Bayes factor of at least 10 with unlimited
 participants, from the `r format(ppv("English", "ndraws"), big.mark = ",")` pilot posterior
-draws and the fitted by-verb covariance at 72 verbs and 66 for Norwegian. The last columns
+draws and the fitted by-verb covariance at 72 verbs and 66 for Norwegian. The H1b column is
+the active-by-affectedness interaction, the confirmatory prediction, and the H1a column the
+passive affectedness slope. The last columns
 give the verbs needed for an 80% and 90% joint ceiling. A ceiling just above target, as for
 English, still leaves it out of reach, since any finite sample sits below its ceiling. The
 English interaction ceiling of `r pct1(ppv("English", "ceiling_h1b_bf10"))` is likewise the
@@ -849,16 +851,19 @@ ggplot(curve_df, aes(n_participants, p, colour = Prediction, shape = Prediction)
   theme(legend.position = "top", panel.grid.minor = element_blank(),
         strip.text = element_text(face = "bold"),
         # As in Figure 1, the two entries were close enough that the label to key
-        # pairing was ambiguous. The panels are short, so the gap is widened
-        # instead of stacking the entries.
-        legend.key.spacing.x = grid::unit(18, "pt"))
+        # pairing was ambiguous, and the panels are short, so a modest gap settles
+        # it without stacking. The title takes a gap of its own.
+        legend.key.spacing.x = grid::unit(10, "pt"),
+        legend.title = element_text(margin = ggplot2::margin(r = 8)))
 ```
 
 `\vspace{-8pt}`{=latex}
 
 *Note.* Points are detection probabilities over the simulated studies in each complete cell,
 with Wilson 95% intervals reflecting Monte-Carlo uncertainty. The dashed line marks the
-earlier 80% target. Points are dodged so the two predictions do not overlap.
+earlier 80% target. Points are dodged so the two predictions do not overlap. H1b is the
+active-by-affectedness interaction, which is the confirmatory prediction, and H1a the
+passive affectedness slope, which is reported as a positive control.
 
 `\vspace{12pt}`{=latex}
 
@@ -1650,10 +1655,12 @@ bf_10      <- (post_prob / (1 - post_prob)) / (prior_prob / (1 - prior_prob))
 \end{center}
 ```
 
-This appendix reports the operating characteristics for all four predictions in every available
-cell of the corrected literature-anchored run with at least ten replicates, namely the
-probability of exceeding the primary and secondary Bayes-factor thresholds, the median Bayes
-factor and the convergence rate, set out in @tbl-opchar, which covers `r lit_language_text`.
+This appendix reports the operating characteristics for all four predictions in every cell of
+the corrected literature-anchored run holding at least ten replicates, set out in
+@tbl-opchar, which covers `r lit_language_text`. The note under the table defines each
+column. Under Hyp, H1b is the active-by-affectedness interaction, H1a the passive
+affectedness slope, and H2a and H2b the secondary pseudo-passive interaction in each
+direction.
 
 ```{r tbl-opchar}
 #| tbl-cap: "Operating Characteristics by Design Condition and Prediction"
@@ -1683,10 +1690,10 @@ kable(opc, booktabs = TRUE, longtable = TRUE, align = "lrrlrrrrr",
 `\vspace{-18pt}`{=latex}
 
 *Note.* The probability columns give the proportion of simulated studies reaching a Bayes
-factor of 10 and of 3, Median BF the median across them to two significant figures,
-Convergence the proportion of fits meeting the criteria, and Reps the number of studies in
-the cell. Cells holding fewer than ten replicates are excluded, and Norwegian has no
-pseudo-passive, hence half as many rows.
+factor of 10 and of 3, Median BF their median to two significant figures, Convergence the
+proportion of fits meeting the criteria, and Reps the number of studies in the cell. Cells
+with fewer than ten replicates are excluded, and Norwegian has no pseudo-passive, hence
+half as many rows.
 
 `\vspace{12pt}`{=latex}
 
