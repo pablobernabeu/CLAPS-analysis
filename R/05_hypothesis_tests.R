@@ -33,16 +33,19 @@
 #   formed. The functions below raise an error rather than substituting an
 #   analytic approximation.
 #
-# PREREGISTERED TEST DIRECTIONS:
-#   H1 — ONE-TAILED, negative direction:
-#         S_TypeActive:Semantics < 0  (smaller affectedness slope for actives than passives).
+# PREREGISTERED TEST DIRECTIONS, lettered as the coefficients enter the model:
+#   H1a — ONE-TAILED, positive direction:
+#         Semantics > 0 for passives, the reference level.
+#         Supporting prediction, held as a prespecified positive control.
 #
-#   H2 — TWO-TAILED (both directions reported as H2a + H2b):
+#   H1b — ONE-TAILED, negative direction:
+#         S_TypeActive:Semantics < 0  (smaller affectedness slope for actives than passives).
+#         Primary prediction; the confirmatory decision rests on this one alone.
+#
+#   H2  — TWO-TAILED (both directions reported as H2a + H2b):
 #         S_TypePseudo_Passive:Semantics.
 #         Secondary prediction; Turkish pilot showed larger effect for pseudo-passives
 #         (opposite direction).
-#
-#   H1a — Semantics > 0 for passives (reference level) — supporting context check.
 
 suppressPackageStartupMessages({
   library(brms)

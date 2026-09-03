@@ -160,7 +160,12 @@ figure <- ggplot(
     # that has little to spare. The title takes a gap of its own so it does not
     # read as the first entry's label.
     legend.key.spacing.x = grid::unit(10, "pt"),
-    legend.title = element_text(margin = margin(r = 8))
+    legend.title = element_text(margin = margin(r = 8)),
+    # A hairline box gathers the entries and sets the legend off from the
+    # panels. Pale and thin enough that it groups without competing with the
+    # keys it encloses.
+    legend.background = element_rect(fill = NA, colour = "grey78", linewidth = 0.25),
+    legend.margin = margin(t = 3, r = 7, b = 3, l = 7)
   )
 
 # geom_jitter draws its offsets when the plot is built. Fixing the RNG state

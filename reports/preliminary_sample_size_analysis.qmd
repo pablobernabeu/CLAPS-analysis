@@ -67,6 +67,13 @@ library(knitr)
 library(kableExtra)
 library(ggplot2)
 
+# One language order for every table and figure. It is the order the pilot
+# tables already use; the point of naming it here is that three displays used to
+# fall back on alphabetical sorting and so disagreed with the rest. union() keeps
+# any language outside the list instead of turning it into NA.
+LANG_LEVELS <- c("English", "Turkish", "Norwegian")
+lang_factor <- function(x) factor(x, levels = union(LANG_LEVELS, sort(unique(x))))
+
 # Tidy per-cell Bayes-factor exceedance from the literature-anchored run,
 # aggregated by scripts/aggregate_literature.R (one row per language x N x
 # n_verbs x hypothesis). p_bf_primary is the proportion of replicates with BF10 >= 10
@@ -77,7 +84,7 @@ library(ggplot2)
 exc <- read_csv("../outputs/design_summary_literature/bf_exceedance_literature.csv",
                 show_col_types = FALSE) |>
   filter(n_verbs %in% c(40, 72))   # 12 and 20 verbs are well below the design's count
-lit_languages <- sort(unique(exc$language))
+lit_languages <- levels(droplevels(lang_factor(exc$language)))
 lit_language_text <- if (length(lit_languages) > 2) {
   paste(paste(head(lit_languages, -1), collapse = ", "), "and", tail(lit_languages, 1))
 } else paste(lit_languages, collapse = " and ")
@@ -135,7 +142,7 @@ jp <- read_csv("../outputs/design_summary_pilot/joint_power_pilot.csv",
                show_col_types = FALSE)
 pp <- read_csv("../outputs/design_summary_pilot/pilot_params_ceilings.csv",
                show_col_types = FALSE) |>
-  mutate(language = factor(language, levels = c("English", "Turkish", "Norwegian"))) |>
+  mutate(language = lang_factor(language)) |>
   arrange(language)
 
 pct0  <- function(x) sprintf("%.0f%%", 100 * x)
@@ -408,7 +415,9 @@ give the figures behind both.
 The data-grounded analysis is substantially complete. Results are in for all three languages up
 to `r max_n("Norwegian")` participants, for English up to `r max_n("English")` and for Turkish
 up to `r max_n("Turkish")`. Nothing further is being simulated: the project has capped
-recruitment at 100 participants, so the cells above that are of record interest only. Each
+recruitment at 100 participants, so the cells above that are of record interest only. A cell
+is one design condition, a language at a given participant count and verb count, and it holds
+many simulated studies, or replicates. Each
 simulated condition rests on `r min(jp_a$reps)` to `r max(jp_a$reps)` studies, so the
 individual figures carry a Monte-Carlo error of several percentage points, that is, the
 uncertainty that comes from basing each figure on a limited number of simulated studies. The
@@ -484,16 +493,19 @@ calibration only. Norwegian has no pseudo-passive.
 The model predicts acceptability from sentence type, from verb affectedness, and from their
 interaction. The passive is the reference level, and the active and the pseudo-passive are
 the comparisons. The focal predictions concern the affectedness slope in the passive and how
-it changes across sentence types. The primary prediction (H1b) is one-tailed and holds that
-affectedness raises passive acceptability more than it raises active acceptability, so the
-active-by-affectedness interaction is negative. A supporting prediction (H1a) holds that
-affectedness raises acceptability in the passive itself, so the passive affectedness slope
-is positive. The confirmatory decision rests on H1b alone. H1a is a prespecified positive
-control: it checks that the interaction means what it is meant to mean, and is reported as
-an estimate. An earlier version of the design required both predictions in the same study,
-and the results below are what led to dropping that requirement. A secondary, two-tailed
-prediction (H2) concerns the pseudo-passive-by-affectedness interaction. It does not gate
-the recommendation and does not apply to Norwegian, which has no pseudo-passive.
+it changes across sentence types. The letters follow the model's coefficients, not the
+standing of each prediction in the design. The reference-level slope takes the first letter,
+and the interactions that depart from it take the later ones. H1a holds that affectedness
+raises acceptability in the passive itself, so the passive affectedness slope is positive.
+H1b, the primary prediction, is one-tailed and holds that affectedness raises passive
+acceptability more than it raises active acceptability, so the active-by-affectedness
+interaction is negative. The confirmatory decision rests on H1b alone. H1a is a prespecified
+positive control: it checks that the interaction means what it is meant to mean, and is
+reported as an estimate. An earlier version of the design required both predictions in the
+same study, and the results below are what led to dropping that requirement. A secondary,
+two-tailed prediction concerns the pseudo-passive-by-affectedness interaction, reported in
+both directions, H2a for the positive one and H2b for the negative. It does not gate the recommendation and does not apply to
+Norwegian, which has no pseudo-passive.
 
 # Design-Analysis Method
 
@@ -566,9 +578,9 @@ alone at a Bayes factor of 10, and fixes a single sample size in advance instead
 smallest one that meets a power target.
 
 Each replicate is fitted with four Markov chains of 3,000 iterations, 1,000 of them warm-up,
-at the same target acceptance rate of 0.99 and maximum tree depth of 12 that the
-confirmatory analysis will use, which leaves 8,000 post-warm-up draws. The proposal
-specifies a heavier run for that single confirmatory fit, sixteen chains of 5,000 iterations
+at the same target acceptance rate of 0.99 and maximum treedepth of 12 that the
+confirmatory analysis will use, which leaves 8,000 post-warm-up draws. The CLAPS project
+proposal specifies a heavier run for that single confirmatory fit, sixteen chains of 5,000 iterations
 with 2,000 of warm-up, or 48,000 draws. The shorter chains add Monte-Carlo noise to each
 simulated Bayes factor without shifting it systematically, so the power figures below are,
 if anything, mildly conservative.
@@ -577,7 +589,7 @@ The literature-anchored grid crosses the three languages with participant counts
 120. The output read here covers `r lit_language_text` from `r lit_n_min` to `r lit_n_max`
 participants at verb counts of 40 and 72. Each completed cell holds 50 replicates, giving a
 Monte-Carlo standard error of about five to six percentage points near a power of 80%, so
-estimates close to the threshold are not perfectly ordered across adjacent sample sizes. The
+estimates close to that target are not perfectly ordered across adjacent sample sizes. The
 central code for the data-generating process, the model and the Bayes factor is reproduced
 in Appendix B. The full operating characteristics of this run, cell by cell, are reported in
 @tbl-opchar in Appendix C, and Appendix D maps the whole repository, including which file
@@ -612,7 +624,7 @@ kable(pj[, c("n_participants", "English", "Turkish", "Norwegian")],
   kableExtra::kable_styling(
     latex_options = "repeat_header",
     repeat_header_method = "replace",
-    repeat_header_text = "\\textbf{Table 1 (continued)}"
+    repeat_header_text = "\\textbf{Table \\thetable\\ (continued)}"
   )
 ```
 
@@ -637,9 +649,9 @@ reach it at any simulated sample size. For English, the analytic ceiling is
 participants, and its simulated joint power remains below 80%. It is
 `r pct1(jval("English", 300, "p_joint"))` by 300 participants and
 `r pct1(jval("English", 400, "p_joint"))` at 400. The reason is structural. The joint
-requirement is held back by the affectedness main effect (H1a), whose detection rate levels off
-at about three in four, while the interaction (H1b) climbs comfortably past it. Because
-affectedness is a property of the verb, its main effect is estimated from the 72 verbs, so
+requirement is held back by the passive affectedness slope (H1a), whose detection rate levels
+off at about three in four, while the interaction (H1b) climbs comfortably past it. Because
+affectedness is a property of the verb, that slope is estimated from the 72 verbs, so
 adding participants does not sharpen it. The precision of that effect, and with it the power to
 detect it, is set by the number of verbs. For Turkish, both focal effects are weak in the
 pilot. The joint power never exceeds `r pct1(tur_max_joint)` at any simulated sample size, and
@@ -684,9 +696,9 @@ kable(ce, align = "lrrrrr")
 
 *Note.* Ceilings are the probability of a Bayes factor of at least 10 with unlimited
 participants, from the `r format(ppv("English", "ndraws"), big.mark = ",")` pilot posterior
-draws and the fitted by-verb covariance at 72 verbs and 66 for Norwegian. The H1b column is
-the active-by-affectedness interaction, the confirmatory prediction, and the H1a column the
-passive affectedness slope. The last columns
+draws and the fitted by-verb covariance at 72 verbs and 66 for Norwegian. The H1a column is
+the passive affectedness slope and the H1b column the active-by-affectedness interaction,
+which carries the confirmatory decision. The last columns
 give the verbs needed for an 80% and 90% joint ceiling. A ceiling just above target, as for
 English, still leaves it out of reach, since any finite sample sits below its ceiling. The
 English interaction ceiling of `r pct1(ppv("English", "ceiling_h1b_bf10"))` is likewise the
@@ -735,7 +747,7 @@ participants, with `r jval("English", 400, "reps")` replicates in, the joint pow
 `r pct1(jval("English", 300, "p_joint"))` (`r jratio("English", 300)`) at 300 participants.
 These sparse estimates are not literally flat, but their decline is compatible with Monte-Carlo
 variation. Overturning the plateau would have required a sustained rise at 400 and 500, and the
-400-participant data already rule that out. No further cells are being simulated, and by that
+400-participant data already rule that out. No further replicates are being simulated, and by that
 test the sample sizes already run settle the plateau.
 
 ## Literature-anchored cross-check
@@ -757,8 +769,8 @@ number of participants.
 #| fig-height: 2.5
 #| fig-pos: "H"
 
-# Languages and sample sizes are taken from the data rather than listed here,
-# so the panel follows whatever the aggregation covers.
+# Sample sizes are taken from the data, so the panel follows whatever the
+# aggregation covers. The language order is the report's, not alphabetical.
 grid_df <- tidyr::crossing(
   language = sort(unique(foc_full$language)),
   n_participants = sort(unique(foc_full$n_participants)),
@@ -767,6 +779,9 @@ grid_df <- tidyr::crossing(
   left_join(select(foc_full, language, n_participants, n_verbs, binding),
             by = c("language", "n_participants", "n_verbs")) |>
   mutate(
+    # After the join, not before it: joining against a character column would
+    # coerce the factor back and restore alphabetical order.
+    language = lang_factor(language),
     nv = factor(n_verbs, levels = c(40, 72)),
     np = factor(n_participants, levels = c(50, 60, 70, 80, 90, 100, 120)),
     lab = ifelse(is.na(binding), "", sprintf("%.0f", 100 * binding)),
@@ -825,6 +840,7 @@ grows, at each verb count.
 
 z <- 1.96
 curve_df <- foc_full |>
+  mutate(language = lang_factor(language)) |>
   select(language, n_participants, n_verbs, reps, H1a, H1b) |>
   tidyr::pivot_longer(c(H1a, H1b), names_to = "Prediction", values_to = "p") |>
   mutate(
@@ -832,7 +848,10 @@ curve_df <- foc_full |>
     ctr = (p + z^2 / (2 * reps)) / den,
     hw  = z * sqrt(p * (1 - p) / reps + z^2 / (4 * reps^2)) / den,
     lo  = pmax(0, ctr - hw), hi = pmin(1, ctr + hw),
-    nv  = factor(paste(n_verbs, "verbs"), levels = paste(c(40, 72), "verbs"))
+    # Figure 2 puts the larger verb count on the upper row, its y axis running
+    # upwards. Facet rows read downwards, so the levels are reversed here to make
+    # the two figures stack the verb counts the same way.
+    nv  = factor(paste(n_verbs, "verbs"), levels = paste(c(72, 40), "verbs"))
   )
 
 pd <- position_dodge(width = 4)
@@ -852,18 +871,21 @@ ggplot(curve_df, aes(n_participants, p, colour = Prediction, shape = Prediction)
         strip.text = element_text(face = "bold"),
         # As in Figure 1, the two entries were close enough that the label to key
         # pairing was ambiguous, and the panels are short, so a modest gap settles
-        # it without stacking. The title takes a gap of its own.
+        # it without stacking. The title takes a gap of its own, and the same
+        # hairline box as Figure 1 encloses the whole legend.
         legend.key.spacing.x = grid::unit(10, "pt"),
-        legend.title = element_text(margin = ggplot2::margin(r = 8)))
+        legend.title = element_text(margin = ggplot2::margin(r = 8)),
+        legend.background = element_rect(fill = NA, colour = "grey78", linewidth = 0.25),
+        legend.margin = ggplot2::margin(t = 3, r = 7, b = 3, l = 7))
 ```
 
 `\vspace{-8pt}`{=latex}
 
 *Note.* Points are detection probabilities over the simulated studies in each complete cell,
 with Wilson 95% intervals reflecting Monte-Carlo uncertainty. The dashed line marks the
-earlier 80% target. Points are dodged so the two predictions do not overlap. H1b is the
-active-by-affectedness interaction, which is the confirmatory prediction, and H1a the
-passive affectedness slope, which is reported as a positive control.
+earlier 80% target. Points are dodged so the two predictions do not overlap. H1a is the
+passive affectedness slope, reported as a positive control, and H1b the active-by-affectedness
+interaction, which carries the confirmatory decision.
 
 `\vspace{12pt}`{=latex}
 
@@ -959,7 +981,7 @@ on the Bayes-factor evidence.
 
 For an effect that lives at the level of the participant, a weaker true effect simply needs a
 larger sample, and the rough guide is that a true effect around two-thirds of the assumed
-magnitude doubles the sample needed. The affectedness main effect lives at the level of the
+magnitude doubles the sample needed. The passive affectedness slope lives at the level of the
 verb, however, where its precision is set by the number of verbs, so a weaker true effect
 cannot be recovered by recruiting more participants. This is exactly what the data-grounded
 results show. At the full verb count and the pilot's own effects, the affectedness power for
@@ -988,12 +1010,13 @@ explores the posterior, and the specification itself stands. Restricting the pow
 to the fully converged fits leaves the estimates essentially unchanged. For English at 72 verbs
 and 50 participants, the binding focal power is `r pct(cc$all)` over all 50 fits and
 `r pct(cc$conv)` over the `r cc$n_conv` converged fits, so the recommendation does not depend
-on the difference. That describes the literature-anchored grid. The pilot-grounded replicates,
+on the difference. That describes the literature-anchored grid. The data-grounded replicates,
 which carry the fitted by-verb slopes and the larger variance components the pilot models
 estimate, pass the same screen far less often, `r jval("English", 80, "n_converged")` of
 `r jval("English", 80, "reps")` English fits at 80 participants, and the rates over the passing
 fits are reported beside the decision table below. There too the failures are on effective
-sample size and R-hat, with divergences and treedepth saturations at zero.
+sample size and R-hat, with divergences and treedepth saturations, iterations on which the
+sampler exhausted its step budget before crossing the posterior, at zero.
 
 The simulations ran on the University of Oxford's ARC service, across its two clusters, under
 R 4.4.2 from the module `R/4.4.2-gfbf-2024a`. Each replicate is fitted with brms 2.21.0
@@ -1137,7 +1160,7 @@ an earlier draft of this report recommended it. A Bayes factor of 6 is
 would need about `r sprintf("%.0f", bf_for_p(0.05))`. The sampling equivalents given under
 the method are stricter, since the prior's shrinkage has to be overcome first.
 
-The project's starting point was a Bayes factor of 10, which the internal record of decisions
+The project's starting point was a Bayes factor of 10, which the record of decisions
 carries as the primary criterion for the focal interaction, with 3 as a secondary one, and 10
 is the criterion this report recommends. An interim version of this analysis recommended 6,
 because the pooled cross-language test was then the confirmatory test and 6 was the strongest
@@ -1224,7 +1247,7 @@ outstanding.
 | Power target | 90% per language | What the design supports at `r ppv("English", "n_verbs")` verbs. Nature Human Behaviour, the target venue, sets its 0.95 requirement for frequentist analysis plans. Of a Bayesian plan it asks either sampling until a Bayes factor of 10, or a stated maximum feasible sample at which an inconclusive result would still matter, and it attaches no power threshold to the second. Norwegian clears 90% by the lower-bound rule, at `r pct0(h1blb("Norwegian", 80))`. English meets it as a point estimate, with a plateau of `r pct0(eng_plateau$p)` above 80 participants |
 | Sample size | 80 per language | Between 80 and 100 the simulations differ by less than their own resolution, and the verb count binds. At 70 English falls to `r pct0(h1bv("English", 70))`, so 80 has no slack below it. 80 is the number the teams can collect |
 | Confirmatory test | Per language, interaction alone | Each language is powered and judged on its own. The pooled model is kept as the preregistered synthesis: with three languages it reaches `r pct0(pooled_combined("p_h1b")$p)` at a Bayes factor of 10, and its evidence grows with the number of languages, which is not yet known |
-| Turkish | Estimation only | Its ceiling on the interaction is `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` at a Bayes factor of 10 whatever the sample. Settled; further cells will not change it |
+| Turkish | Estimation only | Its ceiling on the interaction is `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` at a Bayes factor of 10 whatever the sample. Settled; further replicates will not change it |
 | Verb pool | `r ppv("English", "n_verbs")` verbs, fixed | Closed by the project: the limit is the supply of suitable verbs, not session length, so the pool cannot be enlarged |
 | Stopping rule | Fixed sample, announced in advance | Closed by the project: teams must take a stated sample size to their ethics committees. The statistical objection to sequential testing does not apply, but the operational one does |
 
@@ -1234,7 +1257,7 @@ outstanding.
 
 None of these now waits on further computation. The project closed two of them, and the
 simulations settled the rest, having said everything they can about them. The table records
-which is which. The internal record of decisions still states the success criterion for both
+which is which. The record of decisions still states the success criterion for both
 focal predictions together, and will be amended to the interaction alone once the collaborators
 confirm the criterion.
 
@@ -1279,7 +1302,7 @@ pooled model has separately been fitted to the combined real pilot data, and wha
 shows is set out in its own subsection below, because it qualifies the figures reported
 here.
 
-The pooled arm has finished computing. Of the 180 cells submitted, 135 returned, the rest
+The pooled arm has finished computing. Of the 180 replicates submitted, 135 returned, the rest
 lost to the ten-day wall, and nothing is still running. `r pooled_interim`
 
 The rationale is theoretical before it is statistical. The hypothesis CLAPS tests is
@@ -1426,10 +1449,12 @@ Treedepth saturation is the other mode, and a longer run does nothing for it, be
 binding constraint is the depth of each trajectory. The amendment exists to remove it, and the
 refit was the test of whether it succeeds. It does not. On the real pilot data, the amended
 model saturated the treedepth on three quarters of its iterations, as the unamended one had.
-The proposal leaves no discretion on the consequence. Zero divergences and zero treedepth
+The record of decisions leaves no discretion on the consequence. Zero divergences and zero treedepth
 saturations are locked acceptance criteria for confirmatory fits, and a fit that misses them
-falls to the next level of the model ladder, its result set aside. Raising the maximum tree
-depth is not an available remedy, the configuration reserving it for diagnosis. For the pooled
+falls to the next level of the model ladder, the prespecified sequence of progressively
+simpler random-effects structures set out in the record of decisions, and its result is set
+aside. Raising the maximum treedepth
+is not an available remedy, the configuration reserving it for diagnosis. For the pooled
 model, the next level is the uncorrelated cross-language model, which the record of decisions
 names for the pooled design analysis and which no pooled cell has simulated. Its operating
 characteristics are expected to be close to those reported above, since the focal interaction's
@@ -1472,14 +1497,14 @@ unaffected. (These counts, like the diagnostic ones quoted earlier, are read fro
 records.) The analytic ceilings use all 8,000 draws and are unaffected, and the pooled
 cross-linguistic design analysis and the decision arm sample their draw indices randomly over
 the full pilot posteriors, so the limitation does not reach them. Replication itself is
-complete, since the original single-language grid finished all 720 of its cells and the low
-counts noticed mid-run were cells still computing.
+complete, since the original single-language grid finished all 720 of its replicates and the
+low counts noticed mid-run were replicates still computing.
 
 An audit of seed allocation, prompted by a failing continuous-integration check, found two
 grids sharing a seed base and a smoke grid sharing a seed with a production cell. Both are
 fixed. Neither touched a reported figure, because the two arms concerned produced no output
 at all, their arrays having been cancelled before any task started. The arm the
-recommendation rests on was checked directly. Its 1,080 cells carry 1,080 distinct seeds,
+recommendation rests on was checked directly. Its 1,080 replicates carry 1,080 distinct seeds,
 contiguous over 940000 to 941079, disjoint from every other committed grid once the
 per-language offsets are expanded, and each resolves to its own output file.
 
@@ -1502,7 +1527,7 @@ cells at face value under a flat prior, the true rate at a Bayes factor of 10 is
 near `r pct0(pooled_post("p_h1b")$k / pooled_post("p_h1b")$n)`, with an exact interval from
 `r pct0(pooled_combined("p_h1b")$lo)` to `r pct0(pooled_combined("p_h1b")$hi)` and a
 probability of `r prob_txt(pp_atleast(0.70, "p_h1b"))` that it is as high as 70%. A run of
-`r N_NEW_SUBMITTED` further cells at 80 participants per language was submitted to tighten this
+`r N_NEW_SUBMITTED` further replicates at 80 participants per language was submitted to tighten this
 and cancelled before any of them started,
 and then set aside on the strength of its own arithmetic. The chance of landing more than ten
 points from the current figure is about `r num2(pooled_predictive$p_beyond_10)`, and the new
@@ -1520,7 +1545,7 @@ cannot change, and it would survive any respecification of the model. Further si
 therefore measure this design more precisely without producing a better one, and the design
 analysis is closed on that basis.
 
-Individual cells close to the threshold should be read as near target, since each rests on
+Individual cells close to the power target should be read as near it, since each rests on
 `r min(jp_a$reps)` to `r max(jp_a$reps)` simulated studies, and the conclusions rest on the
 pattern across sample sizes.
 
@@ -1542,7 +1567,7 @@ it is distinct from the confirmatory analysis of the real ratings that will be r
 collection is complete. The analysis code and configuration are openly available, and the
 report rebuilds from the committed summary tables without the raw data, which remain private to
 CLAPS until the project reaches a more advanced stage. The simulation programme is now closed,
-so this report is finalised on the evidence described, with no further cells pending. The one
+so this report is finalised on the evidence described, with no further replicates pending. The one
 check left open, the pooled arm's sensitivity to the prior on the between-language variance,
 concerns the synthesis and has no bearing on the sample size.
 
@@ -1556,6 +1581,10 @@ concerns the synthesis and has no bearing on the sample size.
 {{< pagebreak >}}
 
 ```{=latex}
+% Appendix tables carry their own letter, as APA 7 asks, so the body
+% sequence is not interrupted by tables the reader meets later.
+\setcounter{table}{0}
+\renewcommand{\thetable}{A\arabic{table}}
 \begin{center}
 {\large\bfseries Appendix A}\\[3pt]
 {\bfseries Composition of the Pilot Sample}
@@ -1584,6 +1613,10 @@ hence only two sentence types.
 {{< pagebreak >}}
 
 ```{=latex}
+% Appendix tables carry their own letter, as APA 7 asks, so the body
+% sequence is not interrupted by tables the reader meets later.
+\setcounter{table}{0}
+\renewcommand{\thetable}{B\arabic{table}}
 \begin{center}
 {\large\bfseries Appendix B}\\[3pt]
 {\bfseries Key Code for the Simulation and the Models}
@@ -1649,6 +1682,10 @@ bf_10      <- (post_prob / (1 - post_prob)) / (prior_prob / (1 - prior_prob))
 {{< pagebreak >}}
 
 ```{=latex}
+% Appendix tables carry their own letter, as APA 7 asks, so the body
+% sequence is not interrupted by tables the reader meets later.
+\setcounter{table}{0}
+\renewcommand{\thetable}{C\arabic{table}}
 \begin{center}
 {\large\bfseries Appendix C}\\[3pt]
 {\bfseries Full Bayes-Factor Operating Characteristics}
@@ -1658,9 +1695,9 @@ bf_10      <- (post_prob / (1 - post_prob)) / (prior_prob / (1 - prior_prob))
 This appendix reports the operating characteristics for all four predictions in every cell of
 the corrected literature-anchored run holding at least ten replicates, set out in
 @tbl-opchar, which covers `r lit_language_text`. The note under the table defines each
-column. Under Hyp, H1b is the active-by-affectedness interaction, H1a the passive
-affectedness slope, and H2a and H2b the secondary pseudo-passive interaction in each
-direction.
+column. Under Prediction, H1a is the passive affectedness slope, H1b the
+active-by-affectedness interaction, and H2a and H2b the pseudo-passive interaction in its
+positive and negative directions.
 
 ```{r tbl-opchar}
 #| tbl-cap: "Operating Characteristics by Design Condition and Prediction"
@@ -1670,7 +1707,7 @@ hyp_lab <- c(H1a_semantics_positive = "H1a", H1b_active_interaction_negative = "
 opc <- exc |>
   filter(reps >= 10) |>
   mutate(Hyp = factor(hyp_lab[hypothesis], levels = c("H1a", "H1b", "H2a", "H2b"))) |>
-  transmute(Language = language, Verbs = n_verbs, N = n_participants, Hyp,
+  transmute(Language = lang_factor(language), Verbs = n_verbs, N = n_participants, Hyp,
             `P(BF>=10)` = sprintf("%.0f%%", 100 * p_bf_primary),
             `P(BF>=3)`  = sprintf("%.0f%%", 100 * p_bf_secondary),
             # Formatted per value rather than left numeric: a numeric column here
@@ -1700,6 +1737,10 @@ half as many rows.
 {{< pagebreak >}}
 
 ```{=latex}
+% Appendix tables carry their own letter, as APA 7 asks, so the body
+% sequence is not interrupted by tables the reader meets later.
+\setcounter{table}{0}
+\renewcommand{\thetable}{D\arabic{table}}
 \begin{center}
 {\large\bfseries Appendix D}\\[3pt]
 {\bfseries Guide to the Analysis Code}
@@ -1720,7 +1761,7 @@ comes from. A reader checking how a simulated study is built and analysed wants
 [`R/06_simulate_design.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/06_simulate_design.R)
 for the literature-anchored generator,
 [`R/10_simulate_from_pilot_v2.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/10_simulate_from_pilot_v2.R)
-for the pilot-grounded one, and
+for the data-grounded one, and
 [`R/05_hypothesis_tests.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/05_hypothesis_tests.R)
 for the Bayes factor. A reader intending to rerun the analysis wants `scripts/`, whose files
 are numbered in the order they are meant to run, together with the matching submitters in
@@ -1736,18 +1777,21 @@ are numbered in the order they are meant to run, together with the matching subm
 | `config/` | The design grids, one row per simulated condition, plus the model and prior configuration |
 | `outputs/` | The aggregated summaries this report reads, and the figure it displays |
 | `tests/` | Unit tests for the validation, prior, diagnostic and Bayes-factor logic |
+| `docs/` | The pipeline description, the record of preregistration decisions, and the reproducibility and submission notes |
 | `reports/` | This report, its bibliography and citation style |
 
 : Layout of the public analysis repository. {#tbl-repo}
 
 `\vspace{12pt}`{=latex}
 
-The unit of work is the cell, meaning one simulated condition: a language, a participant
-count, a verb count and a replicate index. A grid file in `config/` lists the cells, an
-array task runs one row, and each cell is saved as a single `.rds` file holding its
+The unit of work is one replicate: a language, a participant
+count, a verb count and a replicate index. The code calls that unit a cell, in
+`run_design_cell()` and its relatives, whereas the body of this report reserves cell for the
+design condition and counts replicates within it. A grid file in `config/` lists the
+replicates, an array task runs one row, and each is saved as a single `.rds` file holding its
 summary, its Bayes factors and its convergence diagnostics. The aggregation scripts read a
-directory of those files and reduce them to the tables in `outputs/`. Reading one saved
-cell is therefore the quickest way to see exactly what the pipeline computes per simulated
+directory of those files and reduce them to the tables in `outputs/`. Reading one saved file
+is therefore the quickest way to see exactly what the pipeline computes per simulated
 study.
 
 Two conventions are worth knowing before reading the code. Names carrying `pilot` refer to
@@ -1770,7 +1814,7 @@ level to the same recipe, so this engine covers both scopes in one file:
 `simulate_claps_data()` for a single language and `simulate_claps_data_multilanguage()` beside
 it.
 
-The pilot-grounded engine is
+The data-grounded engine is
 [`R/10_simulate_from_pilot.R`](https://github.com/pablobernabeu/CLAPS-analysis/blob/main/R/10_simulate_from_pilot.R).
 It takes the true effects from a model already fitted to the pilot data, so a simulated
 study inherits that language's estimated slopes, thresholds and variance components together
@@ -1816,7 +1860,7 @@ file implements it at each scope.
 | Engine | Where the effects come from | Single language | All three pooled |
 |:----------------------|:--------------------------------|:---------------------|:---------------------|
 | Literature-anchored | Published effect sizes, stipulated | `06` | `06`, the same file |
-| Pilot-grounded | Estimated from the fitted pilot models | `10`, extended by `10_v2` | `11`, which loads `10_v2` |
+| Data-grounded | Estimated from the fitted pilot models | `10`, extended by `10_v2` | `11`, which loads `10_v2` |
 
 : The two simulation engines and the files implementing them. {#tbl-engines}
 

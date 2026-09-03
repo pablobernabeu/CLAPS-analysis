@@ -171,7 +171,7 @@ Selection is documented in `outputs/design_summary/ladder_selection.csv`.
 | H2 direction for Turkish | Unresolved (both ways reported) | After pilot analysis |
 | Specific $P(BF > 10)$ success threshold | To be agreed with statistical lead | Before confirmatory pre-reg |
 | `literature_centred` prior centres for languages without pooled estimates | Use weakly informative defaults until single-language data available | Before pilot fits |
-| Which languages have pseudo-passives | Partially resolved (Turkish: yes; English, German: no) | Before confirmatory data collection |
+| Which languages have pseudo-passives | Resolved (English: yes; Turkish: yes; Norwegian: no; Balinese: no), as set by `has_pseudo_passive` in `config/analysis_config.yaml` | Settled |
 
 ---
 
