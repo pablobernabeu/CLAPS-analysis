@@ -847,7 +847,11 @@ ggplot(curve_df, aes(n_participants, p, colour = Prediction, shape = Prediction)
        y = "Detection probability", colour = "Prediction", shape = "Prediction") +
   theme_bw(base_size = 10) +
   theme(legend.position = "top", panel.grid.minor = element_blank(),
-        strip.text = element_text(face = "bold"))
+        strip.text = element_text(face = "bold"),
+        # As in Figure 1, the two entries were close enough that the label to key
+        # pairing was ambiguous. The panels are short, so the gap is widened
+        # instead of stacking the entries.
+        legend.key.spacing.x = grid::unit(18, "pt"))
 ```
 
 `\vspace{-8pt}`{=latex}

@@ -153,7 +153,12 @@ figure <- ggplot(
     # panel was legible while a confidence band tinted it, but with the band
     # dropped from the key it became a swatch behind the line.
     legend.key = element_blank(),
-    legend.key.width = grid::unit(22, "pt")
+    legend.key.width = grid::unit(22, "pt"),
+    # The entries sat close enough that each label was as near the next key as to
+    # its own, so the pairing had to be guessed. Widening the gap between entries
+    # is preferred to stacking them, which would take three rows of height from a
+    # figure that has little to spare.
+    legend.key.spacing.x = grid::unit(18, "pt")
   )
 
 # geom_jitter draws its offsets when the plot is built. Fixing the RNG state
