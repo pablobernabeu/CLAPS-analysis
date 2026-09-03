@@ -986,6 +986,34 @@ estimate, pass the same screen far less often, `r jval("English", 80, "n_converg
 fits are reported beside the decision table below. There too the failures are on effective
 sample size and R-hat, with divergences and treedepth saturations at zero.
 
+The simulations ran on the University of Oxford's ARC service, across its two clusters, under
+R 4.4.2 from the module `R/4.4.2-gfbf-2024a`. Each replicate is fitted with brms 2.21.0
+through the cmdstanr backend, so the sampler is CmdStan 2.39.0. The reported fits were
+compiled by the gcc 13.3.0 that arrives with the R module, though the CmdStan installation
+now pins gcc 12.3.0 in its `make/local`, so a rerun would compile with that instead. The
+compiler is worth naming, because a Stan model is compiled C++ and the toolchain is part of
+what decides whether a fit reproduces exactly. The distribution recorded in
+`config/arc_modules.yaml` is the login node's, where the record was captured, while the
+compute nodes run an ARC-built kernel of the same family. Containers are not available on
+this cluster, which was checked in July 2026, so reproducibility rests on the module pin and
+the lockfile.
+
+`renv.lock` in the repository records that environment. It fixes 176 packages at exact
+versions against R 4.4.2, each entry carrying the hash renv computes from the package's
+DESCRIPTION. All but one are pinned to CRAN, among them brms 2.21.0, rstan 2.32.7 and
+StanHeaders 2.32.10. The exception is cmdstanr 0.8.0, which CRAN does not distribute and
+which is locked from an r-universe mirror. The lockfile was checked against the cluster on
+2 September 2026, when every version in it matched what was installed there. A companion
+record, `config/arc_environment_recorded.csv`, holds the wider set of 190 packages actually
+present, the same 176 with the fourteen base packages that come with R itself.
+
+The report renders away from the cluster. Every power figure, Bayes factor, ceiling and
+convergence rate in it is read from the committed summary tables, with no replicate refitted
+at build time. The R that builds the document computes the descriptive pilot figure and its
+trend lines, the sample counts in Appendix A and the binomial intervals quoted in the text.
+Its version therefore bears on how the simulation results are presented, while the results
+themselves come from the cluster.
+
 ## Secondary Prediction
 
 The pseudo-passive-by-affectedness interaction reaches a detection probability of about
