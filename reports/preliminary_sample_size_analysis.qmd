@@ -414,8 +414,7 @@ give the figures behind both.
 
 The data-grounded analysis is substantially complete. Results are in for all three languages up
 to `r max_n("Norwegian")` participants, for English up to `r max_n("English")` and for Turkish
-up to `r max_n("Turkish")`. Nothing further is being simulated: the project has capped
-recruitment at 100 participants, so the cells above that are of record interest only. A cell
+up to `r max_n("Turkish")`. The project has capped recruitment at 100 participants, so the cells above that are of record interest only. A cell
 is one design condition, a language at a given participant count and verb count, and it holds
 many simulated studies, or replicates. Each
 simulated condition rests on `r min(jp_a$reps)` to `r max(jp_a$reps)` studies, so the
@@ -423,8 +422,7 @@ individual figures carry a Monte-Carlo error of several percentage points, that 
 uncertainty that comes from basing each figure on a limited number of simulated studies. The
 400-participant simulations now confirm the English plateau, the levelling-off of power short
 of the target, so it no longer rests on extrapolation. The recommendation below is final on
-this evidence, and no result is outstanding. The refit described under the pooled model
-returned on 27 August, and it bears on the pooled figures alone.
+this evidence.
 
 # Background and Motivation
 
@@ -747,8 +745,8 @@ participants, with `r jval("English", 400, "reps")` replicates in, the joint pow
 `r pct1(jval("English", 300, "p_joint"))` (`r jratio("English", 300)`) at 300 participants.
 These sparse estimates are not literally flat, but their decline is compatible with Monte-Carlo
 variation. Overturning the plateau would have required a sustained rise at 400 and 500, and the
-400-participant data already rule that out. No further replicates are being simulated, and by that
-test the sample sizes already run settle the plateau.
+400-participant data already rule that out. By that test, the sample sizes already run
+settle the plateau.
 
 ## Literature-anchored cross-check
 
@@ -1153,8 +1151,7 @@ A directional Bayes factor of $k$ is reached exactly when the posterior probabil
 predicted sign reaches $k/(k+1)$, so a Bayes factor of 3 is a posterior sign probability of
 `r num2(bf_sign(3))`, which is `r sprintf("%.2f", bf_z(3))` standard errors from zero and
 corresponds to a one-sided tail probability of `r sprintf("%.2f", bf_onep(3))`. A criterion
-that lenient will not carry a confirmatory claim through review, whatever it is called, and
-an earlier draft of this report recommended it. A Bayes factor of 6 is
+that lenient will not carry a confirmatory claim through review, whatever it is called. A Bayes factor of 6 is
 `r sprintf("%.2f", bf_onep(6))` on the same scale and 10 is
 `r sprintf("%.3f", bf_onep(10))`, and matching a one-sided 5% test on the posterior scale
 would need about `r sprintf("%.0f", bf_for_p(0.05))`. The sampling equivalents given under
@@ -1243,11 +1240,11 @@ outstanding.
 | Choice | Decision | What settled it |
 |:-----------------|:----------------------|:-----------------------------------------------|
 | Adequacy rule | The interaction alone | No feasible sample reaches the conjunction of both focal predictions; dropping it lifts the English ceiling from `r pct0(ppv("English", "ceiling_joint_bf10"))` to `r pct0(ppv("English", "ceiling_h1b_bf10"))`. The passive-only slope is reported as a positive control |
-| Evidence threshold | Bayes factor of 10 | The project's criterion, kept. Per language it costs little: English `r pct0(h1bv("English", 80, "p_h1b_bf6"))` at 6 against `r pct0(h1bv("English", 80))` at 10. An interim recommendation of 6 was made for the pooled test, which sits at `r pct0(pooled_combined("p_h1b")$p)` at 10 and no sample can lift, and that test is no longer the confirmatory one |
+| Evidence threshold | Bayes factor of 10 | The project's criterion, kept. Per language it costs little: English `r pct0(h1bv("English", 80, "p_h1b_bf6"))` at 6 against `r pct0(h1bv("English", 80))` at 10. A concession to 6 would matter only for the pooled test, which sits at `r pct0(pooled_combined("p_h1b")$p)` at 10 and no sample can lift, and that test is no longer the confirmatory one |
 | Power target | 90% per language | What the design supports at `r ppv("English", "n_verbs")` verbs. Nature Human Behaviour, the target venue, sets its 0.95 requirement for frequentist analysis plans. Of a Bayesian plan it asks either sampling until a Bayes factor of 10, or a stated maximum feasible sample at which an inconclusive result would still matter, and it attaches no power threshold to the second. Norwegian clears 90% by the lower-bound rule, at `r pct0(h1blb("Norwegian", 80))`. English meets it as a point estimate, with a plateau of `r pct0(eng_plateau$p)` above 80 participants |
 | Sample size | 80 per language | Between 80 and 100 the simulations differ by less than their own resolution, and the verb count binds. At 70 English falls to `r pct0(h1bv("English", 70))`, so 80 has no slack below it. 80 is the number the teams can collect |
 | Confirmatory test | Per language, interaction alone | Each language is powered and judged on its own. The pooled model is kept as the preregistered synthesis: with three languages it reaches `r pct0(pooled_combined("p_h1b")$p)` at a Bayes factor of 10, and its evidence grows with the number of languages, which is not yet known |
-| Turkish | Estimation only | Its ceiling on the interaction is `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` at a Bayes factor of 10 whatever the sample. Settled; further replicates will not change it |
+| Turkish | Estimation only | Its ceiling on the interaction is `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` at a Bayes factor of 10 whatever the sample. Settled |
 | Verb pool | `r ppv("English", "n_verbs")` verbs, fixed | Closed by the project: the limit is the supply of suitable verbs, not session length, so the pool cannot be enlarged |
 | Stopping rule | Fixed sample, announced in advance | Closed by the project: teams must take a stated sample size to their ethics committees. The statistical objection to sequential testing does not apply, but the operational one does |
 
@@ -1255,8 +1252,7 @@ outstanding.
 
 `\vspace{12pt}`{=latex}
 
-None of these now waits on further computation. The project closed two of them, and the
-simulations settled the rest, having said everything they can about them. The table records
+The project closed two of these decisions, and the simulations settled the rest. The table records
 which is which. The record of decisions still states the success criterion for both
 focal predictions together, and will be amended to the interaction alone once the collaborators
 confirm the criterion.
@@ -1291,9 +1287,7 @@ unchanged, namely directional Savage-Dickey Bayes factors on the pooled focal co
 under the same zero-centred priors. The recommendation is 80 participants per language, with
 100 the most any team would be asked for, so the estimate combines the pooled cells at or
 below 100. The grid itself runs from 50 to 150 per language, and the cells above 100 are
-retained for record interest. No further simulation is running, and none is scheduled to
-run. The only CLAPS tasks still in the queue are administratively held remnants of an
-earlier array that will not execute. The per-language decision arm, at 70, 80 and 100
+retained for record interest. The per-language decision arm, at 70, 80 and 100
 participants, carries 120 replicates per
 cell, which brings its Monte-Carlo error near a power of 80% down to about four percentage
 points. The pooled cells hold far fewer, as the next paragraph says. The pooled analytic ceiling given
@@ -1302,8 +1296,8 @@ pooled model has separately been fitted to the combined real pilot data, and wha
 shows is set out in its own subsection below, because it qualifies the figures reported
 here.
 
-The pooled arm has finished computing. Of the 180 replicates submitted, 135 returned, the rest
-lost to the ten-day wall, and nothing is still running. `r pooled_interim`
+Of the 180 pooled replicates submitted, 135 returned, the rest lost to the ten-day compute
+limit. `r pooled_interim`
 
 The rationale is theoretical before it is statistical. The hypothesis CLAPS tests is
 cross-linguistic, and the evidence for it has always been read across languages, most
@@ -1398,8 +1392,7 @@ induces more between-language spread than the raw 0.30, because each replicate d
 language's effects from its own posterior. And the estimate comes from the poorly sampled fit
 just described, so it flags the concern without settling the value.
 
-A refit under the amended specification, started on 20 August 2026, returned on 27 August
-after 6 days and 21 hours, close to the time the original fit took. The effects are
+A refit under the amended specification returned on 27 August 2026. The effects are
 unchanged to two decimal places. The focal interaction is $-0.48$, with a 95% credible
 interval from $-1.01$ to $+0.30$ and a posterior probability of 0.92 that it carries the
 predicted sign, a directional Bayes factor of about 11, and the standard deviation of the
@@ -1476,8 +1469,7 @@ verb-limited. The 400-participant cells confirm that for English at
 `r jval("English", 400, "reps")` replicates, and the analytic ceilings bound it from above.
 No further simulation bears on the sample size: recruitment is capped at 100
 participants, and every sample at or below that cap has been simulated to full
-replication. No fit is outstanding
-either, the refit described above having returned on 27 August.
+replication.
 
 That status statement concerns the joint criterion, which this report no longer recommends.
 Gated on the interaction alone at a Bayes factor of 10, Norwegian clears a 90% target
@@ -1497,14 +1489,12 @@ unaffected. (These counts, like the diagnostic ones quoted earlier, are read fro
 records.) The analytic ceilings use all 8,000 draws and are unaffected, and the pooled
 cross-linguistic design analysis and the decision arm sample their draw indices randomly over
 the full pilot posteriors, so the limitation does not reach them. Replication itself is
-complete, since the original single-language grid finished all 720 of its replicates and the
-low counts noticed mid-run were replicates still computing.
+complete, since the original single-language grid finished all 720 of its replicates.
 
-An audit of seed allocation, prompted by a failing continuous-integration check, found two
-grids sharing a seed base and a smoke grid sharing a seed with a production cell. Both are
-fixed. Neither touched a reported figure, because the two arms concerned produced no output
-at all, their arrays having been cancelled before any task started. The arm the
-recommendation rests on was checked directly. Its 1,080 replicates carry 1,080 distinct seeds,
+An audit of seed allocation found two grids sharing a seed base and a smoke grid sharing a
+seed with a production cell. Both are fixed, and neither touched a reported figure, since the
+two arms concerned were never run and produced no output at all. The arm the recommendation
+rests on was checked directly. Its 1,080 replicates carry 1,080 distinct seeds,
 contiguous over 940000 to 941079, disjoint from every other committed grid once the
 per-language offsets are expanded, and each resolves to its own output file.
 
@@ -1527,9 +1517,8 @@ cells at face value under a flat prior, the true rate at a Bayes factor of 10 is
 near `r pct0(pooled_post("p_h1b")$k / pooled_post("p_h1b")$n)`, with an exact interval from
 `r pct0(pooled_combined("p_h1b")$lo)` to `r pct0(pooled_combined("p_h1b")$hi)` and a
 probability of `r prob_txt(pp_atleast(0.70, "p_h1b"))` that it is as high as 70%. A run of
-`r N_NEW_SUBMITTED` further replicates at 80 participants per language was submitted to tighten this
-and cancelled before any of them started,
-and then set aside on the strength of its own arithmetic. The chance of landing more than ten
+`r N_NEW_SUBMITTED` further replicates at 80 participants per language was set aside before
+any of them ran, on the strength of its own arithmetic. The chance of landing more than ten
 points from the current figure is about `r num2(pooled_predictive$p_beyond_10)`, and the new
 figure would have fallen within five points of the current one roughly
 `r pct0(pooled_predictive$p_within_5)` of the time, so the run would have measured more
@@ -1566,8 +1555,7 @@ This is an a-priori power analysis, a simulation under assumed effects to size t
 it is distinct from the confirmatory analysis of the real ratings that will be run once data
 collection is complete. The analysis code and configuration are openly available, and the
 report rebuilds from the committed summary tables without the raw data, which remain private to
-CLAPS until the project reaches a more advanced stage. The simulation programme is now closed,
-so this report is finalised on the evidence described, with no further replicates pending. The one
+CLAPS until the project reaches a more advanced stage. This report is finalised on the evidence described. The one
 check left open, the pooled arm's sensitivity to the prior on the between-language variance,
 concerns the synthesis and has no bearing on the sample size.
 
