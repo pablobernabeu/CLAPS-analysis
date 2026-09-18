@@ -172,6 +172,61 @@ Selection is documented in `outputs/design_summary/ladder_selection.csv`.
 | Specific $P(BF > 10)$ success threshold | To be agreed with statistical lead | Before confirmatory pre-reg |
 | `literature_centred` prior centres for languages without pooled estimates | Use weakly informative defaults until single-language data available | Before pilot fits |
 | Which languages have pseudo-passives | Resolved (English: yes; Turkish: yes; Norwegian: no; Balinese: no), as set by `has_pseudo_passive` in `config/analysis_config.yaml` | Settled |
+| Which construction counts as **the canonical passive**, language by language | **Unresolved, and the most consequential open item.** Recomputing the Ambridge, Arnon & Bekman (2023) anchors against the other passive-like construction moves Mandarin from $-0.80$ to $+0.29$, Indonesian from $-0.07$ to $+0.27$ and Balinese from $+0.33$ to $+0.86$ per SD of affectedness. Across the seven languages the mean interaction moves from $-0.32$ to $-0.03$ and three of seven change sign, which is a larger movement than anything else in the design analysis. No amount of data settles it: it is a linguistic ruling that has to precede collection | Before any team collects |
+| Minimum number of language teams, and whether it gates Stage 2 | Unresolved; see §12 | Before Stage 1 submission |
+| One agent-gender version per participant, counterbalanced across lists | Proposed 2026-09-16 in reply to the PI; not yet agreed. The power evidence and the list design are in `reports/gender_versions_note.md`. | Before Stage 1 submission |
+
+---
+
+## 12. The cross-linguistic synthesis and the number of language teams
+
+Added 2026-09-10, in response to the project lead's primary of 7 September that the Stage 1
+report carry a rule of the form "we proceed to the Stage 2 paper only if we have a minimum of
+Y languages", with Y at least 6 and possibly 8 or 10.
+
+**The design analysis behind this section.** `scripts/run_klanguage_design_analysis.R`, on the
+engine in `R/13_simulate_klanguage_pooled.R`. It is a two-stage Bayesian random-effects
+meta-analysis evaluated by grid integration, calibrated at $K = 3$ against the 135 completed
+`L5_cross_maximal` replicates in `outputs/design_pooled_v2`, and its inputs are the seven
+languages harmonised by `scripts/extract_cross_language_effects.R`.
+
+**What the analysis establishes.** The probability that the pooled test reaches a directional
+Bayes factor of 10 is governed by the between-language SD of the interaction, $\tau$, and only
+secondarily by $K$. The seven available languages do not form one population: split by the
+protocol that produced them, the CLAPS pilot three give $\tau \approx 0.16$ with Cochran's
+$Q$ non-significant, and the Ambridge, Arnon & Bekman (2023) four give $\tau \approx 0.53$
+with $Q$ significant at $10^{-7}$. The means barely differ. The minimum $K$ reaching 90%
+differs by a factor of five between the two readings.
+
+**Decisions taken.**
+
+1. The pooled cross-linguistic model remains the preregistered **synthesis**, reported at
+   whatever $K$ is achieved. The confirmatory claim continues to rest on the per-language
+   tests, which do not depend on $K$ at all (§8).
+
+2. Any minimum-$K$ rule is written as an **interpretation band over an always-run analysis**,
+   not as a publication gate. A gate would make the per-language confirmatory tests hostage to
+   a recruitment outcome nobody controls, and PCI RR does not permit partial withdrawal of a
+   registered plan.
+
+3. The language set is **frozen on a named date by a named role**, before any pooled analysis
+   is run and before any data are inspected. Without that, a rule conditioned on the number of
+   languages is optional stopping on a between-language quantity.
+
+4. The design analysis reports the three $\tau$ regimes side by side and never a single
+   headline figure, together with the expected number of languages whose own test reaches the
+   threshold in the direction **opposite** to the prediction. Balinese is already such a
+   language, so this is not hypothetical, and the protocol needs a prespecified reading of it.
+
+5. The two-stage synthesis is preregistered as the pooled model's own **fallback rung**. The
+   27 August refit of the maximal pooled model to the real pilot data saturated tree depth on
+   three quarters of its iterations and so failed the §9 criteria, meaning the branch has
+   already occurred once on real data.
+
+**Locked**: No. Items 1 to 3 are proposals to the project lead; item 4 is implemented; the
+value of $Y$ is not set, and should not be set before the corrected estimate of $\tau$
+returns from `scripts/refit_glossa_pooled_tau.R`.
+
 
 ---
 

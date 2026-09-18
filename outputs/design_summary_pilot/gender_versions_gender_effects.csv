@@ -1,0 +1,48 @@
+"language","structure","term","estimate","se","z","n_participants","n_rows","singular","p_two_sided","h1b_estimate","h1b_se","h1a_estimate","h1a_se","shift_if_one_version_only","shift_relative_to_matching_focal"
+"English","P[corr:1,Act,PP,Sem,ActSem,PPSem] V[corr:1,Act,PP]","Gender_c",0.0208333,0.0159967,1.30235,70,30240,TRUE,0.192797,-0.328298,0.076271,0.257667,0.0789163,0.0104167,NA
+"English","P[corr:1,Act,PP,Sem,ActSem,PPSem] V[corr:1,Act,PP]","S_TypeActive:Gender_c",-0.0353175,0.0226228,-1.56115,70,30240,TRUE,0.11849,-0.328298,0.076271,0.257667,0.0789163,-0.0176587,NA
+"English","P[corr:1,Act,PP,Sem,ActSem,PPSem] V[corr:1,Act,PP]","S_TypePseudo_Passive:Gender_c",-0.00456349,0.0226228,-0.201721,70,30240,TRUE,0.840135,-0.328298,0.076271,0.257667,0.0789163,-0.00228175,NA
+"English","P[corr:1,Act,PP,Sem,ActSem,PPSem] V[corr:1,Act,PP]","Semantics_scaled:Gender_c",-0.11989,0.032218,-3.72123,70,30240,TRUE,0.000198257,-0.328298,0.076271,0.257667,0.0789163,-0.0599452,-0.232646
+"English","P[corr:1,Act,PP,Sem,ActSem,PPSem] V[corr:1,Act,PP]","S_TypeActive:Semantics_scaled:Gender_c",0.135065,0.0455631,2.96434,70,30240,TRUE,0.00303331,-0.328298,0.076271,0.257667,0.0789163,0.0675323,-0.205705
+"English","P[corr:1,Act,PP,Sem,ActSem,PPSem] V[corr:1,Act,PP]","S_TypePseudo_Passive:Semantics_scaled:Gender_c",0.112786,0.0455631,2.47538,70,30240,TRUE,0.0133094,-0.328298,0.076271,0.257667,0.0789163,0.056393,NA
+"Turkish","P[zcp:1,Act,PP,Sem,PPSem] V[zcp:1,Act,PP]","Gender_c",-0.0224206,0.0155713,-1.43987,70,30240,TRUE,0.149904,-0.119237,0.0340496,0.14385,0.0589731,-0.0112103,NA
+"Turkish","P[zcp:1,Act,PP,Sem,PPSem] V[zcp:1,Act,PP]","S_TypeActive:Gender_c",-0.00575397,0.0202988,-0.283463,70,30240,TRUE,0.776822,-0.119237,0.0340496,0.14385,0.0589731,-0.00287698,NA
+"Turkish","P[zcp:1,Act,PP,Sem,PPSem] V[zcp:1,Act,PP]","S_TypePseudo_Passive:Gender_c",0.0718254,0.0202988,3.5384,70,30240,TRUE,0.000402557,-0.119237,0.0340496,0.14385,0.0589731,0.0359127,NA
+"Turkish","P[zcp:1,Act,PP,Sem,PPSem] V[zcp:1,Act,PP]","Semantics_scaled:Gender_c",-0.0478559,0.029832,-1.60418,70,30240,TRUE,0.108674,-0.119237,0.0340496,0.14385,0.0589731,-0.023928,-0.16634
+"Turkish","P[zcp:1,Act,PP,Sem,PPSem] V[zcp:1,Act,PP]","S_TypeActive:Semantics_scaled:Gender_c",0.00143181,0.0408826,0.0350225,70,30240,TRUE,0.972062,-0.119237,0.0340496,0.14385,0.0589731,0.000715905,-0.00600407
+"Turkish","P[zcp:1,Act,PP,Sem,PPSem] V[zcp:1,Act,PP]","S_TypePseudo_Passive:Semantics_scaled:Gender_c",0.0632047,0.0408826,1.54601,70,30240,TRUE,0.122103,-0.119237,0.0340496,0.14385,0.0589731,0.0316024,NA
+"Norwegian","P[zcp:1,Act,Sem] V[corr:1,Act]","Gender_c",0.00265816,0.0239911,0.110798,57,15048,TRUE,0.911777,-0.276052,0.0588418,0.172357,0.100745,0.00132908,NA
+"Norwegian","P[zcp:1,Act,Sem] V[corr:1,Act]","S_TypeActive:Gender_c",0.0194046,0.0339286,0.571924,57,15048,TRUE,0.567373,-0.276052,0.0588418,0.172357,0.100745,0.00970229,NA
+"Norwegian","P[zcp:1,Act,Sem] V[corr:1,Act]","Semantics_scaled:Gender_c",0.00462306,0.0483499,0.0956168,57,15048,TRUE,0.923825,-0.276052,0.0588418,0.172357,0.100745,0.00231153,0.0134113
+"Norwegian","P[zcp:1,Act,Sem] V[corr:1,Act]","S_TypeActive:Semantics_scaled:Gender_c",-0.0172995,0.0683771,-0.253001,57,15048,TRUE,0.800267,-0.276052,0.0588418,0.172357,0.100745,-0.00864975,0.0313337
+"English",NA,"random SD: Gender_c | VS",1.2385e-05,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"English",NA,"random SD: Gender_c | Verb",0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"English",NA,"random SD: Gender_c | Participant",0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"random SD: Gender_c | VS",0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"random SD: Gender_c | Verb",0.0310333,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"random SD: Gender_c | Participant",0.0401837,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Norwegian",NA,"random SD: Gender_c | VS",0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Norwegian",NA,"random SD: Gender_c | Verb",1.50332e-05,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Norwegian",NA,"random SD: Gender_c | Participant",0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"English",NA,"reference random SD: (Intercept) | Verb",0.27835,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"English",NA,"reference random SD: Act | Verb",0.218737,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"English",NA,"reference random SD: PP | Verb",0.2318,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"reference random SD: PP | Verb",0.13156,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"reference random SD: Act | Verb",0.114659,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"reference random SD: (Intercept) | Verb",0.233641,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Norwegian",NA,"reference random SD: (Intercept) | Verb",0.366699,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Norwegian",NA,"reference random SD: Act | Verb",0.19305,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"English",NA,"descriptive verb heterogeneity tau: Active",0.0120591,NA,NA,NA,NA,NA,0.428447,NA,NA,NA,NA,NA,NA
+"English",NA,"descriptive verb heterogeneity tau: Active_minus_Passive",0.0482812,NA,NA,NA,NA,NA,0.248804,NA,NA,NA,NA,NA,NA
+"English",NA,"descriptive verb heterogeneity tau: All",0,NA,NA,NA,NA,NA,0.591421,NA,NA,NA,NA,NA,NA
+"English",NA,"descriptive verb heterogeneity tau: Passive",0.059529,NA,NA,NA,NA,NA,0.0726673,NA,NA,NA,NA,NA,NA
+"English",NA,"descriptive verb heterogeneity tau: Pseudo_Passive",0,NA,NA,NA,NA,NA,0.888716,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"descriptive verb heterogeneity tau: Active",0.0355954,NA,NA,NA,NA,NA,0.0144948,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"descriptive verb heterogeneity tau: Active_minus_Passive",0,NA,NA,NA,NA,NA,0.937702,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"descriptive verb heterogeneity tau: All",0.0430785,NA,NA,NA,NA,NA,0.00318575,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"descriptive verb heterogeneity tau: Passive",0.0334098,NA,NA,NA,NA,NA,0.295923,NA,NA,NA,NA,NA,NA
+"Turkish",NA,"descriptive verb heterogeneity tau: Pseudo_Passive",0,NA,NA,NA,NA,NA,0.550894,NA,NA,NA,NA,NA,NA
+"Norwegian",NA,"descriptive verb heterogeneity tau: Active",0.0446302,NA,NA,NA,NA,NA,0.181812,NA,NA,NA,NA,NA,NA
+"Norwegian",NA,"descriptive verb heterogeneity tau: Active_minus_Passive",0.0449393,NA,NA,NA,NA,NA,0.338878,NA,NA,NA,NA,NA,NA
+"Norwegian",NA,"descriptive verb heterogeneity tau: All",0.0679553,NA,NA,NA,NA,NA,0.00327952,NA,NA,NA,NA,NA,NA
+"Norwegian",NA,"descriptive verb heterogeneity tau: Passive",0.087918,NA,NA,NA,NA,NA,0.014615,NA,NA,NA,NA,NA,NA

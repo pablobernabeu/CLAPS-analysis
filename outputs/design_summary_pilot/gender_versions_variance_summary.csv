@@ -1,0 +1,13 @@
+"language","scale","model","engine","n_participants","random_structure","extra_terms","cell_variance","participant_verb_variance","residual_variance","cell_variance_share","noise_removed_by_second_rating"
+"English","response_1_to_7","full_cell_term","lmer",70,"P[corr:1,Act,PP,Sem,ActSem,PPSem] V[corr:1,Act,PP]","(1 | Cell)",0.127065,NA,0.520831,0.19612,0.40194
+"English","response_1_to_7","full_cell_and_participant_verb","lmer",70,"P[corr:1,Act,PP,Sem,ActSem,PPSem] V[corr:1,Act,PP]","(1 | PV) + (1 | Cell)",0.0462886,0.0808234,0.520833,0.0816203,0.45919
+"English","response_1_to_7","lmer_cell_term_subset","lmer",35,"P[zcp:1] V[zcp:]","(1 | Participant) + (1 | PS) + (1 | VS) + (1 | Cell)",0.123989,NA,0.462434,0.211433,0.394283
+"English","latent_logit","clmm_cell_term_subset","clmm",35,"R ~ S_Type * Semantics_scaled + (1 | Participant) + (1 | PS) + (1 | VS) + (1 | Cell)","(1 | Participant) + (1 | PS) + (1 | VS) + (1 | Cell)",0.344748,NA,3.28987,0.0948513,0.452574
+"Turkish","response_1_to_7","full_cell_term","lmer",70,"P[zcp:1,Act,PP,Sem,PPSem] V[zcp:1,Act,PP]","(1 | Cell)",0.111232,NA,0.411377,0.21284,0.39358
+"Turkish","response_1_to_7","full_cell_and_participant_verb","lmer",70,"P[zcp:1,Act,PP,Sem,PPSem] V[zcp:1,Act,PP]","(1 | PV) + (1 | Cell)",0.0268294,0.0844286,0.411374,0.0612259,0.469387
+"Turkish","response_1_to_7","lmer_cell_term_subset","lmer",35,"P[zcp:1] V[zcp:]","(1 | Participant) + (1 | PS) + (1 | VS) + (1 | Cell)",0.116869,NA,0.417725,0.218612,0.390694
+"Turkish","latent_logit","clmm_cell_term_subset","clmm",35,"R ~ S_Type * Semantics_scaled + (1 | Participant) + (1 | PS) + (1 | VS) + (1 | Cell)","(1 | Participant) + (1 | PS) + (1 | VS) + (1 | Cell)",0.409993,NA,3.28987,0.110813,0.444593
+"Norwegian","response_1_to_7","full_cell_term","lmer",57,"P[zcp:1,Act,Sem] V[corr:1,Act]","(1 | Cell)",0.491035,NA,0.601742,0.449346,0.275327
+"Norwegian","response_1_to_7","full_cell_and_participant_verb","lmer",57,"P[zcp:1,Act,Sem] V[corr:1,Act]","(1 | PV) + (1 | Cell)",0.144748,0.348924,0.60174,0.193906,0.403047
+"Norwegian","response_1_to_7","lmer_cell_term_subset","lmer",35,"P[zcp:1] V[zcp:]","(1 | Participant) + (1 | PS) + (1 | VS) + (1 | Cell)",0.587134,NA,0.610606,0.490201,0.254899
+"Norwegian","latent_logit","clmm_cell_term_subset","clmm",35,"R ~ S_Type * Semantics_scaled + (1 | Participant) + (1 | PS) + (1 | VS) + (1 | Cell)","(1 | Participant) + (1 | PS) + (1 | VS) + (1 | Cell)",2.82835,NA,3.28987,0.462283,0.268858

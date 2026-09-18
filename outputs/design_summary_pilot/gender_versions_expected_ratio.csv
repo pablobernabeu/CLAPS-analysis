@@ -1,0 +1,49 @@
+"language","scale","source","hypothesis","term","n_participants","se_two_versions","se_one_version","r_expected","share_verb_floor_one_version","share_participant_slope_one_version","share_rating_noise_one_version"
+"English","response_1_to_7","lmer selected + PV + cell","h1a","Semantics_scaled",70,0.0785894,0.0799117,0.983453,0.675555,0.242783,0.0816622
+"English","response_1_to_7","lmer selected + PV + cell","h1a","Semantics_scaled",80,0.0770941,0.0782745,0.98492,0.70411,0.221415,0.0744748
+"English","response_1_to_7","lmer selected + PV + cell","h1b","S_TypeActive:Semantics_scaled",70,0.0764356,0.0791301,0.965948,0.434656,0.419555,0.145789
+"English","response_1_to_7","lmer selected + PV + cell","h1b","S_TypeActive:Semantics_scaled",80,0.0738397,0.0762829,0.967971,0.467708,0.395026,0.137266
+"English","response_1_to_7","lmer selected + PV + cell","h2","S_TypePseudo_Passive:Semantics_scaled",70,0.0798686,0.0824511,0.968679,0.449119,0.416599,0.134282
+"English","response_1_to_7","lmer selected + PV + cell","h2","S_TypePseudo_Passive:Semantics_scaled",80,0.0772222,0.0795616,0.970596,0.482332,0.391482,0.126186
+"English","latent_logit","pilot brms DGP + clmm cell variance","h1a","Semantics_scaled",70,0.215001,0.218016,0.986171,0.795664,0.143645,0.0606911
+"English","latent_logit","pilot brms DGP + clmm cell variance","h1a","Semantics_scaled",80,0.212543,0.215214,0.987591,0.816519,0.128984,0.0544967
+"English","latent_logit","pilot brms DGP + clmm cell variance","h1b","S_TypeActive:Semantics_scaled",70,0.247238,0.252463,0.979303,0.669876,0.239606,0.0905184
+"English","latent_logit","pilot brms DGP + clmm cell variance","h1b","S_TypeActive:Semantics_scaled",80,0.242534,0.247199,0.981128,0.698708,0.218679,0.0826126
+"English","latent_logit","pilot brms DGP + clmm cell variance","h2","S_TypePseudo_Passive:Semantics_scaled",70,0.200264,0.20668,0.968955,0.656361,0.208577,0.135062
+"English","latent_logit","pilot brms DGP + clmm cell variance","h2","S_TypePseudo_Passive:Semantics_scaled",80,0.196462,0.202193,0.971656,0.68582,0.190696,0.123484
+"English","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1a","Semantics_scaled",70,0.214364,0.217388,0.98609,0.80027,0.144477,0.0552525
+"English","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1a","Semantics_scaled",80,0.211979,0.214657,0.987526,0.820762,0.129654,0.0495839
+"English","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1b","S_TypeActive:Semantics_scaled",70,0.246129,0.251377,0.979122,0.675677,0.241681,0.0826422
+"English","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1b","S_TypeActive:Semantics_scaled",80,0.241545,0.246229,0.980977,0.704227,0.220406,0.0753673
+"English","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h2","S_TypePseudo_Passive:Semantics_scaled",70,0.198893,0.205352,0.968546,0.664878,0.211284,0.123838
+"English","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h2","S_TypePseudo_Passive:Semantics_scaled",80,0.195239,0.201005,0.971315,0.693948,0.192956,0.113096
+"Turkish","response_1_to_7","lmer selected + PV + cell","h1a","Semantics_scaled",70,0.0591238,0.0605075,0.977131,0.848982,0.0361284,0.11489
+"Turkish","response_1_to_7","lmer selected + PV + cell","h1a","Semantics_scaled",80,0.0587129,0.0599337,0.97963,0.865317,0.0322206,0.102463
+"Turkish","response_1_to_7","lmer selected + PV + cell","h1b","S_TypeActive:Semantics_scaled",70,0.0347178,0.0391971,0.885724,0.540906,0,0.459094
+"Turkish","response_1_to_7","lmer selected + PV + cell","h1b","S_TypeActive:Semantics_scaled",80,0.0340374,0.0380558,0.894407,0.573837,0,0.426163
+"Turkish","response_1_to_7","lmer selected + PV + cell","h2","S_TypePseudo_Passive:Semantics_scaled",70,0.0459208,0.0493943,0.929676,0.436904,0.273991,0.289105
+"Turkish","response_1_to_7","lmer selected + PV + cell","h2","S_TypePseudo_Passive:Semantics_scaled",80,0.0444789,0.0476243,0.933954,0.469985,0.257895,0.27212
+"Turkish","latent_logit","pilot brms DGP + clmm cell variance","h1a","Semantics_scaled",70,0.161437,0.165431,0.975856,0.823569,0.0691315,0.107299
+"Turkish","latent_logit","pilot brms DGP + clmm cell variance","h1a","Semantics_scaled",80,0.160067,0.163596,0.978426,0.842142,0.0618542,0.096004
+"Turkish","latent_logit","pilot brms DGP + clmm cell variance","h1b","S_TypeActive:Semantics_scaled",70,0.162066,0.169931,0.953718,0.781006,0.0156116,0.203382
+"Turkish","latent_logit","pilot brms DGP + clmm cell variance","h1b","S_TypeActive:Semantics_scaled",80,0.160628,0.167589,0.958464,0.802987,0.0140446,0.182968
+"Turkish","latent_logit","pilot brms DGP + clmm cell variance","h2","S_TypePseudo_Passive:Semantics_scaled",70,0.126299,0.136244,0.927003,0.51924,0.16437,0.31639
+"Turkish","latent_logit","pilot brms DGP + clmm cell variance","h2","S_TypePseudo_Passive:Semantics_scaled",80,0.123135,0.132087,0.932228,0.552439,0.15302,0.294541
+"Turkish","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1a","Semantics_scaled",70,0.160426,0.164444,0.975562,0.83348,0.0699634,0.0965571
+"Turkish","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1a","Semantics_scaled",80,0.159175,0.162724,0.978191,0.851197,0.0625193,0.0862835
+"Turkish","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1b","S_TypeActive:Semantics_scaled",70,0.160046,0.168005,0.952624,0.799014,0.0159715,0.185015
+"Turkish","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1b","S_TypeActive:Semantics_scaled",80,0.158846,0.165881,0.957586,0.819605,0.0143352,0.16606
+"Turkish","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h2","S_TypePseudo_Passive:Semantics_scaled",70,0.123696,0.133835,0.924243,0.538106,0.170343,0.291551
+"Turkish","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h2","S_TypePseudo_Passive:Semantics_scaled",80,0.120801,0.129914,0.929855,0.571078,0.158183,0.270739
+"Norwegian","response_1_to_7","lmer selected + PV + cell","h1a","Semantics_scaled",57,0.0990982,0.100724,0.983861,0.788358,0.0950723,0.11657
+"Norwegian","response_1_to_7","lmer selected + PV + cell","h1a","Semantics_scaled",80,0.0964185,0.0976113,0.98778,0.839435,0.0721278,0.0884369
+"Norwegian","response_1_to_7","lmer selected + PV + cell","h1b","S_TypeActive:Semantics_scaled",57,0.0588515,0.0641338,0.917635,0.608122,0,0.391878
+"Norwegian","response_1_to_7","lmer selected + PV + cell","h1b","S_TypeActive:Semantics_scaled",80,0.0564523,0.0604131,0.934439,0.685336,0,0.314664
+"Norwegian","latent_logit","pilot brms DGP + clmm cell variance","h1a","Semantics_scaled",57,0.192419,0.196911,0.977185,0.687449,0.144766,0.167785
+"Norwegian","latent_logit","pilot brms DGP + clmm cell variance","h1a","Semantics_scaled",80,0.184509,0.187856,0.982184,0.755321,0.11333,0.13135
+"Norwegian","latent_logit","pilot brms DGP + clmm cell variance","h1b","S_TypeActive:Semantics_scaled",57,0.13725,0.149452,0.918357,0.316578,0.100886,0.582536
+"Norwegian","latent_logit","pilot brms DGP + clmm cell variance","h1b","S_TypeActive:Semantics_scaled",80,0.124317,0.133967,0.927966,0.393991,0.0894588,0.516551
+"Norwegian","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1a","Semantics_scaled",57,0.184438,0.189121,0.975242,0.745254,0.156939,0.0978071
+"Norwegian","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1a","Semantics_scaled",80,0.178608,0.182063,0.981021,0.804149,0.120656,0.0751948
+"Norwegian","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1b","S_TypeActive:Semantics_scaled",57,0.113237,0.127753,0.886374,0.433251,0.138068,0.428682
+"Norwegian","latent_logit","pilot brms DGP, cell variance 0 (upper bound on gain)","h1b","S_TypeActive:Semantics_scaled",80,0.105684,0.116883,0.904187,0.517586,0.117522,0.364891
