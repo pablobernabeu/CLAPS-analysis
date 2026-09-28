@@ -227,6 +227,59 @@ cross_txt <- function(lang, target) {
   if (is.na(x)) "no sample run" else paste(x, "participants")
 }
 
+# The pseudo-passive prediction (H2), summarised from the decision arm by
+# scripts/aggregate_pseudo_passive.R, with the pilot posterior of that interaction per SD
+# of affectedness. The figures come from the data-grounded analysis alone, because the
+# literature cross-check's generators set the pseudo-passive interaction positive, where
+# the meta-analysis and the English pilot put it below zero. The file stores integer
+# counts and exact intervals under the rule lower95() applies, so nothing here is rebuilt
+# from a rounded proportion, and a language without a pseudo-passive carries NA in every
+# H2 column, so it cannot print as a test that failed.
+ppd <- read_csv("../outputs/design_summary_pilot/pseudo_passive_decision_arm.csv",
+                show_col_types = FALSE)
+ppp <- read_csv("../outputs/design_summary_pilot/pseudo_passive_pilot_posterior.csv",
+                show_col_types = FALSE)
+# Both summaries count the same decision-arm replicates. The script checked this at every
+# cell where joint_power_pilot.csv holds exactly those replicates, and it is checked again
+# here, so that a later re-aggregation of either file that left the two out of step would
+# stop the render.
+ppd_same <- ppd |>
+  inner_join(select(jp_a, language, n_participants, reps, p_h1b),
+             by = c("language", "n_participants"), suffix = c("", "_jp")) |>
+  filter(reps == reps_jp)
+stopifnot(setequal(ppd_same$language, LANG_LEVELS),
+          all(ppd_same$n_h1b == round(ppd_same$p_h1b * ppd_same$reps)))
+h2v      <- function(lang, N, col) ppd[[col]][ppd$language == lang & ppd$n_participants == N]
+h2ratio  <- function(lang, N, col = "n_h2b") {
+  sprintf("%d/%d", as.integer(h2v(lang, N, col)), as.integer(h2v(lang, N, "reps")))
+}
+h2ci     <- function(lang, N, hyp = "h2b") {
+  sprintf("[%.2f, %.2f]", h2v(lang, N, paste0("lo_", hyp)), h2v(lang, N, paste0("hi_", hyp)))
+}
+h2_ns    <- sort(unique(ppd$n_participants))
+# The replicates per cell, said once when every cell holds the same number.
+h2_reps_txt <- if (length(unique(ppd$reps)) == 1L) as.character(unique(ppd$reps)) else
+  paste(min(ppd$reps), "to", max(ppd$reps))
+and_list <- function(x) {
+  if (length(x) > 1) paste(paste(head(x, -1), collapse = ", "), "and", tail(x, 1)) else as.character(x)
+}
+# One count at every sample in the arm, in sample order, as "a/n, b/n and c/n".
+h2ratios <- function(lang, col = "n_h2b") {
+  and_list(vapply(h2_ns, function(N) h2ratio(lang, N, col), character(1)))
+}
+h2sum    <- function(lang, col) sum(ppd[[col]][ppd$language == lang])
+h2post   <- function(lang, col) ppp[[col]][ppp$language == lang]
+# Every posterior draw on one side of zero is said in words, and anything short of that
+# is given as a count, so the sentence stays true if the pilot models are refitted.
+h2draws  <- function(lang) {
+  k <- h2post(lang, "n_negative")
+  n <- h2post(lang, "ndraws")
+  if (k == n) paste("all", format(n, big.mark = ",")) else
+    paste(format(k, big.mark = ","), "of", format(n, big.mark = ","))
+}
+snum2    <- function(x) sprintf("$%+.2f$", x)   # signed, in math mode for a true minus
+none_or  <- function(k) if (k == 0) "none" else as.character(k)
+
 # Pooled arm, combined across sample sizes at or below the cap. The arm is flat in N,
 # which is what a verb-limited design predicts and what the cells show, so combining
 # them is the best available estimate; cell by cell the pooled arm holds only a few dozen
@@ -261,13 +314,10 @@ pooled_het_ceiling <- pnorm(abs(mean(pp$interaction_mean)) /
                              (sd(pp$interaction_mean) / sqrt(nrow(pp))) - qnorm(10 / 11))
 
 # Literature cross-check reference cells: the full verb set and the reduced
-# 40-verb set at the smallest sample, and the secondary (H2) detection range
-# at the full verb set.
+# 40-verb set at the smallest sample.
 lit50    <- filter(foc_full, n_verbs == 72, n_participants == 50)
 lit40_50 <- filter(foc_full, language == "English", n_verbs == 40,
                    n_participants == 50)$binding
-h2_72    <- filter(exc, hypothesis == "H2a_pseudo_positive", n_verbs == 72,
-                   reps >= MIN_REPS)$p_bf_primary
 
 # How much simulation the report rests on, and how it is distributed across the
 # arms. Derived, because these counts move whenever a cell lands, and because the
@@ -332,6 +382,141 @@ pooled_interim <- if (!is.null(pooledp) && nrow(pooledp) && 50 %in% pooledp$n_pa
           h1b10$txt, h1b10$n, h1b6$txt, min(pooledp$reps), max(pooledp$reps),
           sum(pooledp$n_converged[pooledp$n_participants <= 100]))
 } else "First results are expected within days."
+
+# The reversed agent-gender versions, taken up in Appendix E. The latent ratio and the
+# variance shares come from scripts/gender_versions_latent_ratio.R and the pilot
+# re-analyses from scripts/assess_gender_versions.R. These summaries are finished, so they
+# are read unconditionally like the tables above, and only the pooled arm needs a guard
+# against a file that has not landed. The latent-ratio file also holds a check of the
+# estimator against the generating model, filtered out here because the design question is
+# answered by the estimate from the pilot and the two differ enough in Norwegian to matter.
+# Two earlier files in the same folder, gender_versions_expected_ratio.csv and
+# gender_versions_power_translation.csv, fix the per-rating noise at a constant and ignore
+# the rating scale's ceiling. These supersede them, so nothing here reads them.
+gvr <- read_csv("../outputs/design_summary_pilot/gender_versions_latent_ratio.csv",
+                show_col_types = FALSE) |>
+  filter(source == "pilot")
+gvp <- read_csv("../outputs/design_summary_pilot/gender_versions_power_at_latent_r.csv",
+                show_col_types = FALSE)
+gva <- read_csv("../outputs/design_summary_pilot/gender_versions_agreement.csv",
+                show_col_types = FALSE)
+gve <- read_csv("../outputs/design_summary_pilot/gender_versions_gender_effects.csv",
+                show_col_types = FALSE)
+
+# In these files the prediction is a column and its levels are lower case, where the grid
+# summaries above carry it inside the column name. The accessors therefore take a language
+# and a hypothesis, and default to the confirmatory one. Three decimals are needed for the
+# standard-error ratio and for the gender terms, which two decimals would round together.
+# A gender term's direction is half of what it says, so snum3() prints the sign and sets it
+# in math mode, where LaTeX gives a true minus in place of a hyphen. p values lose the
+# leading zero, as APA asks, since they cannot exceed one.
+num3  <- function(x) sprintf("%.3f", x)
+snum3 <- function(x) sprintf("$%+.3f$", x)
+pval  <- function(x) {
+  if (x < 0.001) "< .001" else paste("=", sub("^0", "", sprintf("%.3f", x)))
+}
+GV_LAB <- c(h1a = "H1a", h1b = "H1b", joint = "Joint")
+gvv  <- function(lang, col, hyp = "h1b") {
+  gvp[[col]][gvp$language == lang & gvp$hypothesis == hyp]
+}
+gvrv <- function(lang, col, hyp = "h1b") {
+  gvr[[col]][gvr$language == lang & gvr$hypothesis == hyp]
+}
+gvav <- function(lang, col, comparison = "same_participant_other_version") {
+  gva[[col]][gva$language == lang & gva$S_Type == "All" & gva$comparison == comparison]
+}
+gvev <- function(lang, term, col = "estimate") {
+  gve[[col]][gve$language == lang & gve$term == term]
+}
+
+# The one-version figures are the decision arm's own, so they are taken from the grid the
+# body already quotes and not from the copies the gender files carry beside them. Two
+# sources for one number drift apart at the next re-aggregation. The Monte-Carlo error is
+# computed as jmcse() computes it, since the grid stores it for the interaction and the
+# joint rule alone and Appendix E also reports the passive slope.
+GV_ARM     <- c(h1a = "p_h1a", h1b = "p_h1b", joint = "p_joint")
+GV_CEILING <- c(h1a = "ceiling_h1a_bf10", h1b = "ceiling_h1b_bf10",
+                joint = "ceiling_joint_bf10")
+gv_arm  <- function(lang, hyp = "h1b", N = 80) jval(lang, N, GV_ARM[[hyp]])
+gv_mcse <- function(lang, hyp = "h1b", N = 80) {
+  r <- jrow(lang, N); p <- r[[GV_ARM[[hyp]]]]
+  sqrt(p * (1 - p) / r$reps)
+}
+# The one exception is the English rate pooled over 100 participants and above, which
+# Appendix E quotes from arm_power_n100plus in the gender file. The both-versions figure
+# beside it was calibrated from that base, which counts one replicate the report's
+# minimum-replicate filter drops, and a rate paired with a lift computed from a different
+# denominator would misstate the lift by more than the lift is worth.
+
+# How far the joint rows miss the arm they approximate. Those figures treat the two focal
+# predictions as independent given the posterior draw, and the size of that approximation
+# is quoted with them, so no sentence has to assert that it is small.
+gv_joint_gap <- max(abs(vapply(LANG_LEVELS, function(L)
+  gvv(L, "joint_approximation_one_version", "joint") - gv_arm(L, "joint"), numeric(1))))
+
+# The largest gain a second version buys, and how that gain stands against the Monte-Carlo
+# error of the cell it moves. Appendix E rests its conclusion on that comparison, so both
+# are computed over every row of the table. An earlier draft asserted a threshold in words,
+# and the Turkish joint row contradicted it. The row is carried with the figures, and the
+# runner-up is computed, because taking two maxima independently would let the prose name
+# one row while quoting another's ratio if a re-aggregation moved them apart.
+gv_mcse_ratio   <- vapply(seq_len(nrow(gvp)), function(i)
+  gvp$gain_points[i] / 100 / gv_mcse(gvp$language[i], gvp$hypothesis[i]), numeric(1))
+gv_gain_i       <- which.max(gvp$gain_points)
+gv_gain_row     <- gvp[gv_gain_i, ]
+gv_gain_max     <- gv_gain_row$gain_points
+gv_gain_vs_mcse <- gv_mcse_ratio[gv_gain_i]
+gv_gain_runner  <- max(gv_mcse_ratio[-gv_gain_i])
+
+# Gender terms are counted and the survivors named from the file. The file also holds
+# random-effect standard deviations and descriptive heterogeneity, which carry no standard
+# error, and Norwegian has no pseudo-passive and so contributes four terms where the others
+# contribute six. The count sets the Bonferroni threshold, and the English three-way term
+# clears it with three per cent to spare, so one row added to or removed from the file
+# would change which terms survive and leave a hand-written list at odds with the count
+# printed beside it.
+GV_TERM_H1A <- "Semantics_scaled:Gender_c"
+GV_TERM_H1B <- "S_TypeActive:Semantics_scaled:Gender_c"
+GV_TERM_LAB <- c(
+  "Gender_c"                                       = "gender",
+  "S_TypeActive:Gender_c"                          = "gender by active",
+  "S_TypePseudo_Passive:Gender_c"                  = "gender by pseudo-passive",
+  "Semantics_scaled:Gender_c"                      = "gender by affectedness",
+  "S_TypeActive:Semantics_scaled:Gender_c"         = "gender by active by affectedness",
+  "S_TypePseudo_Passive:Semantics_scaled:Gender_c" = "gender by pseudo-passive by affectedness")
+gve_fixed          <- filter(gve, !is.na(se))
+gv_terms           <- nrow(gve_fixed)
+gv_kept            <- filter(gve_fixed, p_two_sided <= 0.05 / gv_terms)
+gv_survivors       <- nrow(gv_kept)
+gv_survivors_focal <- sum(gv_kept$term %in% c(GV_TERM_H1A, GV_TERM_H1B))
+gv_survivor_txt    <- {
+  x <- sprintf("%s %s", gv_kept$language, GV_TERM_LAB[gv_kept$term])
+  if (length(x) > 1) paste(paste(head(x, -1), collapse = ", "), "and", tail(x, 1)) else x
+}
+
+# What one version would do to the interaction. Referent gender is coded plus or minus a
+# half in the pilot models, so a design whose participants average g on that code shifts
+# the focal slope by g times the gender term, and gv_shift() reports that shift as a
+# fraction of the slope itself. Complementary lists put g at zero, one version for everyone
+# puts it at a half, and an unequal split leaves the fraction between: an excess of k
+# participants on one list in a sample of n averages k / (2n).
+gv_shift <- function(lang, g = 0.5) {
+  abs(g * gvev(lang, GV_TERM_H1B) / gvev(lang, GV_TERM_H1B, "h1b_estimate"))
+}
+gv_shift_excess <- function(lang, excess = 10, n = 80) gv_shift(lang, excess / (2 * n))
+gv_h1b_at <- function(lang, g = 0.5) {
+  gvev(lang, GV_TERM_H1B, "h1b_estimate") + g * gvev(lang, GV_TERM_H1B)
+}
+
+# Sentences in one pilot session, which is the quantity the session-length question turns
+# on. Every verb was administered in three sentence types and in both agent-gender
+# versions. This counts what the volunteer sat through. The rows the models are fitted to
+# would put a Norwegian session at 264 sentences, because harmonisation drops the synthetic
+# passive, where the session itself ran to 396. Only the verb count is read from the data;
+# the two multipliers are the design, and the prose states them wherever the figure appears.
+GV_S_TYPES_ADMINISTERED <- 3L
+GV_VERSIONS             <- 2L
+gv_trials <- function(lang) GV_VERSIONS * GV_S_TYPES_ADMINISTERED * ppv(lang, "n_verbs")
 ```
 
 `\begin{abstract}\normalsize\noindent`{=latex} CLAPS asks whether the acceptability of a
@@ -466,8 +651,10 @@ composition by language is given in @tbl-pilot in Appendix A. @fig-pilot shows t
 acceptability ratings against agent semantic affectedness, separately by sentence type,
 referent gender and language. The affectedness slope is positive and steepest for the
 passive in English and Norwegian, and shallower for the active and the pseudo-passive. The
-trends are very similar for male and female referents within each language. This is
-reassuring, because the focal effects should not be driven by a referent-gender imbalance.
+trends are very similar for male and female referents within each language. The similarity
+is descriptive only. The English affectedness slope does shift with referent gender by
+enough to matter, which is why the two versions are balanced across participants in the
+design recommended below, as Appendix E sets out.
 
 ```{r fig-pilot}
 #| fig-cap: "Raw Pilot Acceptability by Agent Semantic Affectedness, Sentence Type, Referent Gender and Language"
@@ -500,10 +687,12 @@ acceptability more than it raises active acceptability, so the active-by-affecte
 interaction is negative. The confirmatory decision rests on H1b alone. H1a is a prespecified
 positive control: it checks that the interaction means what it is meant to mean, and is
 reported as an estimate. An earlier version of the design required both predictions in the
-same study, and the results below are what led to dropping that requirement. A secondary,
-two-tailed prediction concerns the pseudo-passive-by-affectedness interaction, reported in
-both directions, H2a for the positive one and H2b for the negative. It does not gate the recommendation and does not apply to
-Norwegian, which has no pseudo-passive.
+same study, and the results below are what led to dropping that requirement. A secondary
+prediction, H2, concerns the pseudo-passive-by-affectedness interaction. The meta-analysis
+[@ambridgeArnonBekman2023] and the English pilot both put that interaction below zero, so
+H2 is proposed as one-tailed and negative, the prediction labelled H2b, in each language
+with a pseudo-passive. It does not gate the recommendation and does not apply to Norwegian,
+which has no pseudo-passive.
 
 # Design-Analysis Method
 
@@ -528,11 +717,14 @@ data. The literature-anchored cross-check instead sets the population effects to
 the cross-linguistic meta-analysis. On the standardised affectedness predictor, the passive
 affectedness slope is set near the pooled value of about 0.23 logits per standard deviation (a
 logit is a unit of the model's underlying scale, not a raw point on the 1 to 7 rating), with a
-negative active-by-affectedness interaction of about $-0.15$ and a small positive
-pseudo-passive-by-affectedness interaction. In the cross-check, affectedness is spread across a
-plausible range, and the by-participant and by-verb random-effect standard deviations are set
-to realistic magnitudes. The referent-gender covariate is held out of both preliminary runs and
-is examined separately.
+negative active-by-affectedness interaction of about $-0.15$. The cross-check also sets the
+pseudo-passive-by-affectedness interaction positive, the opposite of the sign the
+meta-analysis and the English pilot support. Its pseudo-passive figures are therefore set
+aside, and the secondary prediction is reported from the data-grounded analysis alone. In the
+cross-check, affectedness is spread across a plausible range, and the by-participant and
+by-verb random-effect standard deviations are set to realistic magnitudes. The
+referent-gender covariate is held out of both preliminary runs and is examined separately in
+Appendix E.
 
 The analysis model uses the maximal random-effects structure consistent with the design,
 meaning the most complex structure the design supports, so any effect that can vary across
@@ -589,10 +781,12 @@ participants at verb counts of 40 and 72. Each completed cell holds 50 replicate
 Monte-Carlo standard error of about five to six percentage points near a power of 80%, so
 estimates close to that target are not perfectly ordered across adjacent sample sizes. The
 central code for the data-generating process, the model and the Bayes factor is reproduced
-in Appendix B. The full operating characteristics of this run, cell by cell, are reported in
-@tbl-opchar in Appendix C, and Appendix D maps the whole repository, including which file
-implements each of the two simulation engines described above and how the pooled analysis
-reuses one of them.
+in Appendix B. The operating characteristics of this run for the two focal predictions, cell
+by cell, are reported in @tbl-opchar in Appendix C. Appendix D maps the whole repository,
+including which file implements each of the two simulation engines described above and how
+the pooled analysis reuses one of them. Appendix E takes up the reversed agent-gender versions
+of the stimuli, which the session design turns on.
+
 
 # Results
 
@@ -1046,13 +1240,41 @@ themselves come from the cluster.
 
 ## Secondary Prediction
 
-The pseudo-passive-by-affectedness interaction reaches a detection probability of about
-`r pct0(min(h2_72))` to `r pct0(max(h2_72))` at 72 verbs. This remains below the focal
-predictions and reflects its smaller
-assumed magnitude, and the opposite-direction test is near zero throughout, as expected.
-This prediction is secondary and two-tailed, and it does not constrain the sample-size
-recommendation. Full operating characteristics for all four predictions, including the
-convergence rates, are reported in Appendix C.
+The pseudo-passive prediction asks whether affectedness raises the acceptability of
+pseudo-passives as it raises that of passives. The meta-analysis finds that it does not
+[@ambridgeArnonBekman2023], and the English pilot agrees. There the
+pseudo-passive-by-affectedness interaction is `r snum2(h2post("English", "per_sd_mean"))`
+logits per standard deviation of affectedness, with a 95% credible interval from
+`r snum2(h2post("English", "per_sd_lo95"))` to `r snum2(h2post("English", "per_sd_hi95"))`
+and `r h2draws("English")` posterior draws below zero. H2 is therefore proposed as a
+one-tailed test of the negative interaction, H2b, in each language with a pseudo-passive.
+
+The data-grounded runs behind the sample-size decision, `r h2_reps_txt` simulated studies at
+each of `r and_list(h2_ns)` participants, computed the pseudo-passive Bayes factors in every
+study, so they give the power of that test directly. In English, H2b reaches a Bayes factor
+of 10 in `r h2ratios("English")` studies, from the smallest sample to the largest. At 80
+participants the rate is `r pct1(h2v("English", 80, "p_h2b"))` `r h2ci("English", 80)`,
+against `r pct1(h1bv("English", 80))` for H1b on the same replicates. The exact
+one-sided 95% lower bound on the H2b rate is `r pct1(h2v("English", 80, "lb_h2b"))`. Of the
+`r h2v("English", 80, "n_converged")` replicates at that sample that pass the convergence
+screen, `r h2v("English", 80, "n_h2b_converged")` reach the threshold. H1b and H2b reach it
+together in `r h2ratio("English", 80, "n_h1b_and_h2b")` studies. The positive direction,
+labelled H2a in the record of decisions, reaches it in
+`r none_or(h2sum("English", "n_h2a"))` of the `r h2sum("English", "reps")` English studies.
+
+In Turkish the pilot interaction runs the other way, at
+`r snum2(h2post("Turkish", "per_sd_mean"))` per standard deviation, with a 95% credible
+interval from `r snum2(h2post("Turkish", "per_sd_lo95"))` to
+`r snum2(h2post("Turkish", "per_sd_hi95"))`. There affectedness raises the acceptability of
+pseudo-passives more than that of passives, and the simulations inherit the reversal, since
+they draw their effects from that posterior. H2b reaches a Bayes factor of 10 in
+`r h2ratios("Turkish")` Turkish studies, and the reversed direction reaches it in
+`r h2ratios("Turkish", "n_h2a")`. Under the one-tailed test, each of those reversals is a
+Bayes factor for H2b of 1/10 or less. At 80 participants the reversal comes to
+`r pct1(h2v("Turkish", 80, "p_h2a"))`, and `r h2v("Turkish", 80, "n_h2_inconclusive")` of
+the `r h2v("Turkish", 80, "reps")` studies reach 10 in neither direction. Norwegian has no
+pseudo-passive, so the prediction does not apply to it. H2 is secondary and does not gate the
+sample-size recommendation.
 
 # Paths Forward
 
@@ -1063,7 +1285,7 @@ is part of the record.
 
 The design is now capped at 80 participants per language, with 100 the absolute maximum any
 team would be asked for. The verb pool cannot grow beyond 72, because suitable verbs are scarce
-in every language and session length was never the constraint. The third option below is
+in every language and session length was never the constraint on it. The third option below is
 therefore unavailable. Collection must be at a single sample size fixed and announced in
 advance, because the teams have to take a stated number to their ethics committees, which rules
 out the fourth option. Many of the teams have not run a study of this type before and could not
@@ -1096,8 +1318,8 @@ now built. Its rationale and the first results are set out below.
 The third option expands the verb pool without lengthening any participant's session. Verbs are
 the scarce resource, and a planned-missingness design assigns each participant a random subset
 of a larger pool [@grahamTaylorOlchowskiCumsille2006; @littleRhemtulla2013]. Each volunteer
-still rates about 72 items, so the 45-minute session is unchanged, while the pool grows to,
-say, 120 to 150 verbs. At about `r ppv("English", "verbs_for_90")` verbs, the English joint
+still rates the same number of verbs, so the session is no longer than the one recommended
+here, while the pool grows to, say, 120 to 150 verbs. At about `r ppv("English", "verbs_for_90")` verbs, the English joint
 ceiling reaches 90%, and the pooled cross-linguistic test gains in proportion. The cost falls
 on materials, namely affectedness norms and translations for the new verbs. This option is
 closed. Planned missingness would work if the 72-verb limit constrained the session, but it
@@ -1214,6 +1436,43 @@ information is in the verbs. Seventy would change it. At 70, the English rate fa
 smallest sample at which English sits at the target and the figure has no slack below it.
 The case for 80 is that it is the number the teams can collect.
 
+One further design question was put to the simulations after the sample size was settled.
+The accepted proposal has every participant rate each of the
+`r ppv("English", "n_verbs")` verbs twice in each of `r GV_S_TYPES_ADMINISTERED` sentence
+types, once with a woman agent and once with a man agent. That makes `r gv_trials("English")` sentences
+in an English session where `r gv_trials("English") / 2` would serve every analysis the
+project has preregistered, none of which uses the pairing, and it doubles the time each
+volunteer gives. The second version buys very little. The figures above already describe the
+shorter session, because the decision arm generates one rating per participant, verb and
+sentence type. A second version would move the detection rate for the interaction at 80
+participants from `r pct1(gv_arm("English"))` to
+`r pct1(gvv("English", "power_both_versions"))` in English, from
+`r pct1(gv_arm("Norwegian"))` to `r pct1(gvv("Norwegian", "power_both_versions"))` in
+Norwegian, and from `r pct1(gv_arm("Turkish"))` to
+`r pct1(gvv("Turkish", "power_both_versions"))` in Turkish, which gains most. The largest of
+those three gains, `r sprintf("%.1f", gvv("Turkish", "gain_points"))` points, is smaller
+than the Monte-Carlo standard error of the figure it moves, `r pct1(gv_mcse("Turkish"))`.
+
+The reason is the one that governs the rest of this report. Affectedness is a property of
+the verb, so the precision of a verb-level contrast is held up by how far the verbs scatter
+about the affectedness line, and rating a verb a second time leaves that scatter where it
+was. Only the per-rating noise shrinks, and it carries
+`r pct0(gvrv("English", "share_rating_noise"))` of the English interaction's sampling
+variance against `r pct0(gvrv("English", "share_verbs"))` from the verbs themselves. The
+ceilings in @tbl-ceilings are therefore the same under either design, and no session design
+brings Turkish near the target.
+
+The recommendation is therefore to drop the second version from the session and to keep both
+versions in the materials, split across participants by two complementary lists, so that
+each verb is seen with a woman agent by half the sample and with a man agent by the other
+half. The recommendation holds only if that balance holds. English shows gender terms large
+enough to move the focal interaction by about `r pct0(gv_shift("English"))` if every
+participant saw the same version, and equal lists cancel them. Both versions are also kept
+in the affectedness rating task, which is short and whose scores are agent-specific. The
+variance decomposition this rests on, the per-language figures, the volunteers a one-version
+study would need to match the longer one and the caveats are set out in Appendix E, with the
+detection rates under both designs in @tbl-gender-power.
+
 ## What Is Settled and What Is Still Open
 
 The design analysis varies several things at once, and it is worth separating the questions
@@ -1230,12 +1489,15 @@ The choices that follow from this are set out in @tbl-choices. Each row is a dec
 collaborators, with what the evidence says about it and what, if anything, is still
 outstanding.
 
-<!-- The table is tall enough to break across a page. A \newpage sat here to keep it
-     whole, on the reasoning that a break strands a row under the caption and repeats
-     the header. The text above it has since shrunk to three lines, so the break was
-     leaving a page holding nothing else, which is the worse of the two. The table is
-     a longtable and repeats its header on the continuation. If the text above grows
-     again, check the rendered pages before restoring the break. -->
+<!-- The table is tall enough to break across a page. It is a longtable, so it repeats its
+     header on the continuation. The \newpage below keeps it from starting low on a page.
+     Flowing on from the text above left two rows on one page and stranded the last row
+     alone on a third. The break was once removed because the text above had shrunk to
+     three lines and it left a page holding nothing else. That text now fills about half a
+     page, so the break costs the rest of that page and buys a table split across two.
+     Check the rendered pages whenever the text above changes length. -->
+
+`\newpage`{=latex}
 
 | Choice | Decision | What settled it |
 |:-----------------|:----------------------|:-----------------------------------------------|
@@ -1245,6 +1507,7 @@ outstanding.
 | Sample size | 80 per language | Between 80 and 100 the simulations differ by less than their own resolution, and the verb count binds. At 70 English falls to `r pct0(h1bv("English", 70))`, so 80 has no slack below it. 80 is the number the teams can collect |
 | Confirmatory test | Per language, interaction alone | Each language is powered and judged on its own. The pooled model is kept as the preregistered synthesis: with three languages it reaches `r pct0(pooled_combined("p_h1b")$p)` at a Bayes factor of 10, and its evidence grows with the number of languages, which is not yet known |
 | Turkish | Estimation only | Its ceiling on the interaction is `r pct0(ppv("Turkish", "ceiling_h1b_bf10"))` at a Bayes factor of 10 whatever the sample. Settled |
+| Session design | One agent-gender version per participant, both across two lists | The second version lowers the interaction's standard error by at most `r pct0(1 - gvrv("Turkish", "r80"))` and raises the Turkish rate at 80 participants by `r sprintf("%.1f", gvv("Turkish", "gain_points"))` points, less than that cell's Monte-Carlo error, and it leaves every ceiling where it was. Both versions stay in the materials, split across participants by two complementary lists, which the English gender terms make a condition. Settled by the simulations, and a deviation from the accepted proposal that the collaborators have yet to confirm |
 | Verb pool | `r ppv("English", "n_verbs")` verbs, fixed | Closed by the project: the limit is the supply of suitable verbs, not session length, so the pool cannot be enlarged |
 | Stopping rule | Fixed sample, announced in advance | Closed by the project: teams must take a stated sample size to their ethics committees. The statistical objection to sequential testing does not apply, but the operational one does |
 
@@ -1255,7 +1518,11 @@ outstanding.
 The project closed two of these decisions, and the simulations settled the rest. The table records
 which is which. The record of decisions still states the success criterion for both
 focal predictions together, and will be amended to the interaction alone once the collaborators
-confirm the criterion.
+confirm the criterion. Dropping the second agent-gender version from each session is a
+deviation from the accepted proposal as well, and it needs the same confirmation. The
+pseudo-passive prediction is proposed here as one-tailed and negative, where the record of
+decisions reports it in both directions, and that change also awaits the collaborators'
+agreement.
 
 One caveat applies to the whole table. Every rate in this report is computed over all fitted
 cells, whether or not they pass the convergence screen, since a real analysis would not discard
@@ -1593,8 +1860,11 @@ kable(comp, align = "lrrrrr", format.args = list(big.mark = ","))
 `\vspace{-8pt}`{=latex}
 
 *Note.* Counts are read from the harmonised pilot data. Items are verb-by-agent-gender
-combinations, so the item count is twice the verb count. Norwegian lacks a pseudo-passive,
-hence only two sentence types.
+combinations, so the item count is twice the verb count, every pilot participant having
+seen both versions of every verb. Appendix E recommends splitting the two versions across
+participants in the study itself. Norwegian lacks a pseudo-passive, hence only two sentence
+types. Norwegian sessions also carried a synthetic passive, which harmonisation drops, so a
+Norwegian volunteer rated half as many sentences again as this table counts.
 
 `\vspace{12pt}`{=latex}
 
@@ -1676,25 +1946,29 @@ bf_10      <- (post_prob / (1 - post_prob)) / (prior_prob / (1 - prior_prob))
 \renewcommand{\thetable}{C\arabic{table}}
 \begin{center}
 {\large\bfseries Appendix C}\\[3pt]
-{\bfseries Full Bayes-Factor Operating Characteristics}
+{\bfseries Bayes-Factor Operating Characteristics of the Focal Predictions}
 \end{center}
 ```
 
-This appendix reports the operating characteristics for all four predictions in every cell of
-the corrected literature-anchored run holding at least ten replicates, set out in
+This appendix reports the operating characteristics of the two focal predictions in every
+cell of the corrected literature-anchored run holding at least ten replicates, set out in
 @tbl-opchar, which covers `r lit_language_text`. The note under the table defines each
-column. Under Prediction, H1a is the passive affectedness slope, H1b the
-active-by-affectedness interaction, and H2a and H2b the pseudo-passive interaction in its
-positive and negative directions.
+column. Under Prediction, H1a is the passive affectedness slope and H1b the
+active-by-affectedness interaction. The pseudo-passive prediction is left out, for the reason given in the
+Design-Analysis Method, and its figures are under Secondary Prediction in the Results.
 
 ```{r tbl-opchar}
 #| tbl-cap: "Operating Characteristics by Design Condition and Prediction"
 
-hyp_lab <- c(H1a_semantics_positive = "H1a", H1b_active_interaction_negative = "H1b",
-             H2a_pseudo_positive = "H2a", H2b_pseudo_negative = "H2b")
+# The focal predictions only. The cross-check's pseudo-passive rows are left out because
+# its generators set that interaction positive, against the sign the meta-analysis and the
+# English pilot support, so the rows would describe an effect the design does not expect.
+# The labels are taken from `focal`, so this table cannot name a row differently from the
+# figures in the body.
+hyp_lab <- setNames(names(focal), focal)
 opc <- exc |>
-  filter(reps >= 10) |>
-  mutate(Hyp = factor(hyp_lab[hypothesis], levels = c("H1a", "H1b", "H2a", "H2b"))) |>
+  filter(reps >= 10, hypothesis %in% focal) |>
+  mutate(Hyp = factor(hyp_lab[hypothesis], levels = names(focal))) |>
   transmute(Language = lang_factor(language), Verbs = n_verbs, N = n_participants, Hyp,
             `P(BF>=10)` = sprintf("%.0f%%", 100 * p_bf_primary),
             `P(BF>=3)`  = sprintf("%.0f%%", 100 * p_bf_secondary),
@@ -1706,7 +1980,11 @@ opc <- exc |>
             Conv        = sprintf("%.0f%%", 100 * p_convergence_ok),
             Reps        = reps) |>
   arrange(Language, Verbs, N, Hyp)
-kable(opc, booktabs = TRUE, longtable = TRUE, align = "lrrlrrrrr",
+# Each design cell is one H1a row and one H1b row, so the gap closes each pair. The
+# format is named because, left to choose it, kable under Quarto drops linesep and
+# falls back to a gap every fifth row, which splits the pairs.
+kable(opc, format = "latex", booktabs = TRUE, longtable = TRUE, align = "lrrlrrrrr",
+      linesep = c("", "\\addlinespace"),
       col.names = c("Language", "Verbs", "N", "Prediction", "P(BF>=10)",
                     "P(BF>=3)", "Median BF", "Convergence", "Reps")) |>
   kableExtra::kable_styling(font_size = 10, latex_options = c("repeat_header"))
@@ -1717,8 +1995,7 @@ kable(opc, booktabs = TRUE, longtable = TRUE, align = "lrrlrrrrr",
 *Note.* The probability columns give the proportion of simulated studies reaching a Bayes
 factor of 10 and of 3, Median BF their median to two significant figures, Convergence the
 proportion of fits meeting the criteria, and Reps the number of studies in the cell. Cells
-with fewer than ten replicates are excluded, and Norwegian has no pseudo-passive, hence
-half as many rows.
+with fewer than ten replicates are excluded.
 
 `\vspace{12pt}`{=latex}
 
@@ -1760,7 +2037,7 @@ are numbered in the order they are meant to run, together with the matching subm
 | Location | What it holds |
 |:------------------|:-----------------------------------------------------------|
 | `R/` | The building blocks: data validation and preprocessing (`01`, `02`), priors and model formulas (`03`, `04`), the Bayes factor (`05`), the two simulation engines (`06`, and `10` with `11`), convergence diagnostics (`07`) and summarising (`08`) |
-| `scripts/` | Runnable steps, numbered in running order, from harmonising the pilot (`00`) through fitting the pilot models, generating a design grid, running one cell, to aggregating results (`aggregate_pilot.R`, `aggregate_pooled.R`, `aggregate_literature.R`) |
+| `scripts/` | Runnable steps, numbered in running order, from harmonising the pilot (`00`) through fitting the pilot models, generating a design grid, running one cell, to aggregating results (`aggregate_pilot.R`, `aggregate_pseudo_passive.R`, `aggregate_pooled.R`, `aggregate_literature.R`) |
 | `hpc/` | One SLURM submitter per arm. Each takes a grid file and an output directory, and runs one grid row per array task |
 | `config/` | The design grids, one row per simulated condition, plus the model and prior configuration |
 | `outputs/` | The aggregated summaries this report reads, and the figure it displays |
@@ -1865,3 +2142,261 @@ runs a single row by calling `run_pooled_cell_v2()`; and
 reduces the resulting `.rds` files to `pooled_power_pilot.csv` in
 `outputs/design_summary_pilot/`, which is the table this report reads for every pooled
 figure it quotes.
+
+{{< pagebreak >}}
+
+```{=latex}
+% Appendix tables carry their own letter, as APA 7 asks, so the body
+% sequence is not interrupted by tables the reader meets later.
+\setcounter{table}{0}
+\renewcommand{\thetable}{E\arabic{table}}
+\begin{center}
+{\large\bfseries Appendix E}\\[3pt]
+{\bfseries What the Reversed Agent-Gender Versions Add}
+\end{center}
+```
+
+This appendix sets out what the second, reversed agent-gender version of each stimulus adds
+to the design, and what dropping it would cost. Pilot participants rated every verb in three
+sentence types and in both versions, `r gv_trials("English")` sentences in an English or a
+Turkish session and `r gv_trials("Norwegian")` in a Norwegian one, and dropping the second
+version halves those to `r gv_trials("English") / 2` and `r gv_trials("Norwegian") / 2`. The
+Norwegian figure counts the synthetic passive, which the session administers and
+harmonisation drops, so it rests on three sentence types where @tbl-pilot records the two
+that are analysed. The decision arm on which this report rests already generates one rating
+per participant, verb and sentence type, so every power figure elsewhere in the report
+describes the shorter session, and the question is what the longer one would add.
+@tbl-gender-r gives the variance decomposition the answer rests on, and @tbl-gender-power
+the detection rates under both designs. The figures come from
+`gender_versions_latent_ratio.csv` and `gender_versions_power_at_latent_r.csv` in
+`outputs/design_summary_pilot/`, written by `scripts/gender_versions_latent_ratio.R`, with
+the pilot re-analyses in `scripts/assess_gender_versions.R`. Two earlier files in the same
+folder, `gender_versions_expected_ratio.csv` and `gender_versions_power_translation.csv`,
+fix the per-rating noise at a constant and ignore the rating scale's ceiling, and the
+estimates here supersede them.
+
+H1a and H1b are verb-level contrasts, so their precision is capped by how far the verbs
+scatter about the affectedness line and by how many verbs there are [@clark1973;
+@westfallKennyJudd2014]. Decomposed as Judd et al. [-@juddWestfallKenny2017] set out, the
+sampling variance of the interaction has a between-verb term, a participant-slope term and a
+per-rating noise term, and only the last shrinks when the same verb is rated again.
+@tbl-gender-r gives the three shares. Between-verb variation carries
+`r pct0(gvrv("Norwegian", "share_verbs"))` to `r pct0(gvrv("English", "share_verbs"))` of
+the interaction's variance and `r pct0(gvrv("Norwegian", "share_verbs", "h1a"))` to
+`r pct0(gvrv("Turkish", "share_verbs", "h1a"))` of the passive slope's. Writing the noise
+share as $q$ and the correlation between the two versions' noise as $\rho$, which are the
+Noise and Correlation columns of the table, a second version gives a standard-error ratio of
+$r = \sqrt{1 - q(1 - \rho)/2}$, an identity those columns satisfy to the rounding the table
+shows. Even Turkish's `r pct0(gvrv("Turkish", "share_rating_noise"))` noise share therefore
+buys a standard error only `r pct0(1 - gvrv("Turkish", "r80"))` smaller, the largest
+reduction of the three, and the passive slope gains about
+`r pct0(1 - gvrv("English", "r80", "h1a"))` in every language. Turkish gains most because
+its participant-slope variance is almost nil, which leaves per-rating noise a larger share
+of a smaller total.
+
+```{r tbl-gender-r}
+#| tbl-cap: "Sources of the Standard Error and What a Second Agent-Gender Version Removes"
+
+# The headers are short because the fuller wording ran past the right margin at the eight
+# columns this table needs. The note below carries the definitions instead.
+gv1 <- gvr |>
+  transmute(Language     = lang_factor(language),
+            Prediction   = factor(GV_LAB[hypothesis], levels = GV_LAB),
+            Verbs        = pct0(share_verbs),
+            Participants = pct0(share_participant_slopes),
+            Noise        = pct0(share_rating_noise),
+            Correlation  = num2(rho),
+            `SE ratio`   = num3(r80),
+            Interval     = sprintf("%s to %s", num3(r80_lo), num3(r80_hi))) |>
+  arrange(Language, Prediction)
+# longtable with a repeated header, as @tbl-opchar uses: at nine rows this table
+# lands mid-page and split without one, stranding three rows under no column names.
+# Two predictions per language, so the gap closes each language. The format is named for
+# the reason given at @tbl-opchar.
+kable(gv1, format = "latex", booktabs = TRUE, longtable = TRUE, align = "llrrrrrr",
+      linesep = c("", "\\addlinespace")) |>
+  kableExtra::kable_styling(font_size = 9, latex_options = c("repeat_header"))
+```
+
+`\vspace{-8pt}`{=latex}
+
+*Note.* Verbs, Participants and Noise are the shares of the sampling variance of the
+estimated contrast, at 80 participants and under one version, that come from variation
+between verbs, from by-participant slopes and from per-rating noise. They sum to one before
+rounding, and they are estimated on the latent scale from the pilot data by
+`scripts/gender_versions_latent_ratio.R`. Correlation is the correlation between the two
+versions' per-rating noise in the same contrast, where zero is the case most favourable to a
+second version. SE ratio is the standard error under both versions divided by the standard
+error under one, so a value of 1 would mean the second version adds nothing. Interval is two
+jackknife standard errors either side of that ratio, computed by deleting one verb at a
+time. It omits participant sampling, so it is narrower than the uncertainty warrants. H1a is
+the passive affectedness slope and H1b the active-by-affectedness interaction, which carries
+the confirmatory decision.
+
+`\vspace{12pt}`{=latex}
+
+@tbl-gender-power turns that ratio into detection rates. The scaling is calibrated so that a
+normal approximation to the directional Bayes-factor criterion, averaged over the
+`r format(ppv("English", "ndraws"), big.mark = ",")` pilot posterior draws, reproduces the
+decision arm's own rate under one version. The largest gain in the table is
+`r gv_gain_row$language` on `r GV_LAB[gv_gain_row$hypothesis]`,
+`r sprintf("%.1f", gv_gain_max)` points. Measured against the Monte-Carlo standard error of
+the cell it moves, it comes to `r pct0(gv_gain_vs_mcse)` of that error, and the next closest
+row reaches `r pct0(gv_gain_runner)` of its own. The English rate of
+`r pct1(gv_arm("English"))` probably sits at the favourable end of its own error, since
+pooling every cell at 100 participants and above gives
+`r pct1(gvv("English", "arm_power_n100plus"))` over
+`r gvv("English", "arm_reps_n100plus")` replicates, one of which the report's
+minimum-replicate filter drops elsewhere, and a second version would lift that to about
+`r pct1(gvv("English", "power_both_from_n100plus"))`. Counted in volunteers, a
+one-version study matches the two-version precision at 80 participants with about
+`r sprintf("%.0f", gvv("English", "one_version_n_matching_two_at_80"))` participants in
+English, `r sprintf("%.0f", gvv("Turkish", "one_version_n_matching_two_at_80"))` in Turkish
+and `r sprintf("%.0f", gvv("Norwegian", "one_version_n_matching_two_at_80"))` in Norwegian,
+and with about
+`r sprintf("%.0f", gvv("Norwegian", "one_version_n_matching_two_at_80", "h1a"))` to
+`r sprintf("%.0f", gvv("Turkish", "one_version_n_matching_two_at_80", "h1a"))` for the
+passive slope, each of them sitting half as long.
+
+```{r tbl-gender-power}
+#| tbl-cap: "Detection at 80 Participants with One Agent-Gender Version and with Both"
+
+gv2 <- gvp |>
+  mutate(one  = vapply(seq_len(n()), function(i) gv_arm(language[i], hypothesis[i]),
+                       numeric(1)),
+         mcse = vapply(seq_len(n()), function(i) gv_mcse(language[i], hypothesis[i]),
+                       numeric(1)),
+         # The ceiling is the same quantity under either design, so it is read from the
+         # fitted pilot models the body already reports and not from the copy alongside.
+         ceil = vapply(seq_len(n()),
+                       function(i) ppv(language[i], GV_CEILING[[hypothesis[i]]]),
+                       numeric(1))) |>
+  # Short headers again, for the reason given at @tbl-gender-r.
+  transmute(Language        = lang_factor(language),
+            Prediction      = factor(GV_LAB[hypothesis], levels = GV_LAB),
+            `One version`   = pct1(one),
+            `MC error`      = pct1(mcse),
+            `Both versions` = pct1(power_both_versions),
+            `Across r`      = sprintf("%s to %s", pct1(power_both_lo), pct1(power_both_hi)),
+            Gain            = sprintf("%+.1f", gain_points),
+            Ceiling         = pct1(ceil)) |>
+  arrange(Language, Prediction)
+# Three rows per language, so the gap closes each language.
+kable(gv2, format = "latex", booktabs = TRUE, longtable = TRUE, align = "llrrrrrr",
+      linesep = c("", "", "\\addlinespace")) |>
+  kableExtra::kable_styling(font_size = 9, latex_options = c("repeat_header"))
+```
+
+`\vspace{-8pt}`{=latex}
+
+*Note.* One version is the decision arm's own detection rate at 80 participants, at a Bayes
+factor of 10, from the same summary table the body quotes. MC error is the binomial
+Monte-Carlo standard error of that rate over the replicates in the cell,
+`r jval("English", 80, "reps")` at this sample size. Both versions scales the arm's
+effective standard error by the ratio $r$ that @tbl-gender-r gives for H1a and H1b, and
+Across r repeats that at the two ends of the interval for $r$. The Joint rows combine the
+two scaled predictions and have no ratio of their own, which is why @tbl-gender-r carries no
+entry for them. Gain is the difference in percentage points, computed before rounding, so a
+row may not add up exactly as printed. Ceiling is the detection rate
+that would remain with unlimited participants at the current verb counts, from @tbl-ceilings,
+and it is the same under either design. H1a is the passive affectedness slope, H1b the
+active-by-affectedness interaction and Joint the conjunction of the two, the rule the design
+no longer uses, kept here for completeness. The Joint rows treat the two predictions as
+independent given the posterior draw, which reproduces the arm's own joint rate to within
+`r sprintf("%.1f", 100 * gv_joint_gap)` points.
+
+`\vspace{12pt}`{=latex}
+
+The last column decides the question. The bound it reports comes from the by-verb
+variability divided by the spread of the affectedness scores, the quantity that no number of
+ratings of the same verb can reduce, and it is computed from the fitted pilot models exactly
+as in @tbl-ceilings. In those models the verb term alone puts a floor of
+`r num2(ppv("English", "se_floor_h1b"))` logits under the English interaction's standard
+error, `r num2(ppv("Turkish", "se_floor_h1b"))` under the Turkish and
+`r num2(ppv("Norwegian", "se_floor_h1b"))` under the Norwegian. With unlimited participants
+and either session design, the Turkish interaction still tops out at
+`r pct1(ppv("Turkish", "ceiling_h1b_bf10"))`, so the session is not where the Turkish
+shortfall could be met. The pooled synthesis is touched less still, since its evidence is
+set by the spread between languages, which no session design changes. That last point
+follows from where the pooled model draws its evidence, and no separate simulation was run
+to confirm it.
+
+The two versions of a stimulus are only loosely alike, and that bears on how the gains
+should be read. The same participant's two ratings of a verb correlate at
+`r num2(gvav("English", "pearson"))` in English, `r num2(gvav("Turkish", "pearson"))` in
+Turkish and `r num2(gvav("Norwegian", "pearson"))` in Norwegian, and differ on average by
+`r num2(gvav("English", "mean_abs_diff"))`, `r num2(gvav("Turkish", "mean_abs_diff"))` and
+`r num2(gvav("Norwegian", "mean_abs_diff"))` points, against
+`r num2(gvav("Turkish", "mean_abs_diff", "different_participants_same_version"))` to
+`r num2(gvav("Norwegian", "mean_abs_diff", "different_participants_same_version"))` when two
+different participants rate the identical stimulus. The power argument does not rest on that
+agreement. In the interaction contrast the version-specific noise correlates at only
+`r num2(gvrv("English", "rho"))` in English, `r num2(gvrv("Turkish", "rho"))` in Turkish and
+`r num2(gvrv("Norwegian", "rho"))` in Norwegian, and noise that close to independent is the
+case most favourable to keeping both versions. The gains in @tbl-gender-power are therefore
+near the best a second version could do.
+
+What one version would bear on is bias, and this is the condition attached to the
+recommendation. Referent gender is coded plus or minus a half in the pilot models, so a
+design whose participants average anything other than zero on that code shifts a focal slope
+by that average times the corresponding gender term. English is the language where this
+matters. Its gender-by-affectedness interaction is
+`r snum3(gvev("English", GV_TERM_H1A))` (*SE* =
+`r num3(gvev("English", GV_TERM_H1A, "se"))`, *p*
+`r pval(gvev("English", GV_TERM_H1A, "p_two_sided"))`) and its
+gender-by-active-by-affectedness term is `r snum3(gvev("English", GV_TERM_H1B))` (*SE* =
+`r num3(gvev("English", GV_TERM_H1B, "se"))`, *p*
+`r pval(gvev("English", GV_TERM_H1B, "p_two_sided"))`), which puts the focal interaction at
+about `r mnum2(gv_h1b_at("English", 0.5))` for woman-agent items and
+`r mnum2(gv_h1b_at("English", -0.5))` for man-agent ones. One version for everyone would
+therefore move it by about `r pct0(gv_shift("English"))`, against
+`r pct0(gv_shift("Turkish"))` in Turkish and `r pct0(gv_shift("Norwegian"))` in Norwegian.
+Of the `r gv_terms` gender terms fitted across the three languages, `r gv_survivors` survive
+a Bonferroni correction, namely `r gv_survivor_txt`, of which `r gv_survivors_focal` bear on
+a focal prediction. Version differences specific to a verb are negligible. The by-verb
+standard deviation on the gender term is estimated at exactly zero in English, at the
+boundary of the parameter space, and
+`r num2(gvev("Turkish", "random SD: Gender_c | Verb"))` in Turkish, against
+`r num2(gvev("English", "reference random SD: (Intercept) | Verb"))` and
+`r num2(gvev("Turkish", "reference random SD: (Intercept) | Verb"))` for the by-verb
+intercept.
+
+Two complementary lists remove that shift without lengthening the session. The verbs are
+split into two sets of `r ppv("English", "n_verbs") / 2`, or
+`r ppv("Norwegian", "n_verbs") / 2` in Norwegian, matched on affectedness and on verb type,
+and the participants into two lists. List 1 shows the first set with woman agents and the
+second with man agents, and list 2 the reverse, so each verb is rated in each version by half
+the sample and the estimand stays the gender-averaged slope. Holding the version constant
+across a verb's sentence types keeps a version main effect out of the comparison between
+sentence types, although a version-by-construction interaction cancels only through the
+balance across lists. An excess of 10 participants on one list in a sample of 80 would still
+move the English interaction by `r pct1(gv_shift_excess("English"))`, an eighth of what one
+version for everyone would produce, so participants should be assigned to lists alternately
+and exclusions replaced within the same list. Splitting the direction of the roles across
+participants in this way follows Ambridge et al.
+[-@ambridgeBidgoodPineRowlandFreudenthal2016, Study 3] and the Hebrew study of Ambridge et
+al. [-@ambridgeArnonBekman2023].
+
+Both versions stay in the affectedness rating task. That task asks for one judgement per
+verb and agent gender, `r GV_VERSIONS * ppv("English", "n_verbs")` in English and
+`r GV_VERSIONS * ppv("Norwegian", "n_verbs")` in Norwegian, and it is short. Halving it
+would leave each agent-specific score resting on half as many raters and would attenuate
+every slope estimated from those scores, which is the opposite of what the shorter session
+is for.
+
+One item needs correcting first. The man-agent active sentence for one Norwegian verb is
+coded as woman-agent for all `r gvev("Norwegian", GV_TERM_H1B, "n_participants")` Norwegian
+pilot participants and carries the woman-agent affectedness score. Both scripts behind this
+appendix correct the label before fitting, in one case by resolving it from the raw sentence
+text, so every figure here is computed on the corrected coding. The harmonised file itself is unchanged, so the
+Norwegian gender panels of @fig-pilot and the counts in @tbl-pilot still show the item as it
+stands. One item in one cell does not visibly move those panels, and the file will be
+corrected before collection begins.
+
+Several caveats bound what is claimed here. The both-versions figures are calibrated to the
+decision arm, so they carry the arm's own Monte-Carlo error and the calibration's on top of
+it. The interval on $r$ deletes one verb at a time and omits participant sampling, so it is
+narrower than the uncertainty warrants. The latent estimator uses verb-by-sentence-type and
+participant-by-sentence-type effects in place of the preregistered random slopes, and it
+matches the fitted pilot models' thresholds and their one-version standard errors closely,
+though not exactly.

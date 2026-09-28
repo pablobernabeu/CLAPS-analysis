@@ -168,11 +168,11 @@ Selection is documented in `outputs/design_summary/ladder_selection.csv`.
 | Issue | Status | Resolution needed by |
 |-------|--------|---------------------|
 | Exact R module name on ARC | Unresolved | Before first production submission |
-| H2 direction for Turkish | Unresolved (both ways reported) | After pilot analysis |
+| H2 direction for Turkish | Unresolved (both ways reported). The preliminary sample-size report proposes H2 as one-tailed and negative (H2b) in every language with a pseudo-passive, the direction the meta-analysis and the English pilot support, while the Turkish pilot points the other way. It is not yet agreed with the collaborators, so §3 stands until they confirm it. The simulated rates are in `outputs/design_summary_pilot/pseudo_passive_decision_arm.csv` | After pilot analysis |
 | Specific $P(BF > 10)$ success threshold | To be agreed with statistical lead | Before confirmatory pre-reg |
 | `literature_centred` prior centres for languages without pooled estimates | Use weakly informative defaults until single-language data available | Before pilot fits |
-| Which languages have pseudo-passives | Resolved (English: yes; Turkish: yes; Norwegian: no; Balinese: no), as set by `has_pseudo_passive` in `config/analysis_config.yaml` | Settled |
-| Which construction counts as **the canonical passive**, language by language | **Unresolved, and the most consequential open item.** Recomputing the Ambridge, Arnon & Bekman (2023) anchors against the other passive-like construction moves Mandarin from $-0.80$ to $+0.29$, Indonesian from $-0.07$ to $+0.27$ and Balinese from $+0.33$ to $+0.86$ per SD of affectedness. Across the seven languages the mean interaction moves from $-0.32$ to $-0.03$ and three of seven change sign, which is a larger movement than anything else in the design analysis. No amount of data settles it: it is a linguistic ruling that has to precede collection | Before any team collects |
+| Which languages have pseudo-passives | Resolved for the pilot languages (English: yes; Turkish: yes; Norwegian: no), as set by `has_pseudo_passive` in `config/analysis_config.yaml`. Balinese has one in the Ambridge, Arnon & Bekman (2023) coding, which treats its Passive_basic construction as the pseudo-passive, although the config still sets Balinese to `false`. Whether a CLAPS Balinese team would test Passive_basic as its pseudo-passive turns on the canonical-passive ruling in the next row | Settled for the three pilot languages, open for Balinese |
+| Which construction counts as **the canonical passive**, language by language | **Unresolved, and the most consequential open item.** Recomputing the Ambridge, Arnon & Bekman (2023) anchors against the other passive-like construction moves Mandarin from $-0.80$ to $+0.29$, Indonesian from $-0.07$ to $+0.27$ and Balinese from $+0.33$ to $+0.86$ per SD of affectedness. Across the seven languages the mean interaction moves from $-0.32$ to $-0.03$ and two of the seven, Indonesian and Mandarin, change sign, which is a larger movement than anything else in the design analysis. No amount of data settles it: it is a linguistic ruling that has to precede collection | Before any team collects |
 | Minimum number of language teams, and whether it gates Stage 2 | Unresolved; see §12 | Before Stage 1 submission |
 | One agent-gender version per participant, counterbalanced across lists | Proposed 2026-09-16 in reply to the PI; not yet agreed. The power evidence and the list design are in `reports/gender_versions_note.md`. | Before Stage 1 submission |
 
@@ -195,8 +195,9 @@ Bayes factor of 10 is governed by the between-language SD of the interaction, $\
 secondarily by $K$. The seven available languages do not form one population: split by the
 protocol that produced them, the CLAPS pilot three give $\tau \approx 0.16$ with Cochran's
 $Q$ non-significant, and the Ambridge, Arnon & Bekman (2023) four give $\tau \approx 0.53$
-with $Q$ significant at $10^{-7}$. The means barely differ. The minimum $K$ reaching 90%
-differs by a factor of five between the two readings.
+with $Q$ significant at $10^{-7}$. The means barely differ. Conditional on each $\tau$, the pooled test
+reaches 90% at six languages on the first reading and has not reached it at twenty on the
+second, where it stands at 0.89.
 
 **Decisions taken.**
 
@@ -224,8 +225,9 @@ differs by a factor of five between the two readings.
    already occurred once on real data.
 
 **Locked**: No. Items 1 to 3 are proposals to the project lead; item 4 is implemented; the
-value of $Y$ is not set, and should not be set before the corrected estimate of $\tau$
-returns from `scripts/refit_glossa_pooled_tau.R`.
+value of $Y$ is not set. The corrected estimate of $\tau$ from
+`scripts/refit_glossa_pooled_tau.R` returned on 25 September at 0.47, against the published
+0.45, so it does not narrow the fork, and $Y$ now waits only on which languages join.
 
 
 ---

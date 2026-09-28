@@ -34,8 +34,11 @@
 #   No brms, no Stan, no cluster.
 #
 # USAGE
-#   "C:/Program Files/R/R-4.6.1/bin/Rscript.exe" scripts/extract_cross_language_effects.R
-#   Optionally: --osf=<dir> --claps=<dir> --out=<dir>
+#   Rscript scripts/extract_cross_language_effects.R [--osf=<dir>] [--claps=<dir>] [--out=<dir>]
+#   --claps  the design_analysis/ directory; by default the one this script sits in
+#   --osf    the unpacked Sub2_OSF_Passives archive of Ambridge, Arnon & Bekman (2023);
+#            by default the copy kept beside design_analysis/ in the private repository
+#   --out    by default <claps>/outputs/design_summary_pilot
 # ---------------------------------------------------------------------------
 
 options(stringsAsFactors = FALSE, width = 200)
@@ -50,9 +53,34 @@ argval <- function(flag, default) {
   if (length(hit) == 0) default else sub(paste0("^", flag, "="), "", hit[1])
 }
 
-DEFAULT_ROOT <- "C:/Users/pablob/OneDrive - Nexus365/Documents/GitHub/private_Pablo_CLAPS"
-OSF   <- argval("--osf",   file.path(DEFAULT_ROOT, "PRIVATE_background/Sub2_OSF_Passives"))
-CLAPS <- argval("--claps", file.path(DEFAULT_ROOT, "design_analysis"))
+# The defaults are found from where this script lives, not written in, so it runs
+# from any working directory on any machine and no local path is ever published with
+# it (an absolute home-directory path once reached the public mirror this way).
+# source() leaves the file it is reading in its own frame as `ofile`, and Rscript
+# passes the script it was started with as --file=. The frames are searched first,
+# innermost outwards, because --file= names the top-level script: when some other
+# Rscript-launched script sources this one, --file= points at the caller's folder,
+# while the innermost `ofile` is this file. On Unix, Rscript writes each space in
+# --file= as "~+~", so it is decoded before the path is resolved; otherwise a clone
+# under a folder whose name contains a space would resolve to a folder that does
+# not exist.
+script_dir <- function() {
+  for (i in rev(seq_len(sys.nframe()))) {
+    f <- get0("ofile", envir = sys.frame(i), inherits = FALSE)
+    if (is.character(f) && length(f) == 1L) {
+      return(dirname(normalizePath(f, winslash = "/")))
+    }
+  }
+  file_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+  if (length(file_arg)) {
+    f <- gsub("~+~", " ", sub("^--file=", "", file_arg[1]), fixed = TRUE)
+    return(dirname(normalizePath(f, winslash = "/")))
+  }
+  stop("[paths] cannot tell where this script is; pass --claps=<design_analysis dir>")
+}
+CLAPS <- argval("--claps", NA_character_)
+if (is.na(CLAPS)) CLAPS <- dirname(script_dir())
+OSF   <- argval("--osf",   file.path(dirname(CLAPS), "PRIVATE_background", "Sub2_OSF_Passives"))
 OUT   <- argval("--out",   file.path(CLAPS, "outputs/design_summary_pilot"))
 
 for (p in c(OSF, CLAPS)) {

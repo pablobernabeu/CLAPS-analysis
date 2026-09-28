@@ -1,5 +1,12 @@
-"tau_prior_scale","mean_z","sd_z","p_bf10","p_bf6","p_bf3","row"
-NA,1.386,0.311,0.578,0.859,0.985,"brms target (135 replicates)"
-1,1.42954356459547,0.310498944419225,0.60725,0.878,0.992,"engine, tau prior scale 1"
-1.1,1.40776519516873,0.308451187361111,0.58225,0.86375,0.99125,"engine, tau prior scale 1.1"
-1.2,1.38944058720139,0.306782507327213,0.55725,0.848,0.99025,"engine, tau prior scale 1.2"
+"tau_prior_scale","mean_z","sd_z","p_bf10","p_bf6","p_bf3","row","se_config","n"
+NA,1.38648482385572,0.311271806231859,0.577777777777778,0.851851851851852,0.977777777777778,"brms target (135 replicates, N = 50-150, exact scoring)","brms",135
+1,1.42954356459547,0.310498944419225,0.60725,0.878,0.992,"engine, verb-floor SEs as calibrated, tau prior scale 1","verb_floor",4000
+1.1,1.40776519516873,0.308451187361111,0.58225,0.86375,0.99125,"engine, verb-floor SEs as calibrated, tau prior scale 1.1","verb_floor",4000
+1.2,1.38944058720139,0.306782507327213,0.55725,0.848,0.99025,"engine, verb-floor SEs as calibrated, tau prior scale 1.2","verb_floor",4000
+0.8,1.45009623916061,0.339860307706423,0.6275,0.8705,0.987,"engine, production SEs, tau prior scale 0.8","production",4000
+0.85,1.43335460957918,0.33739537210091,0.609,0.86125,0.98625,"engine, production SEs, tau prior scale 0.85","production",4000
+0.9,1.41827227537466,0.335206761638462,0.59,0.854,0.9845,"engine, production SEs, tau prior scale 0.9","production",4000
+0.95,1.40461841483978,0.333252345826043,0.576,0.8455,0.9835,"engine, production SEs, tau prior scale 0.95","production",4000
+1,1.39220630545827,0.331498298101501,0.5595,0.83575,0.98325,"engine, production SEs, tau prior scale 1","production",4000
+1.1,1.37052168513912,0.328486266273011,0.53625,0.82175,0.98175,"engine, production SEs, tau prior scale 1.1","production",4000
+1.2,1.35227489259136,0.326003388339742,0.5105,0.8075,0.98,"engine, production SEs, tau prior scale 1.2","production",4000

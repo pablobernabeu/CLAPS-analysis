@@ -57,27 +57,28 @@ suppressPackageStartupMessages({
 
 # ---------------------------------------------------------------------------
 # Empirical anchors from previously published passive-affectedness studies.
-# The passive Semantics slope and the active-vs-passive interaction are
-# cross-language pooled posterior means from the Bayesian meta-analytic
-# synthesis (Ambridge, Arnon & Bekman, 2023), which draws together the
-# antecedent single-language studies (Ambridge et al., 2016; Aryawibawa &
+# All three are cross-language pooled posterior means from the Bayesian
+# meta-analytic synthesis (Ambridge, Arnon & Bekman, 2023), which draws together
+# the antecedent single-language studies (Ambridge et al., 2016; Aryawibawa &
 # Ambridge, 2018; Darmasetiyawan & Ambridge, 2022; Liu & Ambridge, 2021).
 #
-# NOTE: the pseudo-passive interaction is NOT a cross-language pooled value.
-# Pseudo-passives are attested in only a subset of the contributing languages,
-# so the figure below is a directional anchor reflecting the meta-analytic
-# conclusion that affectedness does not raise pseudo-passive acceptability
-# (i.e. a negative pseudo-vs-passive interaction, estimated chiefly from the
-# Hebrew data). It is used only by the direction-encoding literature_centred
-# sensitivity regime, never for the primary Bayes factor. All magnitudes are
-# reported by the antecedent studies on their original rating scales and are
-# used here only as order-of-magnitude anchors for the log-odds-scale priors.
+# NOTE: the pseudo-passive interaction is pooled over fewer languages than the
+# other two. In the synthesis's coding the pseudo-passive level is Passive_basic
+# in Balinese, Non_Canonical_Passive in Indonesian and Notional_Passive in
+# Mandarin, while the English and Hebrew studies tested actives and passives
+# alone, so only those three languages carry the level. Its negative sign is the
+# meta-analytic conclusion that affectedness does not raise pseudo-passive
+# acceptability as it raises passive acceptability. It is used only by the
+# direction-encoding literature_centred sensitivity regime, never for the
+# primary Bayes factor. All magnitudes are reported by the antecedent studies on
+# their original rating scales and are used here only as order-of-magnitude
+# anchors for the log-odds-scale priors.
 # ---------------------------------------------------------------------------
 
 EMPIRICAL_ANCHORS <- list(
   semantics_pooled                  = 0.47,   # pooled (cross-language) passive Semantics slope
   s_type_active_interaction         = -0.31,  # pooled (cross-language) active - passive
-  s_type_pseudo_passive_interaction = -0.36,  # directional anchor (NOT pooled); see note above
+  s_type_pseudo_passive_interaction = -0.36,  # pooled (three languages) pseudo - passive (see the note above)
   # Single-language Semantics range reported in the antecedent studies:
   semantics_min = 0.27,
   semantics_max = 0.80
@@ -165,11 +166,10 @@ PRIOR_REGIMES <- list(
   ),
 
   # ---- Literature-centred sensitivity ----------------------------------
-  # Centres focal slopes on the previously observed values: pooled
-  # cross-language means for the passive slope and the active interaction,
-  # and a directional anchor for the pseudo-passive interaction (see
-  # EMPIRICAL_ANCHORS). This regime is appropriate for estimation
-  # sensitivity but is reported as a sensitivity-only check for Bayes
+  # Centres focal slopes on the previously observed values, the pooled
+  # cross-language means in EMPIRICAL_ANCHORS. The pseudo-passive mean is pooled
+  # over fewer languages than the other two. This regime is appropriate for
+  # estimation sensitivity but is reported as a sensitivity-only check for Bayes
   # factors because it encodes the predicted direction (Schad et al., 2023).
   literature_centred = list(
     b_default     = "normal(0, 1.5)",

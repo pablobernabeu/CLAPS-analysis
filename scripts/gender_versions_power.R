@@ -571,10 +571,8 @@ sdx <- setNames(PP$affectedness_sd, PP$language)
 hit <- Hc$source == "CLAPS_pilot" & Hc$language %in% LANGS
 Hc$se[hit] <- vapply(Hc$language[hit], function(L) sd(THETA[[L]]$h1b) * sdx[[L]], numeric(1))
 Hc <- Hc[!duplicated(paste(Hc$source, Hc$language)), ]
-one_per_language <- function(df) {
-  df <- df[order(df$source != "CLAPS_pilot"), ]
-  df[!duplicated(df$language), ]
-}
+# one_per_language() comes from R/13, sourced above, so the two analyses cannot
+# disagree about which English estimate stands for the language.
 POPS <- list(claps_protocol  = subset(Hc, source == "CLAPS_pilot"),
              seven           = one_per_language(Hc),
              glossa_protocol = subset(Hc, source == "Glossa2023" & language != "English"))
