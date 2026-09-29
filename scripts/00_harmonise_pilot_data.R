@@ -87,7 +87,7 @@ PILOT_FILES <- list(
   )
   # Balinese = list(
   #   path               = here::here("data/pilot/dataBal_Final.csv"),
-  #   has_pseudo_passive = TRUE,   # confirm once file is available
+  #   has_pseudo_passive = TRUE,   # as in the config; which construction is which awaits the passive ruling
   #   has_sentence_col   = FALSE   # confirm once file is available
   # )
 )

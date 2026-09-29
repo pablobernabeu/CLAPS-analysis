@@ -123,7 +123,7 @@ test_that("preprocess_data produces treatment-coded S_Type with Passive referenc
 })
 
 test_that("assert_treatment_coding accepts the two-level (no pseudo-passive) case", {
-  # Norwegian and Balinese have only Passive and Active, so the assertion must hold
+  # Norwegian has only Passive and Active, so the assertion must hold
   # for a two-column contrast matrix as well as a three-column one.
   df <- make_valid_df(has_pp = FALSE)
   result <- preprocess_data(df, has_pseudo_passive = FALSE)
@@ -188,7 +188,7 @@ test_that("preprocess_data enforces the coding itself, not just on request", {
 
 test_that("preprocess_data still succeeds for both language shapes", {
   # Guards against the new assertion firing on legitimate input: three sentence
-  # types (English, Turkish) and two (Norwegian, Balinese).
+  # types (English, Turkish, Balinese) and two (Norwegian).
   expect_s3_class(preprocess_data(make_valid_df(has_pp = TRUE),
                                   has_pseudo_passive = TRUE), "data.frame")
   expect_s3_class(preprocess_data(make_valid_df(has_pp = FALSE),

@@ -70,7 +70,7 @@ code_s_type <- function(df) {
 #'
 #' @param df A data frame with an S_Type column.
 #' @param has_pseudo_passive Logical scalar, taken from the per-language settings
-#'   in config/analysis_config.yaml. FALSE for Norwegian and Balinese.
+#'   in config/analysis_config.yaml. FALSE for Norwegian.
 #' @return df with Pseudo_Passive rows and the unused level removed when
 #'   has_pseudo_passive is FALSE; unchanged otherwise.
 #' @details Dropping the *level* as well as the rows is the point of this function.

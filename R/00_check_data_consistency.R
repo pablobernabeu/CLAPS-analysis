@@ -57,8 +57,8 @@ VALID_S_TYPES   <- c("Active", "Passive", "Pseudo_Passive",
 RESPONSE_RANGE  <- c(1L, 7L)
 
 # Languages that have Pseudo_Passive. Mirrors the per-language has_pseudo_passive
-# flags in config/analysis_config.yaml, where Norwegian and Balinese are false.
-LANGUAGES_WITH_PSEUDO_PASSIVE <- c("English", "Turkish")
+# flags in config/analysis_config.yaml, where only Norwegian is false.
+LANGUAGES_WITH_PSEUDO_PASSIVE <- c("English", "Turkish", "Balinese")
 
 # Languages where Synthetic_Passive must be absent by the time data reach a model.
 # Norwegian pilot data contain synthetic passives, and their exclusion is

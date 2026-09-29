@@ -190,7 +190,7 @@ classify_bf <- function(bf_10) {
 #'
 #' @param fit A brmsfit object with sample_prior = "yes".
 #' @param has_pseudo_passive Logical; FALSE for languages lacking the
-#'   Pseudo_Passive level (Norwegian, Balinese per config/analysis_config.yaml),
+#'   Pseudo_Passive level (Norwegian, per config/analysis_config.yaml),
 #'   where the H2 rows are simply absent from the result rather than NA.
 #' @param semantics_var Name of the affectedness predictor as it appears in the
 #'   model formula, used to build the Stan coefficient names.
