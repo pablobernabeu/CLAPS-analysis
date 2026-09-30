@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # Pooled cross-language design analysis, grounded in the per-language pilots.
 #
-# Rationale (see reports/preliminary_sample_size_analysis.qmd, Paths Forward):
+# Rationale (see reports/preliminary_sample_size_analysis.qmd, The Pooled Synthesis):
 # the affectedness effect is verb-level, so per-language power is capped by the
 # per-language verb count. Pooling the three languages multiplies the verb-level
 # information (about 210 verb-by-language units instead of 72) and tests the

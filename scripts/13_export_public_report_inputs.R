@@ -123,7 +123,7 @@ figure <- ggplot(
   scale_fill_manual(values = pal_stype) +
   scale_y_continuous(breaks = 1:7, limits = c(0.5, 7.5)) +
   labs(
-    x = "Agent semantic affectedness (z-scored within language)",
+    x = "Affectedness (z-scored within language)",
     y = "Acceptability rating (1 to 7)",
     colour = "Sentence type"
   ) +
