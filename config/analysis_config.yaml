@@ -27,9 +27,8 @@ languages:
     has_pseudo_passive: false
     exclude_synthetic_passive: true   # Preregistered: synthetic passive excluded
   Balinese:
-    # Balinese has two passive-like constructions (Ambridge, Arnon & Bekman, 2023),
-    # so one plays the pseudo-passive role whichever is ruled the canonical passive.
-    # Which is which is still open: see docs/preregistration_decisions.md.
+    # Coded as in Ambridge, Arnon & Bekman (2023): the ka-, ma- and a- passives are
+    # the passive and the basic passive is the pseudo-passive.
     has_pseudo_passive: true
   # Add additional languages here as data become available
 

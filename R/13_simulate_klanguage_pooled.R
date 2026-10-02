@@ -451,9 +451,11 @@ prepare_language_table <- function(h, claps_se) {
   hc[!duplicated(paste(hc$source, hc$language)), ]
 }
 
-# For three of the seven languages the published model has a second passive-like
-# construction, and which of the two counts as "the passive" is a linguistic ruling
-# the project has not yet made (reports/klanguage_pooled_design_note.md, section 7).
+# For three of the seven languages the published model has a pseudo-passive as well as
+# the passive. The project follows the published coding, with the passive as the
+# reference (settled with the PI on 1 October 2026), and every reported figure uses
+# it. The "alternative" reading measures the interaction against the pseudo-passive
+# instead, a sensitivity the outputs still carry.
 # Both coefficients come from the same published single-language model, fitted with
 # the canonical passive as the reference level, so the interaction measured against
 # the other construction is the difference of the two S_Type-by-Semantics terms:

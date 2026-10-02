@@ -219,7 +219,6 @@ K_POPS <- c("claps_protocol", "seven", "glossa_protocol")
 K7_SET <- c(claps_protocol  = "seven, drawn, 2023 widened 0.40",
             seven           = "seven, drawn, 2023 widened 0.15",
             glossa_protocol = "seven, drawn, 2023 widened 0.15")
-K7_FIXED <- "seven, fixed at estimates"
 kk <- function(pop, K, variant = "canonical", set = K7_SET[[pop]]) {
   x <- k7$power[k7$reading_variant == variant & k7$population == pop & k7$K == K &
                 k7$known_set == set & k7$mode == "assurance"]
@@ -235,14 +234,43 @@ k_reps <- unique(k7$n_reps)
 stopifnot(length(k_reps) == 1)
 # Two decimals, rounding half up, since 0.155 is stored just below its decimal value.
 num2h <- function(x) sprintf("%.2f", x + 1e-9)
-# How far holding the seven at their point estimates moves a rate, over every column of the
-# rows whose 0.15 doubt treats the earlier estimates as close to transferable. Holding them
-# fixed is the opposite premise from the first row's, so that row is left out. The bound is
-# printed rounded up, since R rounds an exact half down and the sentence states a maximum.
-k7_fixed_gap <- max(abs(unlist(lapply(c("seven", "glossa_protocol"), function(p) c(
-  vapply(c(10, 20), function(K) kk(p, K, set = K7_FIXED) - kk(p, K), numeric(1)),
-  kk(p, 20, "alternative", set = K7_FIXED) - kk(p, 20, "alternative"))))))
-k7_fixed_gap_pts <- ceiling(round(100 * k7_fixed_gap, 6))
+
+# The same synthesis for the pseudo-passive interaction, from
+# scripts/run_klanguage_pseudo_passive.R. The measured languages with a pseudo-passive
+# take part at effects drawn from their estimates, and new languages have one at the rate
+# among the measured languages. Its three sets of languages stand in for the three above.
+kpp    <- read_csv(paste0(K_DIR, "klanguage_pseudo_passive.csv"), show_col_types = FALSE)
+kpppop <- read_csv(paste0(K_DIR, "klanguage_pseudo_passive_populations.csv"),
+                   show_col_types = FALSE)
+KPP_POPS <- c(claps_protocol = "claps_protocol", seven = "five",
+              glossa_protocol = "glossa_protocol")
+KPP_SET  <- "five, drawn, Glossa widened 0.15"
+n_measured    <- max(k7$n_known)
+n_measured_pp <- kpppop$K[kpppop$population == "five"]
+# Languages with a pseudo-passive among K, at the measured rate or with every new one.
+kpp_n     <- function(K) n_measured_pp + as.integer(round((K - n_measured) * n_measured_pp / n_measured))
+kpp_n_all <- function(K) K - (n_measured - n_measured_pp)
+kpp_rate <- function(pop, K, n_fun = kpp_n) {
+  x <- kpp$power[kpp$population == KPP_POPS[[pop]] & kpp$K_pp == n_fun(K) &
+                 kpp$known_set == KPP_SET & kpp$mode == "assurance" &
+                 kpp$prior_tau_scale == 1.1]
+  stopifnot(length(x) == 1)
+  x
+}
+kpp_tau <- function(pop) kpppop$tau_median[kpppop$population == KPP_POPS[[pop]]]
+kpp_k   <- function(pop) kpppop$K[kpppop$population == KPP_POPS[[pop]]]
+# Every row takes the 0.15 doubt, which is coherent only while the pilots spread at least
+# as much as the meta-analysis languages (see the pairing note above).
+stopifnot(kpp_tau("claps_protocol") >= kpp_tau("glossa_protocol"))
+# How far giving every new language a pseudo-passive moves a rate, rounded up because the
+# sentence states a maximum.
+kpp_rule_gap_pts <- ceiling(round(100 * max(abs(unlist(lapply(K_POPS, function(p)
+  vapply(c(10, 20), function(K) kpp_rate(p, K, kpp_n_all) - kpp_rate(p, K), numeric(1)))))), 6))
+# Counts below ten in words, as APA 7 asks.
+num_word <- function(n) c("one", "two", "three", "four", "five", "six", "seven", "eight",
+                          "nine")[n]
+# Percentages for a table typeset without escaping, where a bare % starts a comment.
+pct0_tex <- function(x) sub("%", "\\\\%", pct0(x))
 
 # The agent-gender versions, taken up in Appendix B. The gender terms come from the pilot
 # re-analyses in scripts/assess_gender_versions.R, a linear mixed model of the 1-to-7
@@ -291,8 +319,9 @@ reaches a Bayes factor of 10 in `r pct0(pooled_combined()$p)` of simulated studi
 pilot languages, at `r min(pooled_combined()$ns)` to `r max(pooled_combined()$ns)` participants
 per language. If the seven languages measured so far take part and further languages differ as
 much as those seven, it does so in `r pct0(kk("seven", 10))` of studies with ten languages and
-`r pct0(kk("seven", 20))` with twenty. These rates assume the canonical passive in Mandarin,
-Indonesian and Balinese, where the choice of passive is still open.
+`r pct0(kk("seven", 20))` with twenty. On the spread across the
+`r num_word(n_measured_pp)` measured languages with a pseudo-passive, the pooled test of the secondary
+prediction does so in `r pct0(kpp_rate("seven", 10))` and `r pct0(kpp_rate("seven", 20))`.
 `\end{abstract}`{=latex}
 
 <!-- The body starts on its own page. Left to flow, it followed the abstract down the
@@ -548,21 +577,19 @@ constraint on pseudo-passives differs between languages. The Stage 1 protocol wi
 how it will be interpreted.
 
 The negative pseudo-passive interaction also appears in Balinese, Indonesian and Mandarin in the
-per-language models of the meta-analysis, although each sign depends on which construction counts
-as the passive in that language, a choice taken up in the next section. Those studies inform the
-planning, but the confirmatory data will be collected under the CLAPS protocol alone.
+per-language models of the meta-analysis. Those studies inform the planning, but the confirmatory
+data will be collected under the CLAPS protocol alone.
 
 ## The Pooled Synthesis
 
-The pooled model tests the primary prediction, the active-by-affectedness interaction, across all
-the languages together. It has the per-language random-effects structure with random slopes by
-language added, so its population-level interaction estimates the cross-linguistic effect and each
-language can depart from it. It is planned as a synthesis with no confirmatory claim, reported at
-whatever number of languages takes part, and the confirmatory claims rest on the per-language
-tests. Pooled figures for the pseudo-passive interaction await the ruling on the passive in
-Mandarin, Indonesian and Balinese.
+The pooled model tests the primary prediction across all the languages together, and the secondary
+prediction across those with a pseudo-passive. It has the per-language random-effects structure
+with random slopes by language added, so its population-level interactions estimate the
+cross-linguistic effects and each language can depart from them. It is planned as a synthesis with
+no confirmatory claim, reported at whatever number of languages takes part, and the confirmatory
+claims rest on the per-language tests.
 
-With the three pilot languages alone, the pooled model reaches a Bayes factor of 10 on the
+With the three pilot languages alone, the pooled model reaches a Bayes factor of 10 on the active
 interaction in `r pooled_combined()$txt` of `r pooled_combined()$n` simulated studies at
 `r min(pooled_combined()$ns)` to `r max(pooled_combined()$ns)` participants per language. The rate
 shows no trend over that range. It is held down by the variation of the effect between languages,
@@ -571,72 +598,76 @@ simulations used the structure of the published meta-analysis model, which also 
 affectedness slope.
 
 Because more teams are expected to take part, the synthesis is also simulated with ten and twenty
-languages. A two-stage version simulates each language's estimate of the interaction and combines
+languages. A two-stage version simulates each language's estimate of an interaction and combines
 the estimates in a Bayesian random-effects meta-analysis. Its one free parameter, the prior that
 the full model in effect places on the between-language spread, is calibrated against the full
 model's three-language simulations. In these simulations, the seven languages measured so far take
 part as CLAPS samples, with effects drawn from their estimates. They are the three CLAPS pilots,
 and Balinese, Hebrew, Indonesian and Mandarin, the four languages of the meta-analysis other than
-English. The remaining languages, up to ten or twenty, are drawn from a population of languages,
-and @tbl-klang gives the result.
+English. The remaining languages, up to ten or twenty, are drawn from a population of languages.
+The pseudo-passive interaction is simulated in the same way in the languages that have a
+pseudo-passive, `r num_word(n_measured_pp)` of the seven, and @tbl-klang gives both results.
 
 ```{r tbl-klang}
-#| tbl-cap: "Pooled Detection Rate with the Seven Measured Languages and Further Languages Drawn from a Population"
+#| tbl-cap: "Pooled Detection Rates with the Measured Languages and Further Languages Drawn from a Population"
 
-K_POP_LAB <- c(claps_protocol  = "The three CLAPS pilots",
-               seven           = "All seven measured languages",
-               glossa_protocol = "The four other meta-analysis languages")
+K_POP_LAB <- c(claps_protocol  = "The CLAPS pilots",
+               seven           = "All measured languages",
+               glossa_protocol = "The other meta-analysis languages")
 kt <- tibble(
-  `New languages as different as` = unname(K_POP_LAB[K_POPS]),
-  `Median $\\tau$`      = num2h(vapply(K_POPS, kpop, numeric(1), col = "tau_median")),
-  `Ten languages`             = pct0(vapply(K_POPS, kk, numeric(1), K = 10)),
-  `Twenty languages`          = pct0(vapply(K_POPS, kk, numeric(1), K = 20)),
-  `Twenty, alternative reading` = pct0(vapply(K_POPS, kk, numeric(1), K = 20,
-                                              variant = "alternative")))
-kable(kt, align = "lrrrr")
+  set      = unname(K_POP_LAB[K_POPS]),
+  tau_a    = num2h(vapply(K_POPS, kpop, numeric(1), col = "tau_median")),
+  ten_a    = pct0_tex(vapply(K_POPS, kk, numeric(1), K = 10)),
+  twenty_a = pct0_tex(vapply(K_POPS, kk, numeric(1), K = 20)),
+  tau_p    = num2h(vapply(K_POPS, kpp_tau, numeric(1))),
+  ten_p    = pct0_tex(vapply(K_POPS, kpp_rate, numeric(1), K = 10)),
+  twenty_p = pct0_tex(vapply(K_POPS, kpp_rate, numeric(1), K = 20)))
+# Typeset as LaTeX, like the table above, so that the two interactions can share a header
+# row. Escaping is off for the tau symbol, which is why the percentages are escaped by hand.
+kable(kt, format = "latex", booktabs = TRUE, longtable = TRUE, escape = FALSE,
+      align = "lrrrrrr",
+      col.names = c("New languages as different as", "Median $\\tau$", "Ten", "Twenty",
+                    "Median $\\tau$", "Ten", "Twenty")) |>
+  kableExtra::add_header_above(c(" " = 1, "Active" = 3, "Pseudo-passive" = 3))
 ```
 
 `\vspace{-8pt}`{=latex}
 
 *Note.* Each rate is the percentage of `r format(k_reps, big.mark = ",")` simulated studies in
-which the pooled directional Bayes factor on the active-by-affectedness interaction reaches 10, with
-80 participants and 72 verbs per language. $\tau$ is the between-language standard deviation of the
-interaction, per standard deviation of affectedness, and the second column gives its posterior
-median for the set in the first column. New languages are drawn from a population whose mean and
-$\tau$ are themselves drawn from that posterior. The seven measured languages take part at effects
-drawn from their estimates. Each of the four from the meta-analysis carries an extra standard
-deviation, set at 0.15 to allow for the change of protocol. In the first row it is set at 0.40,
-since a spread as small as the pilots' implies that the earlier estimates carry over poorly.
-Holding the seven at their point estimates moves no rate in the second and third rows by more than
-`r k7_fixed_gap_pts` points. The first row is left out of that comparison, since holding the seven
-fixed contradicts its premise. The last column takes the other construction as the passive in
-Mandarin, Indonesian and Balinese, which puts $\tau$ at
-`r num2h(kpop("seven", "tau_median", "alternative"))` for all seven languages and
-`r num2h(kpop("glossa_protocol", "tau_median", "alternative"))` for the four.
+which the pooled directional Bayes factor reaches 10, with ten or twenty languages in all and 80
+participants and 72 verbs per language. $\tau$ is the between-language standard deviation of the
+interaction per standard deviation of affectedness, given as its posterior median, and new
+languages are drawn from its posterior. The active columns rest on the three pilots, the seven
+measured languages and the four other meta-analysis languages, and the pseudo-passive columns on
+the `r num_word(kpp_k("claps_protocol"))` pilots, `r num_word(n_measured_pp)` measured languages
+and `r num_word(kpp_k("glossa_protocol"))` meta-analysis languages that have a pseudo-passive. Each
+meta-analysis language carries an extra standard deviation of 0.15 for the change of protocol, or
+0.40 in the first active row, whose small spread implies that the earlier estimates carry over
+poorly. New languages have a pseudo-passive at the measured rate, so that `r kpp_n(10)` of 10 and
+`r kpp_n(20)` of 20 carry the test, and giving every new language one moves no rate by more than
+`r kpp_rule_gap_pts` points.
 
 `\vspace{12pt}`{=latex}
 
-The spread of the effect between languages decides the result, and it is not yet known. The three
-CLAPS pilots differ little, the four other meta-analysis languages differ a great deal, and all
-seven together lie between. The larger spread may reflect real differences between the languages,
-or the earlier studies' procedures, which differed in scale length, verb count, affectedness
-norming and the construction treated as the passive. The spread across all seven languages is the
-planning value used here, since three languages are too few to estimate a spread well and the
-larger spread may be partly procedural. On that value, the pooled test reaches a Bayes factor of 10
-in `r pct0(kk("seven", 10))` of simulated studies with ten languages and in
-`r pct0(kk("seven", 20))` with twenty. If new languages differ as little as the pilots, the rate
-falls to `r pct0(kk("claps_protocol", 10))` at ten languages, because the four meta-analysis
-estimates then carry over poorly, and rises to `r pct0(kk("claps_protocol", 20))` at twenty.
+The spread of the effect between languages decides the result, and it is not yet known. For the
+active interaction, the three CLAPS pilots differ little, the four other meta-analysis languages
+differ a great deal, and all seven together lie between. The larger spread may reflect real
+differences between the languages, or the earlier studies' procedures, which differed in scale
+length, verb count and affectedness norming. The spread across all seven languages is the planning
+value used here, since three languages are too few to estimate a spread well and the larger spread
+may be partly procedural. On that value, the pooled test reaches a Bayes factor of 10 in
+`r pct0(kk("seven", 10))` of simulated studies with ten languages and in `r pct0(kk("seven", 20))`
+with twenty. If new languages differ as little as the pilots, the rate falls to
+`r pct0(kk("claps_protocol", 10))` at ten languages, because the four meta-analysis estimates then
+carry over poorly, and rises to `r pct0(kk("claps_protocol", 20))` at twenty.
 
-The result also turns on which construction counts as the passive in Mandarin, Indonesian and
-Balinese, each of which has more than one passive-like construction. The figures above take the
-canonical passive in each, as the meta-analysis did. Taking the other construction as the passive
-instead changes the sign of the interaction in Indonesian and Mandarin and moves the average across
-the seven languages from `r mnum2(kpop("seven", "mean_effect"))` to
-`r mnum2(kpop("seven", "mean_effect", "alternative"))`. With twenty languages, the pooled test then
-reaches a Bayes factor of 10 in only `r pct0(kk("seven", 20, "alternative"))` of studies on the
-seven-language spread. Which reading applies is a linguistic decision, to be made for each language
-before its team collects data.
+For the pseudo-passive interaction, the spread across the `r num_word(n_measured_pp)` measured
+languages with a pseudo-passive is again the planning value. On it, the pooled test reaches a Bayes
+factor of 10 in `r pct0(kpp_rate("seven", 10))` of simulated studies with ten languages and
+`r pct0(kpp_rate("seven", 20))` with twenty. Here the pilots are the unfavourable set. The Turkish
+reversal offsets the English effect, so new languages drawn around the two average close to zero,
+and on their spread the rate is `r pct0(kpp_rate("claps_protocol", 10))` and
+`r pct0(kpp_rate("claps_protocol", 20))`.
 
 # The Sampling Plan
 
@@ -653,7 +684,33 @@ field". CLAPS would take the second route for every hypothesis, with a Bayes fac
 threshold in every language. Eighty is the most the collecting teams can provide. At that sample,
 each language is close to the limit its verbs set, so further participants would add little to the
 chance of reaching the threshold. An inconclusive result at 80 would still reflect an estimate with
-nearly the precision the language's verbs allow.
+nearly the precision the language's verbs allow. @tbl-design summarises the planned analyses and
+their detection rates.
+
+<!-- The table starts on a fresh page, after the paragraph that introduces it, so that the
+     text after it fills the rest of that page. Left to flow, it began at the foot of a page
+     with its header and one row. Check the rendered pages whenever the text above changes. -->
+
+`\newpage`{=latex}
+
+| Analysis | Coefficient and direction | Test | Detection rate |
+|:---------------|:------------------------|:------------------------------|:------------------------------|
+| H1b, primary | Active by affectedness, negative | Directional Bayes factor of 10, in each language | English `r pct0(da_rate("English", 80))`, Norwegian `r pct0(da_rate("Norwegian", 80))` and Turkish `r pct0(da_rate("Turkish", 80))` |
+| H2b, secondary | Pseudo-passive by affectedness, negative | Directional Bayes factor of 10, in each language with a pseudo-passive | English `r pct0(da_rate("English", 80, "n_h2b"))`. Turkish is expected to reverse, with a Bayes factor of 1/10 or less in `r pct0(da_rate("Turkish", 80, "n_h2a"))` |
+| H1a | Passive affectedness slope | Planned estimate, with its 95% credible interval | Not tested |
+| Pooled synthesis | Cross-linguistic active-by-affectedness interaction, negative | Reported with its directional Bayes factor, as a synthesis with no confirmatory claim | `r pct0(pooled_combined()$p)` with the three pilot languages. Including the seven measured languages, `r pct0(kk("seven", 10))` with ten and `r pct0(kk("seven", 20))` with twenty |
+| Pooled synthesis | Cross-linguistic pseudo-passive-by-affectedness interaction, negative | As above, in the languages with a pseudo-passive | Including the `r num_word(n_measured_pp)` measured languages with one, `r pct0(kpp_rate("seven", 10))` with ten and `r pct0(kpp_rate("seven", 20))` with twenty |
+
+: Planned Analyses and Their Detection Rates {#tbl-design}
+
+`\vspace{-8pt}`{=latex}
+
+*Note.* The per-language rates are at 80 participants. The three-language pooled rate combines
+simulations at `r min(pooled_combined()$ns)` to `r max(pooled_combined()$ns)` participants per
+language. The ten- and twenty-language rates are at 80 participants per language, on the spread
+across the measured languages that carry the interaction.
+
+`\vspace{12pt}`{=latex}
 
 The Bayes factor to be registered is directional [@moreyWagenmakers2014]. Each prediction is
 represented by the half-normal given in the Design-Analysis Method, one of the forms the journal
@@ -667,31 +724,7 @@ unlimited participants, so an inconclusive Turkish result would be informative f
 above. Its pseudo-passive interaction will probably run the other way. Both Turkish predictions
 would be registered as hypotheses, because the theory makes the same predictions for every
 language, and leaving a language out on the strength of its pilot would amount to choosing
-languages by their results. @tbl-design summarises the planned analyses and their detection rates.
-
-<!-- The table starts on a fresh page. Left to flow, it began at the foot of the page with its
-     header and one row, and the rest ran on overleaf. Check the rendered pages whenever the
-     text above changes length. -->
-
-`\newpage`{=latex}
-
-| Analysis | Coefficient and direction | Test | Detection rate |
-|:---------------|:------------------------|:------------------------------|:------------------------------|
-| H1b, primary | Active by affectedness, negative | Directional Bayes factor of 10, in each language | English `r pct0(da_rate("English", 80))`, Norwegian `r pct0(da_rate("Norwegian", 80))` and Turkish `r pct0(da_rate("Turkish", 80))` |
-| H2b, secondary | Pseudo-passive by affectedness, negative | Directional Bayes factor of 10, in each language with a pseudo-passive | English `r pct0(da_rate("English", 80, "n_h2b"))`. Turkish is expected to reverse, with a Bayes factor of 1/10 or less in `r pct0(da_rate("Turkish", 80, "n_h2a"))` |
-| H1a | Passive affectedness slope | Planned estimate, with its 95% credible interval | Not tested |
-| Pooled synthesis | Cross-linguistic active-by-affectedness interaction, negative | Reported with its directional Bayes factor, as a synthesis with no confirmatory claim | `r pct0(pooled_combined()$p)` with the three pilot languages. Including the seven measured languages, `r pct0(kk("seven", 10))` with ten and `r pct0(kk("seven", 20))` with twenty |
-
-: Planned Analyses and Their Detection Rates {#tbl-design}
-
-`\vspace{-8pt}`{=latex}
-
-*Note.* The per-language rates are at 80 participants. The three-language pooled rate combines
-simulations at `r min(pooled_combined()$ns)` to `r max(pooled_combined()$ns)` participants per
-language. The ten- and twenty-language rates are at 80 participants per language, on the spread
-across the seven measured languages and the canonical reading of the passive.
-
-`\vspace{12pt}`{=latex}
+languages by their results.
 
 # Limitations and Open Decisions
 
@@ -719,11 +752,12 @@ The multi-language figures rest on an assumed population of languages. The seven
 are a convenience sample from five families in two macroareas, and which further languages will
 join is not yet known.
 
-Several decisions remain open. Mandarin, Indonesian and Balinese each need a ruling on which
-construction is the passive, and Turkish needs confirmation that its pseudo-passive is the same
+Several decisions remain open. Turkish needs confirmation that its pseudo-passive is the same
 construction as the English one. It has yet to be settled which teams will collect data, and
 whether the Stage 2 paper waits for a minimum number of languages or the pooled synthesis is
-reported whatever the number. The pooled model also has to specify whether a verb and its
+reported whatever the number. Which teams take part matters most for the pooled pseudo-passive
+test, since `r num_word(kpp_k("glossa_protocol"))` of the `r num_word(n_measured_pp)` languages
+behind it come from the meta-analysis. The pooled model also has to specify whether a verb and its
 translations share one by-verb random effect. The maximum-feasible route for every hypothesis, the
 treatment of H1a as a planned estimate, registering only the negative direction of H2b and the
 registration of both Turkish predictions as hypotheses await the collaborators' agreement. None of
