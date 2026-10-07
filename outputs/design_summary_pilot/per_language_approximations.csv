@@ -1,0 +1,8 @@
+"quantity","population","h1","h2","k"
+"detection, language without a pilot","claps_protocol",0.717673111343102,0.485902657261519,1.16502261686723
+"detection, language without a pilot","seven",0.630438824029679,0.724556689564834,1.16502261686723
+"detection, language without a pilot","glossa_protocol",0.609752360858439,0.859581463234126,1.16502261686723
+"BF >= 10 at a true effect of zero","English",0.0640457335491361,0.0788090988009497,1.16502261686723
+"BF >= 10 at a true effect of zero","Turkish",0.0749379856362288,0.0847328854764458,1.16502261686723
+"BF >= 10 at a true effect of zero","Norwegian",0.0831859577388986,NA,1.16502261686723
+"BF >= 10 at a true effect of zero","language without a pilot",0.0745330972746284,0.0819814914020674,1.16502261686723

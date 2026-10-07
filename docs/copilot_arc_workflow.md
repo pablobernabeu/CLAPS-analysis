@@ -77,14 +77,10 @@ renv.lock           Package lockfile
 Do not add `--gres=gpu` to any SLURM script.
 Stan/CmdStan does not benefit from GPU for the ordinal mixed models used here.
 
-## Module names (unresolved)
+## Module names
 
-The exact R module name on ARC must be verified. Common patterns:
-- `R/4.3.1-foss-2023a`
-- `R/4.4.0`
-- `R`
-
-Set `ARC_R_MODULE` in your environment or update `config/arc_modules.yaml`.
+The R module on ARC is `R/4.4.2-gfbf-2024a`, verified on ARC on 2026-07-30 and pinned in
+`config/arc_modules.yaml`. Set `ARC_R_MODULE` in your environment to override it.
 
 ## Memory troubleshooting
 

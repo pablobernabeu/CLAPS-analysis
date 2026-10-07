@@ -177,7 +177,10 @@ cat(sprintf("\nengine check, English and Turkish pooled: P(BF >= 10) = %.4f (brm
 K_TOTAL <- c(7, 8, 10, 12, 16, 20)
 kmap <- rbind(data.frame(K = K_TOTAL, new_rule = "every new language has one", K_pp = K_TOTAL - 2L),
               data.frame(K = K_TOTAL, new_rule = "new languages at five in seven",
-                         K_pp = 5L + as.integer(round((K_TOTAL - 7) * 5 / 7))))
+                         K_pp = 5L + as.integer(round((K_TOTAL - 7) * 5 / 7))),
+              # The PI's count of 6 October 2026: at least 20 languages, 15 of them with a
+              # pseudo-passive, all seven measured languages among them.
+              data.frame(K = 20, new_rule = "the PI's count, 15 of 20", K_pp = 15L))
 KPP <- sort(unique(c(kmap$K_pp, 2L)))
 
 known_sets <- list(
