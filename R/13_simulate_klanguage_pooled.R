@@ -142,10 +142,13 @@ suppressPackageStartupMessages({
 # restore 0.578 there is about 0.95, and no scale brings sd z down to 0.311. A refit
 # to the production SEs would raise power at six or more languages by under a point
 # (seven-language assurance at K = 6: 0.562 to 0.569) and at K = 3 by two to four
-# points. Which SE configuration the calibration should use is a decision for the
-# maintainer (audit item klanguage-engine#4). Until it is made the scale stays at
-# 1.1, and the calibration section of scripts/run_klanguage_design_analysis.R
-# reports both configurations side by side.
+# points. The scale stays at 1.1 by the maintainer's decision of 9 October 2026 (audit
+# item klanguage-engine#4). The registered test does not use it, a refit would move
+# the robustness-check figures by under a point, and the target is more likely to
+# overstate the brms rate than to understate it: it counts only the 135 of 180 planned
+# replicates that finished, and among those, the slower fits carried weaker evidence.
+# The calibration section of scripts/run_klanguage_design_analysis.R still reports both
+# configurations.
 #
 # Holding the PRIOR fixed while K grows is the conservative choice that also
 # happens to be the principled one: a prior is overwhelmed by data as groups
@@ -425,6 +428,11 @@ split_se <- function(se_verb, se_ppt, rho) {
 # apart. It is the correlation of verb-level effects across languages, about 0.22 (0.22,
 # 95% CI [0.08, 0.46], in the Ambridge, Arnon & Bekman (2023) data, whose single shared
 # verb factor is rejected at dBIC 2310; scripts/refit_glossa_pooled_tau.R), diluted twice.
+# The scripts behind 0.22 and the dBIC were not kept. The refit's verb-split arms give a
+# check that can be rerun: the share of the active contrast's verb variance common to all
+# languages, the correlation that split implies, is 0.16 in M1 and 0.18 in M2 (0.08 for
+# the verb intercept, 0.02 for the pseudo-passive contrast; glossa_tau_refit_summary.csv,
+# from scripts/summarise_glossa_tau_refit.R).
 # The first dilution is the share of a verb list that two languages hold in common, about
 # 0.83, a figure whose derivation was not recorded. The second is the cross-language
 # correlation of a shared verb's affectedness score, since each team norms affectedness

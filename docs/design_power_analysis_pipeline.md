@@ -248,7 +248,10 @@ this order, since steps 2 and 4 check themselves against tables written before t
    `per_language_approximations.csv`.
 4. `scripts/run_klanguage_registered.R` writes `klanguage_registered.csv`, the
    registered two-stage test. It re-creates the simulated studies of the reported cells
-   in steps 1 and 2 and stops unless every one of those rates comes back exactly.
+   in steps 1 and 2 and stops unless every one of those rates comes back exactly. Run
+   again with `--se-scale=calibrated`, it writes `klanguage_registered_se_scaled.csv`,
+   the same test with every language's standard error widened by the calibration factor
+   that step 3 records.
 
 All four read the gitignored pilot extracts in `outputs/pilot_models/`, whose checksums
 are in `config/pilot_models_sha256.csv`. The report reads the tables they write.

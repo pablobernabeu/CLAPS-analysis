@@ -184,6 +184,23 @@ pooled_combined <- function(col = "p_h1b", max_n = POOLED_MAX_N) {
   list(p = k / n, k = k, n = n, ns = sort(unique(d$n_participants)),
        txt = sprintf("%s %s", pct0(k / n), pct_ci(k, n)))
 }
+# The studies the two pooled grids planned at each sample size, every one of which
+# pooled_power_pilot.csv either counts or lacks, so the text can say how many returned no
+# result and what counting them as failures would do to the rate.
+pooled_planned <- bind_rows(
+  read_csv("../config/design_grid_pooled_v2.csv", show_col_types = FALSE),
+  read_csv("../config/design_grid_pooled_v2_N80.csv", show_col_types = FALSE)) |>
+  count(n_participants, name = "planned")
+pooled_missing <- local({
+  d <- pooled_planned |>
+    filter(n_participants <= POOLED_MAX_N) |>
+    left_join(select(pooledp, n_participants, reps), by = "n_participants") |>
+    mutate(reps = coalesce(reps, 0), missing = planned - reps)
+  stopifnot(all(d$missing >= 0), sum(d$reps) == pooled_combined()$n)
+  list(planned = sum(d$planned), missing = sum(d$missing),
+       at_max = d$missing[d$n_participants == max(d$n_participants)],
+       worst = pooled_combined()$k / sum(d$planned))
+})
 
 # The repository's wider grid (joint_power_pilot.csv) holds more studies than the decision
 # arm at some samples, scored for H1 alone. The excess is stated once, when it is the same at
@@ -305,6 +322,19 @@ pla_rate  <- function(h, pop = "seven") {
   x
 }
 pla_range <- function(h) sprintf("%s to %s", pct0(min(pla_np[[h]])), pct0(max(pla_np[[h]])))
+# The registered tests again, on the same simulated studies, with every language's
+# standard error widened by the factor that calibrates the normal approximation above
+# (scripts/run_klanguage_registered.R --se-scale=calibrated). The text quotes the
+# largest fall, and stops the render if any rate rose instead.
+kreg_wide <- read_csv(paste0(K_DIR, "klanguage_registered_se_scaled.csv"), show_col_types = FALSE)
+kreg_shift <- local({
+  d <- inner_join(select(kreg, hypothesis, population, power),
+                  select(kreg_wide, hypothesis, population, power_wide = power, se_scale),
+                  by = c("hypothesis", "population"))
+  stopifnot(nrow(d) == nrow(kreg), length(unique(d$se_scale)) == 1,
+            isTRUE(all.equal(unique(d$se_scale), unique(pla$k))), all(d$power_wide <= d$power))
+  list(k = unique(d$se_scale), max_fall = max(d$power - d$power_wide))
+})
 # Counts below ten in words, as APA 7 asks.
 num_word <- function(n) c("one", "two", "three", "four", "five", "six", "seven", "eight",
                           "nine")[n]
@@ -654,7 +684,10 @@ factor of 10 in only `r pooled_combined()$txt` of `r pooled_combined()$n` simula
 shows no trend over that range. It is held down by the variation of the effect between languages,
 which neither verbs nor participants reduce and three languages estimate poorly. These
 simulations used the structure of the published meta-analysis model, with its by-verb
-affectedness slope.
+affectedness slope. Another `r pooled_missing$missing` of the `r pooled_missing$planned` planned
+studies, `r pooled_missing$at_max` of them at `r max(pooled_combined()$ns)` participants,
+returned no result, and counting them as failures would lower the rate to
+`r pct0(pooled_missing$worst)`.
 
 The collaborators expect at least `r K_PLAN` languages, `r K_PLAN_PP` of them with a
 pseudo-passive, so the confirmatory test is simulated with `r K_PLAN` languages. The seven
@@ -778,6 +811,15 @@ in English, `r pct0(jval("Norwegian", 80, "p_h1b_converged"))` in Norwegian and
 that size would show. With longer chains and four times as many of them, the confirmatory fits
 will have six times the post-warm-up draws.
 
+<!-- The figures in the next paragraph are typed, because their source stays on the
+     cluster: the pooled refit of 20-27 August 2026 (job 8614954, model level
+     L5_cross_verbblock_aligned), saved as pilot_fit_pooled_aligned.rds. Its log gives
+     75,528 observations over 210 verbs and 6,000 of 8,000 transitions at the maximum
+     treedepth. Its 8,000 draws of the active interaction give a mean of -0.484 and a 95%
+     interval from -1.014 to 0.297 on the model's scale, which times 0.5036, the mean pilot
+     SD of the scaled predictor, is -0.244 [-0.510, +0.150] per SD. Checked on 9 October
+     2026. -->
+
 Fitted to the combined pilot data, 75,528 ratings over 210 verbs, a single model across languages
 estimated the interaction at about $-0.24$ logits per standard deviation of affectedness, with a
 95% credible interval from $-0.51$ to $+0.15$. That is close to the average of the three pilot
@@ -790,7 +832,11 @@ that form.
 
 The `r K_PLAN`-language figures rest on an assumed population of languages. The seven measured so
 far are a convenience sample from five families in two macroareas, and the simulations treat the
-other languages as draws from a population like them.
+other languages as draws from a population like them. They also give each language's estimate the
+standard error of a normal approximation to its analysis. The calibration behind the rates for a
+language without a pilot widens that standard error by a factor of `r num2(kreg_shift$k)`, and
+with it every rate in @tbl-klang falls by at most `r sprintf("%.1f", 100 * kreg_shift$max_fall)`
+percentage points.
 
 {{< pagebreak >}}
 

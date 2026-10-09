@@ -29,12 +29,14 @@ its tables (`outputs/design_summary_pilot/klanguage_*.csv` and
 date, as each script's log records. Two checks tie them to the environment of record.
 On the workstation, every regenerated table is byte-identical to the reported one: on
 8 and 9 October 2026 that held for the calibration, populations, partly-known,
-known-languages, outcomes, pseudo-passive, per-language and registered tables. On ARC,
-`scripts/build_registered_arc_check.R` runs the registered test under R 4.4.2 without
-writing anything there. On 9 October 2026 it reproduced `klanguage_registered.csv`
-exactly, and with it the six reported cells of `klanguage_known7.csv` and
-`klanguage_pseudo_passive.csv` that the test re-creates. The script's header gives the
-commands, and its `compare` step reports PASS or FAIL.
+known-languages, outcomes, pseudo-passive, per-language and registered tables. The
+registered test with widened standard errors (`klanguage_registered_se_scaled.csv`,
+added on 9 October 2026) comes from the same script and the same simulated studies. On
+ARC, `scripts/build_registered_arc_check.R` runs the registered test under R 4.4.2
+without writing anything there. On 9 October 2026 it reproduced
+`klanguage_registered.csv` exactly, and with it the six reported cells of
+`klanguage_known7.csv` and `klanguage_pseudo_passive.csv` that the test re-creates. The
+script's header gives the commands, and its `compare` step reports PASS or FAIL.
 
 ## What records the environment
 

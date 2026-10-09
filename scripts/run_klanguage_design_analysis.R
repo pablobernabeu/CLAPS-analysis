@@ -212,8 +212,9 @@ PP <- read.csv(file.path(IN, "pilot_params_ceilings.csv"))
 # (N = 70, 70, 57), standing in for the interaction's at N = 80. The two errors
 # partly cancel: the interaction's SD rescaled to N = 80 and 72 verbs gives a total
 # of 0.0871 against the 0.0885 used here, which moves no power figure by more than
-# 0.0025 (audit item klanguage-engine#7). Rebuilding it waits for a sanctioned
-# regeneration, because it rewrites every table.
+# 0.0025 (audit item klanguage-engine#7). It stays by the maintainer's decision of 9
+# October 2026: rebuilding it would rewrite every table without changing a reported
+# figure, and the larger SE in use errs on the conservative side.
 SE_VERB <- mean(PP$se_floor_h1b  * PP$affectedness_sd)
 SE_POST <- mean(PP$slope_post_sd * PP$affectedness_sd)
 SE_PPT  <- sqrt(max(SE_POST^2 - SE_VERB^2, 0))
@@ -221,8 +222,9 @@ SE_LANG <- sqrt(SE_VERB^2 + SE_PPT^2)
 
 # How much of the verb-level noise is common across languages: RHO_EFF_VERB, defined
 # in R/13_simulate_klanguage_pooled.R with its derivation, so that every script uses
-# the one value. The published Glossa model's rho = 1 is rejected by its own data at
-# dBIC 2310.
+# the one value. The published Glossa model's single verb factor, rho = 1, does not
+# fit its own data: in the refit's verb-split arms, only 0.16 to 0.18 of the active
+# contrast's verb variance is common to all languages (glossa_tau_refit_summary.csv).
 split_at <- function(rho = RHO_EFF_VERB) split_se(SE_VERB, SE_PPT, rho)
 sp_eff <- split_at(RHO_EFF_VERB)
 
@@ -342,7 +344,7 @@ if (want("calib")) {
                     "and sd z stays between %.3f and %.3f against %.3f.\n"),
               tg$target[["p_bf10"]], best, min(pr$sd_z), max(pr$sd_z), tg$target[["sd_z"]]))
   cat("The analysis keeps CALIBRATED_TAU_PRIOR_SCALE =", CALIBRATED_TAU_PRIOR_SCALE,
-      "until the maintainer chooses between the two SE configurations.\n")
+      "by the maintainer's decision of 9 October 2026 (see R/13_simulate_klanguage_pooled.R).\n")
   write_out(calib, "klanguage_calibration.csv")
   write_out(k3, "klanguage_calibration_target_replicates.csv")
 }

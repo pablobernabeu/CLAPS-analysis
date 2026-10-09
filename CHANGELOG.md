@@ -30,6 +30,17 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   extracts (2026-10-09).
 - Unit tests for the generation step, the two-stage analysis and the shared constants in
   `tests/testthat/test-klanguage-pooled.R`, including the reported H1 rate (2026-10-09).
+- `scripts/run_klanguage_registered.R --se-scale=calibrated`, which writes
+  `klanguage_registered_se_scaled.csv`: the registered test on the same simulated studies,
+  with every language's standard error widened by the calibration factor of the
+  per-language approximation (1.165, read from `per_language_approximations.csv`). No
+  rate falls by more than 0.4 points (H1 from 87.85% to 87.48%, H2 from 88.85% to
+  88.60%), and the report says so. `klanguage_registered.csv` is unchanged (2026-10-09).
+- Three columns in `glossa_tau_refit_summary.csv`, from
+  `scripts/summarise_glossa_tau_refit.R`: the share of each verb term's variance common
+  to all languages in the refit's verb-split arms, 0.16 (M1) and 0.18 (M2) for the
+  active contrast, 0.08 for the intercept and 0.02 for the pseudo-passive contrast. The
+  earlier columns are unchanged (2026-10-09).
 
 ### Changed
 
@@ -47,6 +58,14 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   check (2026-10-08).
 - The CI lint gate covers the four scripts behind the registered test as well as `R/`
   (2026-10-09).
+- The preliminary report says that 13 of the 120 studies the three-language pooled arm
+  planned at 50 to 100 participants ended without a result, 11 of them at 100, and that
+  counting them as failures would lower its rate from 57% to 51%. The reported rate is
+  unchanged (2026-10-09).
+- `docs/preregistration_decisions.md` section 4 describes the Bayes factor as it is
+  computed, the posterior odds of the predicted sign over the prior odds, where it named
+  a Savage–Dickey density ratio, and withdraws the bridge-sampling calibration, which
+  could not calibrate that ratio. The computation is unchanged (2026-10-09).
 
 ### Fixed
 

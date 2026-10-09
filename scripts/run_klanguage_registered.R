@@ -28,15 +28,27 @@
 # way, and the script stops unless every reported rate comes back exactly, which
 # confirms that the inputs are the ones the reported cells used.
 #
+# Each simulated language's estimate has the SE of a normal approximation to its
+# analysis. scripts/estimate_per_language_approximations.R calibrates the same
+# approximation against the decision arm by widening that SE by a factor k. With
+# --se-scale=calibrated the script reads k from per_language_approximations.csv and
+# widens every simulated language's SE by it (or by the number given, as in
+# --se-scale=1.2). The studies keep their seeds, so the result differs from the
+# registered table only through the wider SEs, and it goes to a table of its own. The
+# reproduction check runs on the unwidened studies either way.
+#
 # Inputs: outputs/design_summary_pilot/{cross_language_effects_harmonised,
 #   pilot_params_ceilings,klanguage_known7,klanguage_pseudo_passive}.csv,
 #   config/prior_grid.yaml and the pilot posteriors in outputs/pilot_models
-#   (gitignored; checksums in config/pilot_models_sha256.csv).
-# Output: klanguage_registered.csv in --outdir, and a run log. Writing into
+#   (gitignored; checksums in config/pilot_models_sha256.csv), and with
+#   --se-scale=calibrated, per_language_approximations.csv.
+# Output: klanguage_registered.csv in --outdir, or klanguage_registered_se_scaled.csv
+#   when the SEs are widened, and a run log. Writing into
 #   outputs/design_summary_pilot replaces the reported table, so it needs
 #   --overwrite-reported, and the log then goes to outputs/logs.
 # Run from design_analysis/:
-#   Rscript scripts/run_klanguage_registered.R --outdir=DIR [--reps=4000] [--log=FILE]
+#   Rscript scripts/run_klanguage_registered.R --outdir=DIR [--reps=4000]
+#     [--se-scale=calibrated] [--log=FILE]
 # ---------------------------------------------------------------------------
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -50,14 +62,28 @@ IN <- "outputs/design_summary_pilot"
 OUT <- aval("--outdir", IN)
 PILOT_MODELS <- aval("--pilot-models", "outputs/pilot_models")
 
+# The factor applied to every simulated language's SE: 1 for the registered table.
+SE_SCALE_ARG <- aval("--se-scale", "1")
+APPROX_TABLE <- file.path(IN, "per_language_approximations.csv")
+SE_SCALE <- if (identical(SE_SCALE_ARG, "calibrated")) {
+  unique(read.csv(APPROX_TABLE)$k)
+} else {
+  suppressWarnings(as.numeric(SE_SCALE_ARG))
+}
+if (length(SE_SCALE) != 1L || !is.finite(SE_SCALE) || SE_SCALE <= 0) {
+  stop("--se-scale must be 'calibrated', with one k in ", APPROX_TABLE, ", or a positive number")
+}
+OUT_NAME <- if (SE_SCALE == 1) "klanguage_registered" else "klanguage_registered_se_scaled"
+
 source("R/13_simulate_klanguage_pooled.R")
 writes_reported <- guard_reported_dir(OUT, args)
-LOG <- aval("--log", file.path(if (writes_reported) "outputs/logs" else OUT, "klanguage_registered.log"))
+LOG <- aval("--log", file.path(if (writes_reported) "outputs/logs" else OUT, paste0(OUT_NAME, ".log")))
 INPUTS <- c(file.path(IN, c("cross_language_effects_harmonised.csv", "pilot_params_ceilings.csv",
                             "klanguage_known7.csv", "klanguage_pseudo_passive.csv")),
             "config/prior_grid.yaml",
-            file.path(PILOT_MODELS, paste0("pilot_dgp_v2_pilot_", c("English", "Turkish", "Norwegian"), ".rds")))
-log_con <- start_run_log(LOG, INPUTS, replicates = REPS, out = OUT)
+            file.path(PILOT_MODELS, paste0("pilot_dgp_v2_pilot_", c("English", "Turkish", "Norwegian"), ".rds")),
+            if (identical(SE_SCALE_ARG, "calibrated")) APPROX_TABLE)
+log_con <- start_run_log(LOG, INPUTS, replicates = REPS, se_scale = SE_SCALE, out = OUT)
 
 H  <- read.csv(file.path(IN, "cross_language_effects_harmonised.csv"))
 PP <- read.csv(file.path(IN, "pilot_params_ceilings.csv"))
@@ -103,9 +129,13 @@ check_reported <- function(Y, sp, ref, label) {
   }
 }
 
+#' A standard-error split from split_se() with both parts multiplied by one factor.
+scale_se <- function(sp, k) list(shared = sp$shared * k, indep = sp$indep * k)
+
 # --- H1 ---------------------------------------------------------------------------
 # Inputs rebuilt as run_klanguage_design_analysis.R builds them, including its use of
-# the main effect's posterior SD for the interaction's (audit item klanguage-engine#7).
+# the main effect's posterior SD for the interaction's, kept by decision on 9 October
+# 2026 (audit item klanguage-engine#7).
 SE_VERB <- mean(PP$se_floor_h1b * PP$affectedness_sd)
 SE_POST <- mean(PP$slope_post_sd * PP$affectedness_sd)
 sp1 <- split_se(SE_VERB, sqrt(max(SE_POST^2 - SE_VERB^2, 0)), RHO_EFF_VERB)
@@ -117,19 +147,25 @@ P1 <- build_populations(prepare_language_table(H, cse), "canonical")
 TSD1 <- c(claps_protocol = 0.40, seven = 0.15, glossa_protocol = 0.15)
 ref1 <- read.csv(file.path(IN, "klanguage_known7.csv"))
 
+sp1s <- scale_se(sp1, SE_SCALE)
+
 h1 <- do.call(rbind, lapply(names(TSD1), function(pn) {
-  Y <- simulate_partly_known_estimates(K_PLAN, P1$seven, REPS, sp1$indep, pop = P1[[pn]],
-                                       shared_verb_sd = sp1$shared,
-                                       transfer_sd = transfer_sd_by_source(P1$seven, TSD1[[pn]]),
-                                       seed = 7000L + K_PLAN)$Y
+  draw <- function(sp) {
+    simulate_partly_known_estimates(K_PLAN, P1$seven, REPS, sp$indep, pop = P1[[pn]],
+                                    shared_verb_sd = sp$shared,
+                                    transfer_sd = transfer_sd_by_source(P1$seven, TSD1[[pn]]),
+                                    seed = 7000L + K_PLAN)$Y
+  }
+  Y <- draw(sp1)
   check_reported(Y, sp1,
                  ref1[ref1$reading_variant == "canonical" & ref1$population == pn &
                         ref1$mode == "assurance" & ref1$K == K_PLAN &
                         ref1$known_set == sprintf("seven, drawn, 2023 widened %.2f", TSD1[[pn]]), ],
                  paste("H1,", pn))
+  if (SE_SCALE != 1) Y <- draw(sp1s)
   cbind(hypothesis = "H1", population = pn, K = K_PLAN, transfer_sd = TSD1[[pn]],
         prior_mu_sd = P_H1, prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE,
-        detection_rate(two_stage_p_negative(Y, sqrt(sp1$indep^2 + sp1$shared^2), P_H1)))
+        detection_rate(two_stage_p_negative(Y, sqrt(sp1s$indep^2 + sp1s$shared^2), P_H1)))
 }))
 
 # --- H2 ---------------------------------------------------------------------------
@@ -175,24 +211,33 @@ P2 <- list(claps_protocol = k5[k5$source == "CLAPS_pilot", ], five = k5,
            glossa_protocol = k5[k5$source == "Glossa2023", ])
 ref2 <- read.csv(file.path(IN, "klanguage_pseudo_passive.csv"))
 
+sp2s <- scale_se(sp2, SE_SCALE)
+
 h2 <- do.call(rbind, lapply(names(P2), function(pn) {
-  Y <- simulate_partly_known_estimates(K_PLAN_PP, k5, REPS, sp2$indep, pop = P2[[pn]],
-                                       shared_verb_sd = sp2$shared,
-                                       transfer_sd = transfer_sd_by_source(k5, 0.15),
-                                       seed = 8000L + K_PLAN_PP)$Y
+  draw <- function(sp) {
+    simulate_partly_known_estimates(K_PLAN_PP, k5, REPS, sp$indep, pop = P2[[pn]],
+                                    shared_verb_sd = sp$shared,
+                                    transfer_sd = transfer_sd_by_source(k5, 0.15),
+                                    seed = 8000L + K_PLAN_PP)$Y
+  }
+  Y <- draw(sp2)
   check_reported(Y, sp2,
                  ref2[ref2$population == pn & ref2$known_set == "five, drawn, Glossa widened 0.15" &
                         ref2$mode == "assurance" & ref2$K_pp == K_PLAN_PP &
                         ref2$prior_tau_scale == CALIBRATED_TAU_PRIOR_SCALE, ],
                  paste("H2,", pn))
+  if (SE_SCALE != 1) Y <- draw(sp2s)
   cbind(hypothesis = "H2", population = pn, K = K_PLAN_PP, transfer_sd = 0.15,
         prior_mu_sd = P_H2, prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE,
-        detection_rate(two_stage_p_negative(Y, sqrt(sp2$indep^2 + sp2$shared^2), P_H2)))
+        detection_rate(two_stage_p_negative(Y, sqrt(sp2s$indep^2 + sp2s$shared^2), P_H2)))
 }))
 
 out <- rbind(h1, h2)
+# The registered table keeps its columns; a widened run records its factor.
+if (SE_SCALE != 1) out$se_scale <- SE_SCALE
 print(out, row.names = FALSE, digits = 3)
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
-write.csv(out, file.path(OUT, "klanguage_registered.csv"), row.names = FALSE)
-cat("wrote", file.path(OUT, "klanguage_registered.csv"), "\n")
+out_file <- file.path(OUT, paste0(OUT_NAME, ".csv"))
+write.csv(out, out_file, row.names = FALSE)
+cat("wrote", out_file, "\n")
 stop_run_log(log_con)
