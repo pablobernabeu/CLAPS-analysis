@@ -12,13 +12,29 @@ differences are recorded rather than wished away.
 
 | | R | Library | Purpose |
 |---|---|---|---|
-| **ARC** (environment of record) | 4.4.2, module `R/4.4.2-gfbf-2024a` | 190 packages in `$DATA/PROJECT_GROUP/R/library_4.4` | Produces every reported result |
+| **ARC** (environment of record) | 4.4.2, module `R/4.4.2-gfbf-2024a` | 190 packages in `$DATA/PROJECT_GROUP/R/library_4.4` | Produces every reported result that needs a fitted model |
 | **CI** | 4.4.2, GitHub Actions | Installed per run from Posit's binary repository | Static checks and unit tests |
-| **Workstation** | whatever is installed | whatever is installed | Editing, and the parts of the suite that need no Stan toolchain |
+| **Workstation** | whatever is installed | whatever is installed | Editing, the parts of the suite that need no Stan toolchain, and the K-language tables |
 
 Only ARC fits models. A workstation typically lacks brms and the Stan toolchain
 entirely, which is expected and supported, but it means a green local test run
 exercises materially less than CI does. See "Watertight checks" below.
+
+### The K-language tables
+
+The pooled tests across languages fit no model. The engine in
+`R/13_simulate_klanguage_pooled.R` is a meta-analysis by grid integration in base R, so
+its tables (`outputs/design_summary_pilot/klanguage_*.csv` and
+`per_language_approximations.csv`) are computed on the workstation, under R 4.6.1 to
+date, as each script's log records. Two checks tie them to the environment of record.
+On the workstation, every regenerated table is byte-identical to the reported one: on
+8 and 9 October 2026 that held for the calibration, populations, partly-known,
+known-languages, outcomes, pseudo-passive, per-language and registered tables. On ARC,
+`scripts/build_registered_arc_check.R` runs the registered test under R 4.4.2 without
+writing anything there. On 9 October 2026 it reproduced `klanguage_registered.csv`
+exactly, and with it the six reported cells of `klanguage_known7.csv` and
+`klanguage_pseudo_passive.csv` that the test re-creates. The script's header gives the
+commands, and its `compare` step reports PASS or FAIL.
 
 ## What records the environment
 
@@ -164,10 +180,14 @@ The lint standard lives in `.lintr.R`, next to the code, so that
 Rscript -e 'lintr::lint_dir("R")'
 ```
 
-reproduces CI exactly. It used to be passed inline in the workflow YAML, which meant
-running lintr locally applied different rules, and because the step only warned, 259
-findings had accumulated unread. The step now **fails** on any finding, and `R/` is
-clean against the configuration.
+reproduces CI exactly for `R/`. It used to be passed inline in the workflow YAML, which
+meant running lintr locally applied different rules, and because the step only warned,
+259 findings had accumulated unread. The step now **fails** on any finding, and `R/` is
+clean against the configuration. Since 9 October 2026 the step also lints the four
+scripts behind the registered test (`run_klanguage_registered.R`,
+`run_klanguage_pseudo_passive.R`, `estimate_per_language_approximations.R` and
+`build_registered_arc_check.R`), which are clean. The other scripts carry older style
+findings and join the gate as they are cleaned.
 
 Of those 259, some 60% were `object_usage_linter` reporting dplyr's NSE column names
 and functions defined in `source()`d files as undefined. Those are artefacts of this
@@ -245,3 +265,15 @@ Every run writes `outputs/manifest.csv` via `write_manifest()` in
 versions. `scripts/record_environment.R` captures the fuller picture when a complete
 record is wanted. Between the git SHA, the manifest and the recorded environment, a
 result can be traced to the code and the software that produced it.
+
+The K-language scripts keep their own record. Each writes a log recording the git state,
+the R version and the MD5 of every input, and the main script adds the sections run. The
+log goes to `outputs/logs/` when the run replaces a reported table, and beside its output
+otherwise.
+
+The pilot posterior extracts in `outputs/pilot_models/` are gitignored, so git cannot
+vouch for them. The three that the pooled-test scripts read are checksummed in
+`config/pilot_models_sha256.csv`, and comparing them with
+`sha256sum outputs/pilot_models/pilot_dgp_v2_pilot_*.rds` should come before
+regenerating a K-language table. `scripts/run_klanguage_registered.R` also re-creates the reported cells
+before it writes anything, so a changed extract stops it.

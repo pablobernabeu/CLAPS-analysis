@@ -132,14 +132,7 @@ ALT_SE        <- aval("--alt-se", "independent")
 
 # The reported CSVs are quoted in the note and the reply to the PI, so replacing them
 # is a decision, not a side effect of running the script with its defaults.
-same_dir <- function(a, b) {
-  normalizePath(a, winslash = "/", mustWork = FALSE) == normalizePath(b, winslash = "/", mustWork = FALSE)
-}
-WRITES_REPORTED <- same_dir(OUT, REPORTED_DIR)
-if (WRITES_REPORTED && !("--overwrite-reported" %in% args)) {
-  stop("--out is ", REPORTED_DIR, ", which holds the reported CSVs. Pass --overwrite-reported ",
-       "to replace them deliberately, or --out=<dir> for a run elsewhere.")
-}
+WRITES_REPORTED <- guard_reported_dir(OUT, args, flag = "--out", reported = REPORTED_DIR)
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
 
 ALL_SECTIONS <- c("calib", "power", "cond", "sens", "mink", "named", "varshare",
@@ -193,16 +186,6 @@ SEEDS <- list(calibration = 20260910L, power = 4100L, conditional = 4150L,
               verbs = 4900L, named = 5000L, varshare = 5100L, partly = 5200L,
               known7 = 7000L)
 
-git_state <- function() {
-  quiet <- function(expr) tryCatch(expr, error = function(e) character(0),
-                                   warning = function(w) character(0))
-  sha <- quiet(system2("git", c("rev-parse", "--short", "HEAD"), stdout = TRUE, stderr = FALSE))
-  if (!length(sha)) return("not a git checkout, or git not on the PATH")
-  dirty <- quiet(system2("git", c("status", "--porcelain", "--", "R", "scripts", "tests"),
-                         stdout = TRUE, stderr = FALSE))
-  paste(sha, if (length(dirty)) "with uncommitted changes under R/, scripts/ or tests/" else "(clean)")
-}
-
 rule("PROVENANCE")
 cat("started:  ", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"), "\n")
 cat("git:      ", git_state(), "\n")
@@ -236,24 +219,20 @@ SE_POST <- mean(PP$slope_post_sd * PP$affectedness_sd)
 SE_PPT  <- sqrt(max(SE_POST^2 - SE_VERB^2, 0))
 SE_LANG <- sqrt(SE_VERB^2 + SE_PPT^2)
 
-# How much of the verb-level noise is common across languages. Estimated two ways
-# from the pilot and the Glossa data, both giving rho about 0.22, then diluted by
-# the fraction of the verb list two languages actually share (0.83) and by the
-# correlation of their affectedness ratings for a shared verb (0.89), since each
-# team norms affectedness with its own raters. rho_eff = 0.22 * 0.83 * 0.89.
-# The published Glossa model's rho = 1 is rejected by its own data at dBIC 2310.
-RHO_EFF <- 0.164
-split_at <- function(rho = RHO_EFF) split_se(SE_VERB, SE_PPT, rho)
-sp_eff <- split_at(RHO_EFF)
+# How much of the verb-level noise is common across languages: RHO_EFF_VERB, defined
+# in R/13_simulate_klanguage_pooled.R with its derivation, so that every script uses
+# the one value. The published Glossa model's rho = 1 is rejected by its own data at
+# dBIC 2310.
+split_at <- function(rho = RHO_EFF_VERB) split_se(SE_VERB, SE_PPT, rho)
+sp_eff <- split_at(RHO_EFF_VERB)
 
 # The pilot posteriors give the interaction's own posterior SD, which the harmonised
-# table does not carry (it has the main effect's). The per-SD scaling is written out
-# because the reported numbers were computed with these values; the check stops a
-# changed pilot table from being paired with them.
+# table does not carry (it has the main effect's). The per-SD scaling is the
+# seven-digit one the reported numbers were computed with (CLAPS_PILOT_SDX in
+# R/13_simulate_klanguage_pooled.R), and claps_pilot_sdx() stops a changed pilot table
+# from being paired with it.
 CLAPS_LANGS <- c("English", "Turkish", "Norwegian")
-CLAPS_SDX   <- c(0.5035005, 0.5035005, 0.5038147)
-stopifnot(isTRUE(all.equal(CLAPS_SDX, PP$affectedness_sd[match(CLAPS_LANGS, PP$language)],
-                           tolerance = 1e-6)))
+CLAPS_SDX   <- claps_pilot_sdx(PP, CLAPS_LANGS)
 claps_raw <- read_claps_interaction_draws(PILOT_MODELS, CLAPS_LANGS)
 claps_se  <- setNames(vapply(seq_along(CLAPS_LANGS), function(i) sd(claps_raw[[i]]) * CLAPS_SDX[i],
                              numeric(1)), CLAPS_LANGS)
@@ -287,7 +266,7 @@ rule("INPUTS")
 cat(sprintf(paste("per-language SE, per SD of affectedness: total %.4f =",
                   "verb-driven %.4f (shareable) + participant-driven %.4f (never shared)\n"),
             SE_LANG, SE_VERB, SE_PPT))
-cat(sprintf("cross-language correlation of verb-level effects, after dilution: rho = %.3f\n", RHO_EFF))
+cat(sprintf("cross-language correlation of verb-level effects, after dilution: rho = %.3f\n", RHO_EFF_VERB))
 cat(sprintf("so each language's SE splits into %.4f independent and %.4f shared\n\n",
             sp_eff$indep, sp_eff$shared))
 # The DESIGN prior here, not the calibrated analysis prior: this table describes what
@@ -379,7 +358,7 @@ if (want("calib")) {
 # shared^2 to the variance of mu, which lowers power by 0.003 to 0.0075 at rho_eff and
 # by about 0.04 at rho = 1 (audit item klanguage-engine#15). Which applies depends on
 # how Stage 2 codes its verbs.
-cell <- function(K, pop_name, mode = "assurance", rho = RHO_EFF,
+cell <- function(K, pop_name, mode = "assurance", rho = RHO_EFF_VERB,
                  tsc = CALIBRATED_TAU_PRIOR_SCALE, thr = 10, seed) {
   sp <- split_at(rho)
   cbind(population = pop_name, rho = rho,
@@ -439,7 +418,7 @@ if (want("sens")) {
   sens <- list()
   add <- function(tag, df) sens[[tag]] <<- cbind(axis = tag, df)
 
-  add("verb_sharing", do.call(rbind, lapply(c(0, RHO_EFF, 0.22, 1), function(rho)
+  add("verb_sharing", do.call(rbind, lapply(c(0, RHO_EFF_VERB, 0.22, 1), function(rho)
     do.call(rbind, lapply(seq_along(KS), function(i)
       cell(KS[i], "seven", rho = rho, seed = SEEDS$verb_sharing + i))))))
 
@@ -700,7 +679,7 @@ if (want("known7")) {
 # two independent calculations.
 outcome_cell <- function(K, pop_name, seed) {
   set.seed(seed)
-  sp   <- split_at(RHO_EFF)
+  sp   <- split_at(RHO_EFF_VERB)
   pars <- draw_population_params(REPS, POPS[[pop_name]]$y, POPS[[pop_name]]$s)
   z_thr <- qnorm(10 / 11)
   # A single-language analysis reports the whole of its verb-sampling error, shared
@@ -759,7 +738,7 @@ se_for <- function(N = 80, n_verbs = 72) {
   v <- SE_VERB * sqrt(72 / n_verbs)
   p <- SE_PPT  * sqrt(80 / N)
   list(verb = v, total = sqrt(v^2 + p^2),
-       indep = sqrt(v^2 * (1 - RHO_EFF) + p^2), shared = v * sqrt(RHO_EFF))
+       indep = sqrt(v^2 * (1 - RHO_EFF_VERB) + p^2), shared = v * sqrt(RHO_EFF_VERB))
 }
 trade_cell <- function(K, N, n_verbs, pop_name, seed) {
   s <- se_for(N, n_verbs)

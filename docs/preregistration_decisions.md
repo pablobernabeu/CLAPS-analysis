@@ -21,7 +21,9 @@ Response ~ S_Type * Semantics_scaled
 
 **Literature basis**: Treating Likert responses as metric is known to bias regression coefficients and inflate both Type I and Type II error rates [@liddellKruschke2018]. The cumulative-logit model is the principled alternative [@burknerVuorre2019] and has been shown to recover psycholinguistic effects more accurately than Gaussian LMMs in independent empirical comparisons [@verissimo2021; @taylorRousseletScheepersSereno2023].
 
-**Locked**: Yes.
+**Amendment (2026-10-08), proposed to the PI with his draft Stage 1 protocol:** the hypotheses are tested across languages, as the PI's draft states, and the confirmatory test is a two-stage synthesis. Each language is analysed with the model above. The per-language posterior means and SDs of each interaction are then combined in a Bayesian random-effects meta-analysis with Language as the random effect, a normal(0, *P*) prior on the mean across languages (*P* the per-language prior SD per SD of affectedness: 0.25 for H1, 0.30 for H2) and a half-normal(0, 0.5) prior on the between-language SD. The one-stage model across languages in the PI's draft (by-Language slopes on all fixed effects, participants and verbs nested within language) becomes a planned robustness check, reported but deciding neither hypothesis. *Why*: the one-stage model saturated tree depth on three quarters of its iterations when fitted to the pilot data (`outputs/logs/pooledfit_8614954.*`), and in the feasibility runs at 20 languages no rung above `L2_cross_stype_participant_verb` (two of three data sets) converged; the two-stage synthesis is the analysis the power simulations evaluate (`scripts/run_klanguage_registered.R`), and one- and two-stage analyses agree when each study is large and both are specified alike [@burkeEnsorRiley2017].
+
+**Locked**: Yes (the amendment awaits the PI's agreement).
 
 ---
 
@@ -44,8 +46,8 @@ Response ~ S_Type * Semantics_scaled
 
 | Hypothesis | Parameter | Direction | BF threshold |
 |-----------|-----------|-----------|-------------|
-| H1 (primary) | `b_S_TypeActive:Semantics_scaled` | < 0 | BF ≥ 10, in each language |
-| H2 (secondary) | `b_S_TypePseudo_Passive:Semantics_scaled` | < 0 | BF ≥ 10, in each language with a pseudo-passive |
+| H1 (primary) | mean across languages of `b_S_TypeActive:Semantics_scaled` (§1 amendment) | < 0 | BF ≥ 10 |
+| H2 (secondary) | mean across the languages with a pseudo-passive of `b_S_TypePseudo_Passive:Semantics_scaled` | < 0 | BF ≥ 10 |
 
 **Amendment (2026-10-06), agreed with the PI:** only these two hypotheses are registered, and they are named H1 and H2. The passive slope (formerly H1a) carries no prediction and need not be positive, since the theory requires only that affectedness matter more for passives than for the comparison sentence type. The reversed pseudo-passive direction (formerly H2a) is not a hypothesis. A Bayes factor of 1/10 or less counts as evidence against a hypothesis. Turkish is tested on both, like every language. The code and output files keep the earlier labels (`h1b`, `h2b`; `H1b_active_interaction_negative`, `H2b_pseudo_negative`), since they are written into the design grids and the replicate files.
 
@@ -123,9 +125,9 @@ They are **never included** in the confirmatory analysis dataset. The `split_pil
 
 ## 8. Design analysis success criteria
 
-**Primary**: $P(BF_{10} \geq 10)$ for H1 and for H2, each in its own right, per language at the planned sample.
+**Primary**: $P(BF_{10} \geq 10)$ for H1 and for H2, each in its own right, in the two-stage synthesis at the planned sample: 88% for H1 with 20 languages and 89% for H2 with the 15 of them that have a pseudo-passive, on the spread across the measured languages (`outputs/design_summary_pilot/klanguage_registered.csv`, amended 2026-10-08 from per-language rates when the hypotheses became tests across languages).
 
-**Amendment (2026-10-06):** the joint H1a-and-H1b criterion and the secondary $P(BF_{10} > 3)$ are withdrawn with H1a (§3). The primary to the PI of 1 October 2026 replaces the power threshold with the route *Nature Human Behaviour* offers Bayesian plans with limited resources: a maximum feasible sample of 80 participants per language, fixed in advance, at which a test that has reached neither 10 nor 1/10 is reported as inconclusive. The design analysis then reports detection rates as information rather than as a requirement. The PI asked on 6 October what the route means, so it awaits his confirmation.
+**Amendment (2026-10-06):** the joint H1a-and-H1b criterion and the secondary $P(BF_{10} > 3)$ are withdrawn with H1a (§3). The primary to the PI of 1 October 2026 replaces the power threshold with the route *Nature Human Behaviour* offers Bayesian plans with limited resources: a maximum feasible sample of 80 participants per language, fixed in advance, at which a test that has reached neither 10 nor 1/10 is reported as inconclusive. The design analysis then reports detection rates as information rather than as a requirement. The PI asked on 6 October what the route means, and his draft protocol of 8 October takes it; the closing date it needs is in §11.
 
 **Sensitivity requirement**: The above probabilities must be robust across the `primary`, `weak`, and `heavy_tailed` prior regimes (no regime reversal of the BF category) following the sensitivity workflow of @schadNicenboimBurknerBetancourtVasishth2023.
 
@@ -133,7 +135,7 @@ They are **never included** in the confirmatory analysis dataset. The `split_pil
 
 **Literature basis**: @albersLakens2018 caution against design analyses driven by single point estimates from small pilots; the prespecified four-regime sensitivity grid mitigates this risk.
 
-**Locked**: Yes, once the PI confirms the maximum-feasible route.
+**Locked**: Yes.
 
 **Amendment (2026-06-09):** the design analysis is now run as a Monte-Carlo *power* analysis with `n_simulations_per_cell = 200` independently seeded replicates per single-language and gender design point (and 50 per cross-language point), replacing the earlier single-seed feasibility run in which $P(BF_{10} > 10)$ could only be a 0/1 indicator. With $B = 200$ the Monte-Carlo standard error of an exceedance proportion near 0.8 is $\approx 0.028$. Per-language power curves are estimated over $N \in \{30, 40, 50, 60\}$ participants at the maximal model under the `primary` prior, with prior-sensitivity replicates (`weak`, `literature_centred`, `heavy_tailed`) at $N = 50$, and the gender variation over the full $N$ sweep. The cross-language (pooled) analysis runs at reduced replication ($B = 50$) on the **L4 cross-uncorrelated** model, which converges far more reliably than the L5 cross-maximal model and costs ~3–5 h rather than 8–12 h per fit; the L5 cross-maximal convergence/feasibility is documented by the one-off heavy run (§9). *Implementation:* `scripts/generate_design_grid.R` expands each condition into seeded replicates (`config/design_grid_{single,gender,cross}.csv`); one SLURM array task per replicate.
 
@@ -173,16 +175,19 @@ Selection is documented in `outputs/design_summary/ladder_selection.csv`.
 |-------|--------|---------------------|
 | Exact R module name on ARC | Resolved 2026-07-30: `R/4.4.2-gfbf-2024a`, verified on ARC and pinned in `config/arc_modules.yaml` | Settled |
 | H2 direction | Resolved 2026-10-06 with the PI: one-tailed and negative in every language with a pseudo-passive, Turkish included although its pilot points the other way (§3). The simulated rates are in `outputs/design_summary_pilot/pseudo_passive_decision_arm.csv` | Settled |
-| Specific $P(BF > 10)$ success threshold | Replaced by the maximum-feasible route (§8), which awaits the PI's confirmation | Before Stage 1 submission |
+| Specific $P(BF > 10)$ success threshold | Replaced by the maximum-feasible route (§8), which the PI's draft protocol of 8 October takes; only the closing date remains (below) | Settled |
 | `literature_centred` prior centres for languages without pooled estimates | Resolved: the regime centres every language on the same pooled values (`R/03_define_priors.R`) and is sensitivity-only, never used for the primary Bayes factors | Settled |
 | Which languages have pseudo-passives | Resolved (English: yes; Turkish: yes; Norwegian: no; Balinese: yes), as set by `has_pseudo_passive` in `config/analysis_config.yaml`. Indonesian and Mandarin also have one in the Ambridge, Arnon & Bekman (2023) data. Each sentence type is treated as the same construction in every language that has it, the Turkish pseudo-passive included (PI, 6 October 2026) | Settled |
 | Which construction counts as the passive, language by language | Resolved 2026-10-01 with the PI: the coding of Ambridge, Arnon & Bekman (2023), with the passive as the reference level. The ka-, ma- and a- passives (Balinese), the di- passive (Indonesian) and the bei passive (Mandarin) are the passive, the basic, non-canonical and notional passives are the pseudo-passives, and the Mandarin BA active is set aside. Both interactions are predicted negative in every language. Every reported design-analysis figure uses this coding | Settled |
 | Minimum number of language teams, and whether it gates Stage 2 | Resolved 2026-10-06: asked whether he still wanted a minimum number of languages before the Stage 2 paper goes ahead, the PI promised at least 20, 15 of them with a pseudo-passive and all seven measured languages among them. Every language whose team completes data collection enters the synthesis (§12) | Settled |
-| Outcome-neutral quality checks for the Stage 1 protocol | Asked of the PI on 7 October 2026. With H1a no longer a requirement (§3) there is no positive control; the candidates put to him are a ceiling check on the actives, attention checks and the reliability of the affectedness norms | Before Stage 1 submission |
-| Verb class as an alternative explanation | Proposed to the PI on 7 October 2026: an exploratory Stage 2 model with verb class as a covariate, to show whether verb class rather than affectedness drives the interactions. The lists are already matched on verb class (report, Appendix B) | Before Stage 1 submission |
+| Outcome-neutral quality checks for the Stage 1 protocol | Asked of the PI on 8 October 2026; his draft has attention checks and exclusions but no outcome-neutral criteria section. With H1a no longer a requirement (§3) there is no positive control; the candidates put to him are a ceiling check on the actives, attention checks and the reliability of the affectedness norms | Before Stage 1 submission |
+| Verb class as an alternative explanation | Settled 2026-10-08: an exploratory Stage 2 model with verb class as a covariate, reported under Exploratory analyses, since the journal's template keeps exploratory analyses out of the Stage 1 protocol. The lists are already matched on verb class (report, Appendix B) | Settled |
 | Affectedness norming scale across languages | Settled: affectedness is standardised within each language before analysis (centred and divided by twice its SD), so the estimates do not depend on each language's norming scale. The pilot normed Norwegian on 0 to 100 and English and Turkish on 1 to 7 | Settled |
 | Verb term in the pooled model | Resolved 2026-10-06: each language keeps its own by-verb effects (verb IDs prefixed by language), as in the pilot and `R/11_simulate_pooled_v2.R`. The PI asked for whichever option has more power. One shared effect per verb would lower power by 0.3 to 0.75 points at the cross-language correlation of verb effects the design assumes (0.164, the observed 0.22 [0.08, 0.46] diluted for partly different verb lists and norming), and by about 4 points were verbs fully shared, and the shared structure is rejected by the Glossa data at dBIC 2310 (`scripts/refit_glossa_pooled_tau.R`; audit item klanguage-engine#15) | Settled |
-| One agent-gender version per participant, counterbalanced across lists | Specified in the reply to the PI of 1 October 2026: two complementary lists, each showing half the verbs with a woman agent and half with a man agent, as the preliminary report states. The PI's explicit confirmation was requested on 7 October. The power evidence and the list design are in `reports/gender_versions_note.md` | Before Stage 1 submission |
+| One agent-gender version per participant, counterbalanced across lists | The PI's draft protocol (8 October 2026) uses eight lists, each with the man and the woman as agent on half the trials and the same agent across a verb's sentence types. Balance needs each verb to appear with each agent in half the lists; confirmation of that asked of the PI on 8 October. The power evidence and the two-list design are in `reports/gender_versions_note.md` | Before Stage 1 submission |
+| Affectedness rating task: one or both agent-gender versions per rater | The PI's draft says 72 ratings per rater (one version per verb) but its instructions assume 144. Both versions recommended to the PI on 8 October, because one version per rater leaves each version's score on ten raters and attenuates every slope (report, Appendix B) | Before Stage 1 submission |
+| Data-collection closing date | Needed because the draft commits to no maximum number of languages, and the journal's maximum-feasible route requires a point at which collection stops regardless of the Bayes factors. Asked of the PI on 8 October | Before Stage 1 submission |
+| Which entries count as languages | The draft's list of 43 omits Balinese, which the PI's email of 6 October counted among the 20, and lists varieties separately (four Spanish, two Mandarin, Afrikaans with Kaaps and Namakwalands, three Arabic). The pooled test treats languages as independent draws, so asked of the PI on 8 October whether varieties count separately towards the 20 | Before Stage 1 submission |
 
 ---
 
@@ -234,7 +239,9 @@ second, where it stands at 0.89.
    three quarters of its iterations and so failed the §9 criteria, meaning the branch has
    already occurred once on real data.
 
-**Locked**: Yes, as of 2026-10-07. Item 1 is the plan the preliminary report states. Item 2
+**Amendment (2026-10-08):** item 1 is reversed by the PI's draft protocol, which registers H1 and H2 as tests across languages. The pooled analysis is now confirmatory, run as the two-stage synthesis of §1, with the one-stage model as a robustness check; the per-language estimates are reported but not tested. Item 5's fallback becomes the confirmatory analysis itself.
+
+**Locked**: Yes, as of 2026-10-07, with item 1 amended on 8 October. Item 1 was the plan the preliminary report stated until then. Item 2
 is overtaken by the PI's minimum of 20 languages, $Y = 20$ (6 October 2026). Item 3 is met by
 including every language whose team completes data collection, so the set of languages
 follows completion and is never chosen after the data are seen. Items 4 and 5 are implemented.
@@ -242,7 +249,7 @@ The corrected estimate of $\tau$ from `scripts/refit_glossa_pooled_tau.R` return
 25 September at 0.47, against the published 0.45
 (`outputs/design_summary_pilot/glossa_tau_refit_summary.csv`), so it does not narrow the fork.
 
-**Update (2026-10-06).** The PI expects at least 20 languages, 15 of them with a pseudo-passive, all seven measured languages among them, and the preliminary report now plans on that count. With the seven measured languages drawn from their estimates and the rest from a population with the spread of the measured languages, the pooled test reaches $BF_{10} \geq 10$ in 89% of simulated studies for H1 (`klanguage_known7.csv`) and in 90% for H2 over the 15 languages with a pseudo-passive (`klanguage_pseudo_passive.csv`, from `scripts/run_klanguage_pseudo_passive.R`). Across the three spreads the rates run from 76% to 92% for H1 and from 58% to 95% for H2.
+**Update (2026-10-06).** The PI expects at least 20 languages, 15 of them with a pseudo-passive, all seven measured languages among them, and the preliminary report now plans on that count. With the seven measured languages drawn from their estimates and the rest from a population with the spread of the measured languages, the pooled test reaches $BF_{10} \geq 10$ in 89% of simulated studies for H1 (`klanguage_known7.csv`) and in 90% for H2 over the 15 languages with a pseudo-passive (`klanguage_pseudo_passive.csv`, from `scripts/run_klanguage_pseudo_passive.R`). Across the three spreads the rates run from 76% to 92% for H1 and from 58% to 95% for H2. These cells analyse each study as the one-stage model would; analysed as the registered two-stage synthesis (§1), the same simulated studies give 88% for H1 and 89% for H2, and from 74% to 92% and from 56% to 94% across the spreads (`klanguage_registered.csv`, 2026-10-08).
 
 
 ---

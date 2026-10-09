@@ -11,6 +11,9 @@
 #   He later asked (23 September) for the same test at 10 and 20 languages when the
 #   seven languages already measured all take part at their estimated effects and
 #   only the remaining places are unknown; run_partly_known_cell() covers that.
+#   The confirmatory test registered on 8 October 2026 is a two-stage synthesis of
+#   the per-language posteriors, which two_stage_p_negative() applies to the same
+#   simulated studies (section 8).
 #
 # WHY IT IS NOT THE POOLED SIMULATOR IN R/11
 #   R/11_simulate_pooled_v2.R simulates participant-level data for three FIXED
@@ -172,6 +175,15 @@ CALIBRATION_BRACKET <- c(1.0, 1.2)
 # Using the calibrated 1.1 for both inflates the design prior's tau (0.42 rather than
 # 0.39 on the seven languages) and so understates power at every K.
 DESIGN_TAU_PRIOR_SCALE <- 0.5
+
+# The prior on tau in the registered analysis, a third object again. The confirmatory
+# test is a two-stage synthesis (docs/preregistration_decisions.md, amendment to
+# section 1): each language's posterior for the interaction enters a random-effects
+# meta-analysis whose tau takes the weakly informative half-normal(0, 0.5) of the
+# meta-analysis literature. It equals DESIGN_TAU_PRIOR_SCALE in value, but the design
+# prior describes the world and this one is part of the registered analysis, so either
+# may change without the other. two_stage_p_negative() uses it.
+REGISTERED_TAU_PRIOR_SCALE <- 0.5
 
 # ---------------------------------------------------------------------------
 # 1. The Bayesian random-effects meta-analysis, by grid integration
@@ -406,6 +418,45 @@ draw_population_params <- function(n, y, s, prior_tau_scale = DESIGN_TAU_PRIOR_S
 split_se <- function(se_verb, se_ppt, rho) {
   list(shared = se_verb * sqrt(rho),
        indep  = sqrt(se_verb^2 * (1 - rho) + se_ppt^2))
+}
+
+# The cross-language correlation of verb-level noise the design assumes, the rho every
+# run script passes to split_se(). Defined once here so that the scripts cannot drift
+# apart. It is the correlation of verb-level effects across languages, about 0.22 (0.22,
+# 95% CI [0.08, 0.46], in the Ambridge, Arnon & Bekman (2023) data, whose single shared
+# verb factor is rejected at dBIC 2310; scripts/refit_glossa_pooled_tau.R), diluted twice.
+# The first dilution is the share of a verb list that two languages hold in common, about
+# 0.83, a figure whose derivation was not recorded. The second is the cross-language
+# correlation of a shared verb's affectedness score, since each team norms affectedness
+# with its own raters: 0.89, the mean of the three CLAPS pilot pairs (0.965, 0.862 and
+# 0.846, printed by scripts/extract_cross_language_effects.R). These rounded inputs
+# multiply to 0.1625. The value in use, 0.164, came from unrounded inputs that were not
+# recorded. Run at 0.1625 instead, the registered table keeps both headline rates and
+# the six reported cells it re-creates, and its other rates move by at most 0.0005
+# (audit item 8OCT-3, 8 October 2026).
+RHO_EFF_VERB <- 0.164
+
+# The per-SD scaling of the three CLAPS pilots' interaction, written to seven digits
+# because the reported K-language tables were computed with these values.
+# pilot_params_ceilings.csv holds the same values to about 3e-8. Run with the table's
+# values instead, the regenerated tables keep every detection rate, but continuous
+# summaries move in the eighth significant digit, so the tables would no longer
+# regenerate exactly (audit item 8OCT-8). The seven-digit values therefore stay,
+# defined once here and checked against the table by claps_pilot_sdx().
+CLAPS_PILOT_SDX <- c(English = 0.5035005, Turkish = 0.5035005, Norwegian = 0.5038147)
+
+#' The per-SD scaling of the CLAPS pilots, checked against the pilot table.
+#'
+#' @param pp The pilot table, outputs/design_summary_pilot/pilot_params_ceilings.csv.
+#' @param langs Languages wanted, in the order wanted.
+#' @return CLAPS_PILOT_SDX for those languages, unnamed, once the table agrees to 1e-6.
+claps_pilot_sdx <- function(pp, langs = names(CLAPS_PILOT_SDX)) {
+  x <- unname(CLAPS_PILOT_SDX[langs])
+  if (anyNA(x) || !isTRUE(all.equal(x, pp$affectedness_sd[match(langs, pp$language)], tolerance = 1e-6))) {
+    stop("[sdx] the pilot table's affectedness_sd no longer matches CLAPS_PILOT_SDX for ",
+         paste(langs, collapse = ", "))
+  }
+  x
 }
 
 #' One row per language, preferring the CLAPS estimate of a language both sources measured.
@@ -990,35 +1041,46 @@ per_row_transfer_sd <- function(transfer_sd, m) {
   transfer_sd
 }
 
-#' Power when some, or all, of the K languages have already been measured.
+#' Simulated per-language estimates when some, or all, of the K languages have
+#' already been measured.
+#'
+#' The generation step of run_partly_known_cell(), which calls it, exposed so that a
+#' different analysis of the same simulated studies, such as the registered two-stage
+#' test in scripts/run_klanguage_registered.R, draws exactly the studies the reported
+#' cells drew. It sets the seed itself, so the studies do not depend on what ran before.
 #'
 #' @param K Total number of languages contributing.
 #' @param known Data frame of the already-measured languages that will take part,
 #'   with columns y (their harmonised effect) and s (its standard error). At most K
 #'   rows; the remaining K - nrow(known) places are drawn from the population.
+#' @param n_reps Number of simulated studies.
+#' @param se_lang Independent part of each language's standard error.
 #' @param pop The anchor set defining the population the unknown places are drawn
 #'   from, as elsewhere. Not consulted when every place is known.
-#' @param mode "assurance" draws (mu, tau) for the unknown places from pop's
-#'   posterior under the design prior, once per replicate; "point" holds them at
-#'   mu_point and tau_point.
+#' @param shared_verb_sd Shared part of the standard error, one draw per study common
+#'   to every language.
 #' @param transfer_sd Extra SD added to a known language's prior, representing
 #'   doubt that its earlier measurement transfers to the CLAPS protocol: one value
 #'   per row of `known` (see per_row_transfer_sd), zero for a CLAPS pilot language.
+#' @param mode "assurance" draws (mu, tau) for the unknown places from pop's
+#'   posterior under the design prior, once per replicate; "point" holds them at
+#'   mu_point and tau_point.
 #' @param known_truth "drawn" takes each known language's true effect from
 #'   N(y, s^2 + transfer_sd^2), once per replicate, which is how the pilot supplies a
 #'   design prior. "fixed" holds it at y exactly, the literal reading of "kept at
 #'   their estimated effects"; there is then no draw for a transfer doubt to widen.
-#' @return One row. Its first eleven columns are those of the first reported table;
-#'   transfer_sd there is the largest per-row value and n_widened counts the rows.
-run_partly_known_cell <- function(K, known, n_reps, se_lang,
-                                  pop = NULL, shared_verb_sd = 0,
-                                  transfer_sd = 0,
-                                  mode = c("assurance", "point"),
-                                  mu_point = NULL, tau_point = NULL,
-                                  known_truth = c("drawn", "fixed"),
-                                  prior_tau_scale = CALIBRATED_TAU_PRIOR_SCALE,
-                                  design_tau_prior_scale = DESIGN_TAU_PRIOR_SCALE,
-                                  bf_threshold = 10, seed = 1L) {
+#' @param design_tau_prior_scale Half-normal scale of the design prior on tau.
+#' @param seed Seed set before the first draw.
+#' @return List with Y, an n_reps x K matrix of per-language estimates (known languages
+#'   first), and tsd, the per-row transfer doubts. Consumes the random stream.
+simulate_partly_known_estimates <- function(K, known, n_reps, se_lang,
+                                            pop = NULL, shared_verb_sd = 0,
+                                            transfer_sd = 0,
+                                            mode = c("assurance", "point"),
+                                            mu_point = NULL, tau_point = NULL,
+                                            known_truth = c("drawn", "fixed"),
+                                            design_tau_prior_scale = DESIGN_TAU_PRIOR_SCALE,
+                                            seed = 1L) {
   mode <- match.arg(mode)
   known_truth <- match.arg(known_truth)
   m <- nrow(known)
@@ -1066,7 +1128,39 @@ run_partly_known_cell <- function(K, known, n_reps, se_lang,
     theta_new <- if (n_new > 0L) rnorm(n_new, pars$mu[i], pars$tau[i]) else numeric(0)
     Y[i, ] <- c(theta_known, theta_new) + rnorm(1, 0, shared_verb_sd) + rnorm(K, 0, se_lang)
   }
-  p_neg <- ra_meta_batch(Y, se_lang, prior_tau_scale = prior_tau_scale)$p_mu_negative
+  list(Y = Y, tsd = tsd)
+}
+
+#' Power when some, or all, of the K languages have already been measured.
+#'
+#' The studies come from simulate_partly_known_estimates(), whose arguments the
+#' first eleven share, and each is analysed as the one-stage model across languages
+#' would analyse it: a flat prior on the mean and the calibrated tau prior.
+#'
+#' @inheritParams simulate_partly_known_estimates
+#' @param prior_tau_scale Half-normal scale of the analysis prior on tau.
+#' @param bf_threshold Bayes factor a study must reach to count as a detection.
+#' @return One row. Its first eleven columns are those of the first reported table;
+#'   transfer_sd there is the largest per-row value and n_widened counts the rows.
+run_partly_known_cell <- function(K, known, n_reps, se_lang,
+                                  pop = NULL, shared_verb_sd = 0,
+                                  transfer_sd = 0,
+                                  mode = c("assurance", "point"),
+                                  mu_point = NULL, tau_point = NULL,
+                                  known_truth = c("drawn", "fixed"),
+                                  prior_tau_scale = CALIBRATED_TAU_PRIOR_SCALE,
+                                  design_tau_prior_scale = DESIGN_TAU_PRIOR_SCALE,
+                                  bf_threshold = 10, seed = 1L) {
+  mode <- match.arg(mode)
+  known_truth <- match.arg(known_truth)
+  m <- nrow(known)
+  gen <- simulate_partly_known_estimates(K, known, n_reps, se_lang, pop = pop,
+                                         shared_verb_sd = shared_verb_sd, transfer_sd = transfer_sd,
+                                         mode = mode, mu_point = mu_point, tau_point = tau_point,
+                                         known_truth = known_truth,
+                                         design_tau_prior_scale = design_tau_prior_scale, seed = seed)
+  tsd <- gen$tsd
+  p_neg <- ra_meta_batch(gen$Y, se_lang, prior_tau_scale = prior_tau_scale)$p_mu_negative
   bf <- bf_from_p_negative(p_neg)
   z <- z_from_p_negative(p_neg)
 
@@ -1079,4 +1173,121 @@ run_partly_known_cell <- function(K, known, n_reps, se_lang,
              n_widened = sum(tsd > 0), mode = mode, known_truth = known_truth,
              mu_point = if (mode == "point") mu_point %||% NA_real_ else NA_real_,
              tau_point = if (mode == "point") tau_point %||% NA_real_ else NA_real_)
+}
+
+# ---------------------------------------------------------------------------
+# 8. The registered two-stage analysis
+# ---------------------------------------------------------------------------
+
+#' P(mean across languages < 0) under the registered two-stage analysis.
+#'
+#' Stage 1 analyses each language on its own with the planned per-language model,
+#' whose normal(0, prior_sd) prior on the interaction shrinks a language's estimate
+#' towards zero. With the estimate normal around the truth, the language's posterior
+#' is normal with mean w * y and SD sqrt(w) * se, where w = prior_sd^2 /
+#' (prior_sd^2 + se^2). Stage 2 combines those posterior means and SDs in a
+#' random-effects meta-analysis with a normal(0, prior_sd) prior on the mean across
+#' languages and a half-normal prior on tau (docs/preregistration_decisions.md,
+#' amendment to section 1).
+#'
+#' @param Y Matrix of per-language estimates, one row per study and one column per
+#'   language, as from simulate_partly_known_estimates().
+#' @param se_total Each language's whole standard error, one value or one per column.
+#'   A language's own model reports all of it, since it cannot tell apart the part of
+#'   its verb noise that other languages share.
+#' @param prior_sd Prior SD of the interaction per SD of affectedness, used in both
+#'   stages.
+#' @param prior_tau_scale Half-normal scale of the prior on tau.
+#' @return Each study's posterior probability that the mean across languages is negative.
+two_stage_p_negative <- function(Y, se_total, prior_sd,
+                                 prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE) {
+  Y <- as.matrix(Y)
+  stopifnot(length(se_total) %in% c(1L, ncol(Y)), all(is.finite(se_total)), all(se_total > 0),
+            length(prior_sd) == 1L, is.finite(prior_sd), prior_sd > 0)
+  w <- prior_sd^2 / (prior_sd^2 + se_total^2)
+  shrunk <- if (length(w) == 1L) w * Y else sweep(Y, 2L, w, `*`)
+  ra_meta_batch(shrunk, sqrt(w) * se_total, prior_mu_sd = prior_sd,
+                prior_tau_scale = prior_tau_scale)$p_mu_negative
+}
+
+#' Rate at which a set of simulated studies reaches the Bayes-factor threshold.
+#'
+#' @param p Each study's posterior probability that the mean across languages is negative.
+#' @param bf_threshold Directional Bayes factor a study must reach.
+#' @return One-row data frame: the rate, its exact 95% interval and the number of studies.
+detection_rate <- function(p, bf_threshold = 10) {
+  k <- sum(bf_from_p_negative(p) >= bf_threshold)
+  ci <- binom.test(k, length(p))$conf.int
+  data.frame(power = k / length(p), power_lo = ci[1], power_hi = ci[2], n_reps = length(p))
+}
+
+# ---------------------------------------------------------------------------
+# 9. Run provenance for the scripts that drive this engine
+# ---------------------------------------------------------------------------
+
+#' The git commit of the working tree, and whether its code has uncommitted changes.
+#'
+#' @return One line of text. It never fails: without git it says so.
+git_state <- function() {
+  quiet <- function(expr) {
+    tryCatch(expr, error = function(e) character(0), warning = function(w) character(0))
+  }
+  sha <- quiet(system2("git", c("rev-parse", "--short", "HEAD"), stdout = TRUE, stderr = FALSE))
+  if (!length(sha)) return("not a git checkout, or git not on the PATH")
+  dirty <- quiet(system2("git", c("status", "--porcelain", "--", "R", "scripts", "tests"),
+                         stdout = TRUE, stderr = FALSE))
+  paste(sha, if (length(dirty)) "with uncommitted changes under R/, scripts/ or tests/" else "(clean)")
+}
+
+#' Stop unless writing into the directory of the reported tables was asked for.
+#'
+#' The reported tables are quoted in the report and in correspondence, so replacing
+#' one is a decision, not a side effect of running a script with its defaults.
+#'
+#' @param out The run's output directory.
+#' @param args The script's command-line arguments.
+#' @param flag The script's name for its output-directory option, for the message.
+#' @param reported Directory of the reported tables.
+#' @return TRUE when the run writes into the reported directory, invisibly.
+guard_reported_dir <- function(out, args, flag = "--outdir",
+                               reported = "outputs/design_summary_pilot") {
+  same <- normalizePath(out, winslash = "/", mustWork = FALSE) ==
+    normalizePath(reported, winslash = "/", mustWork = FALSE)
+  if (same && !("--overwrite-reported" %in% args)) {
+    stop(flag, " is ", reported, ", which holds the reported tables. Pass --overwrite-reported ",
+         "to replace them deliberately, or ", flag, "=<dir> for a run elsewhere.")
+  }
+  invisible(same)
+}
+
+#' Start a run log: copy the console to a file and record the provenance of the run.
+#'
+#' @param log_path File to write. Its directory is created.
+#' @param inputs Files whose MD5 checksums the log should record.
+#' @param ... Further labelled values to record, such as the replicate count.
+#' @return The log connection, invisibly, for stop_run_log().
+start_run_log <- function(log_path, inputs = character(0), ...) {
+  dir.create(dirname(log_path), recursive = TRUE, showWarnings = FALSE)
+  con <- file(log_path, open = "wt")
+  sink(con, split = TRUE)
+  cat("started:  ", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"), "\n")
+  cat("git:      ", git_state(), "\n")
+  cat("R:        ", R.version.string, "\n")
+  extra <- list(...)
+  for (nm in names(extra)) cat(sprintf("%-10s %s\n", paste0(nm, ":"), format(extra[[nm]])))
+  if (length(inputs)) {
+    cat("input md5:\n")
+    for (f in inputs) cat(sprintf("  %s  %s\n", tools::md5sum(f), f))
+  }
+  invisible(con)
+}
+
+#' Close a run log opened by start_run_log(), recording when the run finished.
+#'
+#' @param con The connection start_run_log() returned.
+stop_run_log <- function(con) {
+  cat("finished: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"), "\n")
+  sink()
+  close(con)
+  invisible(NULL)
 }

@@ -250,10 +250,18 @@ KPP_POPS <- c(claps_protocol = "claps_protocol", seven = "five",
               glossa_protocol = "glossa_protocol")
 KPP_SET  <- "five, drawn, Glossa widened 0.15"
 n_measured_pp <- kpppop$K[kpppop$population == "five"]
+# The headline rows are those at the engine's calibrated tau scale, read from the engine
+# itself so that the report cannot pick rows at a scale the engine no longer uses.
+# Sourcing it only defines functions and constants.
+CALIBRATED_TAU <- local({
+  engine <- new.env()
+  sys.source("../R/13_simulate_klanguage_pooled.R", envir = engine)
+  engine$CALIBRATED_TAU_PRIOR_SCALE
+})
 kpp_rate <- function(pop, k_pp = K_PLAN_PP) {
   x <- kpp$power[kpp$population == KPP_POPS[[pop]] & kpp$K_pp == k_pp &
                  kpp$known_set == KPP_SET & kpp$mode == "assurance" &
-                 kpp$prior_tau_scale == 1.1]
+                 kpp$prior_tau_scale == CALIBRATED_TAU]
   stopifnot(length(x) == 1)
   x
 }
@@ -262,6 +270,28 @@ kpp_k   <- function(pop) kpppop$K[kpppop$population == KPP_POPS[[pop]]]
 # Every row takes the 0.15 doubt, which is coherent only while the pilots spread at least
 # as much as the meta-analysis languages (see the pairing note above).
 stopifnot(kpp_tau("claps_protocol") >= kpp_tau("glossa_protocol"))
+
+# The confirmatory pooled tests as registered, from scripts/run_klanguage_registered.R:
+# the two-stage synthesis, with a normal prior on the mean across languages and a
+# half-normal(0.5) prior on tau, applied to the same simulated studies as the cells read
+# above. Those cells analyse each study as the single model across languages would, with
+# a flat prior on the mean and the calibrated tau prior; they now serve the robustness
+# check only.
+kreg <- read_csv(paste0(K_DIR, "klanguage_registered.csv"), show_col_types = FALSE)
+# The registered table names its sets as the two tables above do.
+KREG_POPS <- list(H1 = setNames(K_POPS, K_POPS), H2 = KPP_POPS)
+kreg_row <- function(h, pop = "seven") {
+  x <- kreg[kreg$hypothesis == h & kreg$population == KREG_POPS[[h]][[pop]], ]
+  stopifnot(nrow(x) == 1)
+  x
+}
+kreg_rate <- function(h, pop = "seven") kreg_row(h, pop)$power
+kreg_ci <- function(h, pop = "seven") {
+  x <- kreg_row(h, pop)
+  sprintf("[%.0f, %.0f]", 100 * x$power_lo, 100 * x$power_hi)
+}
+stopifnot(all(kreg$K[kreg$hypothesis == "H1"] == K_PLAN),
+          all(kreg$K[kreg$hypothesis == "H2"] == K_PLAN_PP))
 
 # The expected per-language detection rate in a language without a pilot, from
 # scripts/estimate_per_language_approximations.R: a normal approximation to the
@@ -309,27 +339,25 @@ gv_trials <- function(lang) GV_VERSIONS * GV_S_TYPES_ADMINISTERED * ppv(lang, "n
 
 `\begin{abstract}\normalsize\noindent`{=latex} CLAPS asks whether affectedness, how strongly
 an event affects the person or thing it happens to, matters more for the acceptability of
-passive sentences than of active ones, and whether that pattern holds across languages. This
-report evaluates by simulation what the planned sample of 80 participants per language can be
-expected to deliver. Studies were simulated from the planned ordinal model fitted to the pilot
-data in English, Turkish and Norwegian, with the effects drawn from each language's pilot
-posterior, and each was analysed as the real data will be. The design has about 72 verbs per
-language, with agent gender counterbalanced across participants. At 80 participants, the
-primary hypothesis (H1), that the affectedness slope is steeper for passives than for actives,
-reaches a directional Bayes factor of 10 in `r pct0(da_rate("English", 80))` of simulated
-English studies and `r pct0(da_rate("Norwegian", 80))` of Norwegian ones. Turkish, whose pilot
-effect is weakest, reaches it in `r pct0(da_rate("Turkish", 80))`. The secondary hypothesis
-(H2), that the slope is also steeper for passives than for pseudo-passives, reaches a Bayes
-factor of 10 in `r pct0(da_rate("English", 80, "n_h2b"))` of English studies, while the Turkish
-pilot shows the reverse pattern and the simulations inherit it. Affectedness is a property of the
-verb, so the verbs bound the precision of every test, and beyond 80 participants the rates barely
-change. The pooled cross-linguistic analysis, planned as a synthesis with no confirmatory claim,
-reaches a Bayes factor of 10 on H1 in `r pct0(pooled_combined()$p)` of simulated studies with the
-three pilot languages, at `r min(pooled_combined()$ns)` to `r max(pooled_combined()$ns)`
-participants per language. With the `r K_PLAN` languages the collaborators expect, the seven
-measured so far among them, it does so in `r pct0(kk("seven", K_PLAN))` of studies on H1 and, across
-the `r K_PLAN_PP` with a pseudo-passive, in `r pct0(kpp_rate("seven"))` on H2, if further
-languages differ as much as the measured ones.
+passive sentences than of active ones, and whether that pattern holds across languages. The
+primary hypothesis (H1) holds that the affectedness slope is steeper for passives than for
+actives, and the secondary hypothesis (H2) that it is also steeper for passives than for
+pseudo-passives. This report evaluates by simulation what the planned design, 80 participants per
+language in at least `r K_PLAN` languages, can be expected to deliver. Both hypotheses are tested
+across languages in a two-stage synthesis: each language is analysed with the planned ordinal
+model, and the estimates are combined in a Bayesian random-effects meta-analysis. The simulations
+draw the effects of English, Turkish and Norwegian from their pilot posteriors, those of Balinese,
+Hebrew, Indonesian and Mandarin from published estimates, and those of further languages from a
+population like these seven. With `r K_PLAN` languages, the synthesis reaches a directional Bayes
+factor of 10 in `r pct0(kreg_rate("H1"))` of simulated studies on H1, and in
+`r pct0(kreg_rate("H2"))` on H2 across the `r K_PLAN_PP` languages with a pseudo-passive. These
+rates depend mainly on how much the effect varies between languages. Within a single pilot
+language at 80 participants, H1 reaches a Bayes factor of 10 in `r pct0(da_rate("English", 80))`
+of simulated English studies, `r pct0(da_rate("Norwegian", 80))` of Norwegian ones and
+`r pct0(da_rate("Turkish", 80))` of Turkish ones. H2 reaches it in
+`r pct0(da_rate("English", 80, "n_h2b"))` of English studies, whereas the Turkish pilot points the
+other way. Because affectedness is a property of the verb, the verbs bound the precision of each
+language's estimate, and beyond 80 participants the rates barely change.
 `\end{abstract}`{=latex}
 
 <!-- The body starts on its own page. Left to flow, it followed the abstract down the
@@ -356,13 +384,14 @@ The evidence to date spans English, Indonesian, Balinese, Hebrew and Mandarin. A
 meta-analytic synthesis of those studies finds that affectedness raises the acceptability of
 passives but not of pseudo-passives [@ambridgeArnonBekman2023]. In most of the five languages,
 it raises passive acceptability more than active acceptability, although the size of that
-advantage varies considerably and in Balinese it runs the other way. CLAPS adds Turkish and
-Norwegian, for which its pilot supplies estimates.
+advantage varies considerably and in Balinese it runs the other way. The CLAPS pilot, run in
+English, Turkish and Norwegian, adds two languages to that evidence.
 
 Each language's data will be collected by its own team, at a sample size fixed in advance. This
 report, prepared for the study's Stage 1 Registered Report, evaluates what the planned sample can
 be expected to deliver. It does so through a design analysis [@schonbrodtWagenmakers2018] whose
-simulated effects come from the CLAPS pilot.
+simulated effects come from the CLAPS pilot and, for the languages the pilot does not cover, from
+the published estimates.
 
 # The Model and the Predictions
 
@@ -380,13 +409,23 @@ pushed", the last a cleft that puts the patient first without the passive's morp
 sentence type is treated as the same construction in every language that has it. The passive is
 the reference level, and the active and the pseudo-passive are compared with it.
 
-The pilot, whose sample Appendix A describes, shows the expected pattern in English and
+The study tests two hypotheses, each across languages. H1, the primary hypothesis, holds that the
+affectedness slope is steeper for passives than for actives, so that the active-by-affectedness
+interaction is negative. H2, the secondary hypothesis, holds that the slope is also steeper for
+passives than for pseudo-passives, so that the pseudo-passive-by-affectedness interaction is
+negative. The passive slope itself carries no prediction. Affectedness might raise or lower the
+acceptability of sentences in general, and the theory requires only that it matter more for
+passives, so each test compares the passive slope with another slope, whatever their signs. H1 is
+tested on the mean across all languages, and H2 on the mean across the languages with a
+pseudo-passive, which the Norwegian materials do not include.
+
+The pilot, whose sample Appendix A describes, shows the predicted pattern in English and
 Norwegian (@fig-pilot). In both, the affectedness slope is positive and steepest for the passive,
 and flat or slightly negative for the active, as it is for the English pseudo-passive. In
 Turkish, the passive slope is also steeper than the active slope, though by less, while the
 pseudo-passive slope is at least as steep as the passive slope. The trends look much the same for
 male and female agents, although in English the active-by-affectedness interaction differs
-between agent genders. The design therefore balances the two agent genders across participants
+between them. The design therefore balances the two agent genders across participants
 (Appendix B).
 
 ```{r fig-pilot}
@@ -402,30 +441,22 @@ knitr::include_graphics(pilot_figure)
 `\vspace{-8pt}`{=latex}
 
 *Note.* Panels are by language across rows and by agent gender across columns. Points are
-individual pilot ratings, jittered, and lines are per-sentence-type linear trends with 95%
-confidence bands, which ignore the clustering of ratings within participants and verbs and so
+individual pilot ratings, jittered. Lines are linear trends for each sentence type, with 95%
+confidence bands that ignore the clustering of ratings within participants and verbs and so
 understate the uncertainty. Affectedness is the score normed for each agent-gender version,
 z-scored within language, and the model uses one score per verb, the mean of the two. The
 Norwegian materials include no pseudo-passive.
 
 `\vspace{12pt}`{=latex}
 
-The study tests two hypotheses. H1, the primary hypothesis, holds that the affectedness slope is
-steeper for passives than for actives, so that the active-by-affectedness interaction is negative.
-H2, the secondary hypothesis, holds that the slope is also steeper for passives than for
-pseudo-passives, so that the pseudo-passive-by-affectedness interaction is negative. The
-meta-analysis [@ambridgeArnonBekman2023] and the English pilot both put that interaction below
-zero. The passive slope itself carries no prediction. Affectedness might raise or lower the
-acceptability of sentences in general, and the theory requires only that it matter more for
-passives, so each test compares the passive slope with another slope, whatever their signs. H1 is
-tested in every language, and H2 in every language with a pseudo-passive, which the Norwegian
-materials do not include.
-
 # Design-Analysis Method
 
-The design analysis simulates many studies from the cumulative-logit model planned for the real
-data and analyses each as the real data will be analysed. The procedure stays within the
-Bayesian framework throughout, because the confirmatory test is a Bayes factor. Its result is the
+The design analysis simulates many studies and analyses each one as the real data will be
+analysed. Simulations of single languages, from the cumulative-logit model planned for each
+language's data, show how precisely one language's data estimate each interaction. Simulations of
+`r K_PLAN` languages then evaluate the confirmatory test, which combines the per-language
+estimates in the way described below. The procedure stays within the Bayesian framework
+throughout, because the confirmatory test is a Bayes factor. Its result is therefore the
 probability that a study reaches a Bayes factor of 10, a different quantity from the power to
 return a significant *p*-value.
 
@@ -450,16 +481,16 @@ the CLAPS protocol.
 
 Affectedness is a property of the verb. In the study, it will be rated in a separate norming task,
 in which twenty further speakers of each language rate the affectedness of the patient in each
-event, once for each agent-gender version, and a verb's score is the mean of its two version
-scores. Each verb therefore carries one affectedness score, the same across participants and
-sentence types, and every affectedness effect is estimated from differences between verbs. The
-verbs and the spread of their scores bound the precision of those effects, however many
-participants take part. This is the stimulus-sampling limit long recognised in psycholinguistics
-[@clark1973] and quantified for designs with crossed random effects by Westfall et al.
-[-@westfallKennyJudd2014; see also @brysbaertStevens2018; @juddWestfallKenny2017]. With unlimited
-participants, the standard error of such an effect cannot fall below the by-verb standard
-deviation of that effect divided by the square root of the verbs' summed squared affectedness
-deviations, a limit that can be read from the fitted pilot models without simulation.
+event, once for each agent-gender version. A verb's score is the mean of its two version scores,
+so each verb carries one affectedness score, the same across participants and sentence types.
+Every affectedness effect is therefore estimated from differences between verbs, and the verbs
+and the spread of their scores bound its precision, however many participants take part. This is
+the stimulus-sampling limit long recognised in psycholinguistics [@clark1973] and quantified for
+designs with crossed random effects by Westfall et al. [-@westfallKennyJudd2014; see also
+@brysbaertStevens2018; @juddWestfallKenny2017]. With unlimited participants, the standard error of
+such an effect cannot fall below the by-verb standard deviation of that effect divided by the
+square root of the verbs' summed squared affectedness deviations. That floor can be read from the
+fitted pilot models without simulation.
 
 The analysis model has the maximal random-effects structure the design supports
 [@barrLevyScheepersTily2013], with correlated by-participant slopes for sentence type,
@@ -476,23 +507,39 @@ the random-effect standard deviations Student-*t* priors with three degrees of f
 of 1. Their correlations take an LKJ prior with a shape of 2 [@gelman2006;
 @lewandowskiKurowickaJoe2009].
 
+The confirmatory test combines the languages in two stages. Each language is first analysed on
+its own with this model, so it keeps its own rating thresholds, participants and verbs. A verb's
+effects are therefore estimated separately in each language. This suits verbs whose translations
+mean similar but never identical things, and across the meta-analysis languages verb effects
+correlate only about 0.2. The per-language posterior means and standard deviations of each
+interaction are then combined in a Bayesian random-effects meta-analysis, with language as the
+random effect. The mean across languages takes a normal prior with the standard deviation of the
+per-language prior, and the between-language standard deviation, $\tau$, a half-normal prior with
+a scale of 0.5. One- and two-stage analyses of data from many studies agree when each study is
+large and both are specified alike [@burkeEnsorRiley2017], and each language here contributes 80
+participants and about 72 verbs. A single model across all languages proved hard to fit (see
+Limitations), so it is kept as a planned robustness check, reported beside the confirmatory test
+but deciding neither hypothesis.
+
 Evidence for each hypothesis is a directional Bayes factor, the posterior odds that the
-coefficient carries the predicted sign divided by the same odds under the prior
-[@moreyWagenmakers2014]. It is estimated from posterior draws and from prior draws sampled
-alongside them. The two signs it compares are each represented by the zero-centred prior
-restricted to that side, which is a half-normal. Under these symmetric priors, a Bayes factor of
-10 corresponds to a posterior probability of `r prob2(bf_sign(10))` that the effect has the
-predicted sign, and a Bayes factor of 1/10 or less is the same weight of evidence for the opposite
-sign. A simulated study counts as a detection when its Bayes factor reaches 10.
+coefficient, or in the synthesis the mean across languages, carries the predicted sign divided by
+the same odds under the prior [@moreyWagenmakers2014]. The hypothesis is represented by the half
+of the zero-centred prior on the predicted side, a half-normal distribution of the kind *Nature
+Human Behaviour* names for representing a prediction. Its competitor, the reversed effect,
+is represented by the same half-normal on the other side. Under these symmetric priors, a Bayes
+factor of 10 corresponds to a posterior probability of `r prob2(bf_sign(10))` that the effect has
+the predicted sign, and a Bayes factor of 1/10 or less is equally strong evidence for the reversal.
+Within a language, the Bayes factor is estimated from posterior draws and from prior draws sampled
+alongside them. A simulated study counts as a detection when its Bayes factor reaches 10.
 
 Each stimulus exists in two versions, one with a woman agent and one with a man agent. Each
 participant will see one version of each verb, so an English or Turkish session has
 `r gv_trials("English") / 2` sentences, and the simulations describe that session. The versions
-are balanced across participants by two complementary lists (Appendix B).
+are balanced across participants by counterbalanced lists (Appendix B).
 
 The per-language results rest on a dedicated set of `r da_reps` simulated studies at each of
-`r and_list(da_ns)` participants per language, each scored for both hypotheses, at the pilot's
-verb counts of `r ppv("English", "n_verbs")` in English and Turkish and
+`r and_list(da_ns)` participants per language, each scored for both hypotheses. The studies keep
+the pilot's verb counts, `r ppv("English", "n_verbs")` in English and Turkish and
 `r ppv("Norwegian", "n_verbs")` in Norwegian. `r grid_extra_txt` Each study is fitted with four
 chains of 3,000 iterations at a target acceptance rate of .99 and a maximum treedepth of 12. After
 1,000 warm-up iterations per chain, 8,000 post-warm-up draws remain. The confirmatory analysis will
@@ -502,16 +549,19 @@ noise to each simulated Bayes factor without shifting it systematically. Each pe
 Monte-Carlo standard error of about three percentage points, so differences of a few points
 between neighbouring sample sizes are noise.
 
-The simulations ran on the University of Oxford's Advanced Research Computing service, under R
-4.4.2 with brms 2.21.0 and the cmdstanr backend on CmdStan 2.39.0, and the lockfile `renv.lock`
+The simulations ran on the University of Oxford's Advanced Research Computing service under R
+4.4.2, with brms 2.21.0 and the cmdstanr backend on CmdStan 2.39.0, and the lockfile `renv.lock`
 fixes the package versions. The analysis code, the simulation settings and the aggregated results
 are openly available at <https://github.com/pablobernabeu/CLAPS-analysis>, where H1 and H2 carry the
-labels h1b and h2b, and this report rebuilds from those results without the raw pilot data, which
-are not yet public.
+labels h1b and h2b. This report rebuilds from those results without the raw pilot data, which are
+not yet public.
 
 # Results
 
-@tbl-power gives the detection rate for each hypothesis by language and sample size.
+@tbl-power gives, for each pilot language analysed on its own, the detection rate for each
+hypothesis by sample size. These per-language rates are not registered tests. They show how
+precisely one language's data estimate each interaction, which the confirmatory pooled test
+builds on.
 
 ```{r tbl-power}
 #| tbl-cap: "Detection Rates by Language and Participant Count"
@@ -548,7 +598,7 @@ is 1/10 or less, evidence against it. The Norwegian materials include no pseudo-
 
 `\vspace{12pt}`{=latex}
 
-## H1, the Primary Hypothesis
+## H1 in Each Pilot Language
 
 At 80 participants, H1 reaches a Bayes factor of 10 in `r pct0(da_rate("English", 80))`
 `r da_ci("English", 80)` of simulated English studies, `r pct0(da_rate("Norwegian", 80))`
@@ -559,14 +609,15 @@ affectedness against `r mnum2(ppv("English", "interaction_per_sd"))` in English 
 `r mnum2(ppv("Norwegian", "interaction_per_sd"))` in Norwegian.
 
 The rates change little between 80 and 100 participants, as the verb limit predicts, so recruiting
-beyond 80 would add little in any language. At that limit, averaged over the pilot posterior, the
-interaction would reach a Bayes factor of 10 in `r ceil_txt("English")` of English studies,
-`r ceil_txt("Norwegian")` of Norwegian ones and `r ceil_txt("Turkish")` of Turkish ones.
+beyond 80 would add little in any language. Even with unlimited participants, and averaging over
+the pilot posterior, the interaction would reach a Bayes factor of 10 in `r ceil_txt("English")`
+of English studies, `r ceil_txt("Norwegian")` of Norwegian ones and `r ceil_txt("Turkish")` of
+Turkish ones.
 
-## H2, the Secondary Hypothesis
+## H2 in Each Pilot Language
 
 In English, the pilot's pseudo-passive-by-affectedness interaction is
-`r snum2(h2post("English", "per_sd_mean"))` logits per standard deviation of affectedness, with a
+`r snum2(h2post("English", "per_sd_mean"))` logits per standard deviation, with a
 95% credible interval from `r snum2(h2post("English", "per_sd_lo95"))` to
 `r snum2(h2post("English", "per_sd_hi95"))` and `r h2draws("English")` posterior draws below zero.
 At 80 participants, H2 reaches a Bayes factor of 10 in `r pct0(da_rate("English", 80, "n_h2b"))`
@@ -585,45 +636,36 @@ The negative pseudo-passive interaction also appears in Balinese, Indonesian and
 per-language models of the meta-analysis. Those studies inform the planning, but the confirmatory
 data will be collected under the CLAPS protocol alone.
 
-These per-language rates come from the three pilot languages, and `r K_PLAN - max(k7$n_known)`
-of the `r K_PLAN` planned languages have no data yet. For a language whose effect is drawn from
-the population the next section assumes, a normal approximation to the per-language test,
-calibrated against the three pilots' simulated rates, puts the expected detection rate at
-`r pct0(pla_rate("h1"))` for H1 and `r pct0(pla_rate("h2"))` for H2 on the spread across the
-measured languages (`r pla_range("h1")` and `r pla_range("h2")` across the three spreads
-considered there).
+## The Confirmatory Pooled Test
 
-## The Pooled Synthesis
+The per-language rates above come from the three pilot languages, and
+`r K_PLAN - max(k7$n_known)` of the `r K_PLAN` planned languages have no data yet. A normal
+approximation to the per-language test, calibrated against the three pilots' simulated rates,
+gives the expected rate for such a language analysed on its own. If its effect comes from the
+population described below, with the spread across the measured languages, it reaches a Bayes
+factor of 10 in about `r pct0(pla_rate("h1"))` of studies on H1 and `r pct0(pla_rate("h2"))` on
+H2. Across the three spreads considered there, the rates run from `r pla_range("h1")` for H1 and
+from `r pla_range("h2")` for H2.
 
-The pooled model tests H1 across all the languages together, and H2 across those with a
-pseudo-passive. It has the per-language random-effects structure with random slopes by language
-added, so its population-level interactions estimate the cross-linguistic effects and each language
-can depart from them. Each language keeps its own by-verb effects, since a verb and its translations
-mean similar but never identical things, and verb effects correlate only about 0.2 across the
-meta-analysis languages. Separate effects also give slightly more power than one shared effect per
-verb. The pooled model is planned as a synthesis with
-no confirmatory claim, reported at whatever number of languages takes part, and the confirmatory
-claims rest on the per-language tests.
-
-With the three pilot languages alone, the pooled model reaches a Bayes factor of 10 on the active
-interaction in `r pooled_combined()$txt` of `r pooled_combined()$n` simulated studies at
+A test on the mean across languages needs more than a few languages. With the three pilots
+analysed together in the single model across languages, the active interaction reaches a Bayes
+factor of 10 in only `r pooled_combined()$txt` of `r pooled_combined()$n` simulated studies at
 `r min(pooled_combined()$ns)` to `r max(pooled_combined()$ns)` participants per language. The rate
 shows no trend over that range. It is held down by the variation of the effect between languages,
-which neither verbs nor participants reduce and which three languages estimate poorly. These
-simulations used the structure of the published meta-analysis model, which also carries a by-verb
+which neither verbs nor participants reduce and three languages estimate poorly. These
+simulations used the structure of the published meta-analysis model, with its by-verb
 affectedness slope.
 
 The collaborators expect at least `r K_PLAN` languages, `r K_PLAN_PP` of them with a
-pseudo-passive, so the synthesis is also simulated with `r K_PLAN` languages. A two-stage version
-simulates each language's estimate of an interaction and combines the estimates in a Bayesian
-random-effects meta-analysis. Its one free parameter, the prior that the full model in effect
-places on the between-language spread, is calibrated against the full model's three-language
-simulations. The seven languages measured so far take part as CLAPS samples, with effects drawn
-from their estimates. They are the three CLAPS pilots, and Balinese, Hebrew, Indonesian and
-Mandarin, the four languages of the meta-analysis other than English. The other
-`r K_PLAN - max(k7$n_known)` are drawn from a population of languages. H2 is simulated in the same
-way in the `r K_PLAN_PP` languages with a pseudo-passive, `r num_word(n_measured_pp)` of them among
-the seven, and @tbl-klang gives both results.
+pseudo-passive, so the confirmatory test is simulated with `r K_PLAN` languages. The seven
+languages measured so far, the three CLAPS pilots and the four other meta-analysis languages, take
+part as CLAPS samples, with effects drawn from their estimates. The other
+`r K_PLAN - max(k7$n_known)` are drawn from a
+population of languages like the measured ones, with a spread estimated in turn from different
+sets of them. Each language's estimate is simulated at the precision that 80 participants and 72 verbs
+achieve, and each simulated study is analysed as registered. H2 is simulated in the same way in
+the `r K_PLAN_PP` languages with a pseudo-passive, `r num_word(n_measured_pp)` of them among the
+seven, and @tbl-klang gives both results.
 
 ```{r tbl-klang}
 #| tbl-cap: "Pooled Detection Rates with Twenty Languages, the Seven Measured Ones Among Them"
@@ -634,9 +676,9 @@ K_POP_LAB <- c(claps_protocol  = "The CLAPS pilots",
 kt <- tibble(
   set    = unname(K_POP_LAB[K_POPS]),
   tau_a  = num2h(vapply(K_POPS, kpop, numeric(1), col = "tau_median")),
-  rate_a = pct0_tex(vapply(K_POPS, kk, numeric(1), K = K_PLAN)),
+  rate_a = pct0_tex(vapply(K_POPS, function(p) kreg_rate("H1", p), numeric(1))),
   tau_p  = num2h(vapply(K_POPS, kpp_tau, numeric(1))),
-  rate_p = pct0_tex(vapply(K_POPS, kpp_rate, numeric(1))))
+  rate_p = pct0_tex(vapply(K_POPS, function(p) kreg_rate("H2", p), numeric(1))))
 # Typeset as LaTeX, like the table above, so that the two hypotheses can share a header
 # row. Escaping is off for the tau symbol, which is why the percentages are escaped by hand.
 kable(kt, format = "latex", booktabs = TRUE, longtable = TRUE, escape = FALSE,
@@ -648,11 +690,12 @@ kable(kt, format = "latex", booktabs = TRUE, longtable = TRUE, escape = FALSE,
 
 `\vspace{-8pt}`{=latex}
 
-*Note.* Each rate is the percentage of `r format(k_reps, big.mark = ",")` simulated studies in
-which the pooled directional Bayes factor reaches 10, with `r K_PLAN` languages, `r K_PLAN_PP` of
-them with a pseudo-passive, and 80 participants and 72 verbs per language. $\tau$ is the
-between-language standard deviation of the interaction per standard deviation of affectedness,
-given as its posterior median. For H2, each set keeps only its languages with a pseudo-passive:
+*Note.* Each rate is the percentage of `r format(unique(kreg$n_reps), big.mark = ",")` simulated
+studies in which the directional Bayes factor of the two-stage synthesis reaches 10. Each study has
+`r K_PLAN` languages, `r K_PLAN_PP` of them with a pseudo-passive, and 80 participants and 72 verbs
+per language. $\tau$ is the between-language standard deviation of the interaction per standard
+deviation of affectedness, given as its posterior median. For H2, each set keeps only its
+languages with a pseudo-passive:
 `r num_word(kpp_k("claps_protocol"))` pilots, `r num_word(n_measured_pp)` measured languages and
 `r num_word(kpp_k("glossa_protocol"))` meta-analysis languages. Each meta-analysis language carries
 an extra standard deviation of 0.15 for the change of protocol, or 0.40 in the first H1 row, whose
@@ -661,28 +704,53 @@ small spread implies that the earlier estimates carry over poorly.
 `\vspace{12pt}`{=latex}
 
 The spread of the effect between languages decides the result, and the languages measured so far
-estimate it only roughly. For H1,
-the three CLAPS pilots differ little, the four other meta-analysis languages differ a great deal,
-and all seven together lie between. The larger spread may reflect real differences between the
-languages, or the earlier studies' procedures, which differed in scale length, verb count and
-affectedness norming. The spread across all seven languages is the planning value used here, since
-three languages are too few to estimate a spread well and the larger spread may be partly
-procedural. On that value, the pooled test of H1 reaches a Bayes factor of 10 in
-`r pct0(kk("seven", K_PLAN))` of simulated studies, against `r pct0(kk("claps_protocol", K_PLAN))`
-if new languages differ as little as the pilots and `r pct0(kk("glossa_protocol", K_PLAN))` if
-they differ as much as the meta-analysis languages.
+estimate it only roughly. For H1, the three CLAPS pilots differ little, the four other
+meta-analysis languages differ a great deal, and all seven together lie between. The larger
+spread may reflect real differences between the languages, or the earlier studies' procedures,
+which differed in scale length, verb count and affectedness norming. The planning value is the
+spread across all seven languages, since three languages are too few to estimate a spread well.
+On that value, the pooled test of H1 reaches a
+Bayes factor of 10 in `r pct0(kreg_rate("H1"))` `r kreg_ci("H1")` of simulated studies. The rate
+rises to `r pct0(kreg_rate("H1", "claps_protocol"))` if new languages differ as little as the
+pilots, and falls to `r pct0(kreg_rate("H1", "glossa_protocol"))` if they differ as much as the
+meta-analysis languages.
 
-For H2, the spread across the `r num_word(n_measured_pp)` measured languages with a pseudo-passive
-is again the planning value, and on it the pooled test reaches a Bayes factor of 10 in
-`r pct0(kpp_rate("seven"))` of simulated studies. Here the pilots are the unfavourable set. The
-Turkish reversal offsets the English effect, so new languages drawn around the two average close
-to zero, and on their spread the rate is `r pct0(kpp_rate("claps_protocol"))`.
+For H2, the planning value is again the spread across the measured languages, here the
+`r num_word(n_measured_pp)` with a pseudo-passive. On it, the pooled test reaches a Bayes factor of
+10 in `r pct0(kreg_rate("H2"))` `r kreg_ci("H2")` of simulated studies. This time the
+pilots are the unfavourable set. The Turkish reversal offsets the English effect, so new languages
+drawn around the two average close to zero, and on their spread the rate is
+`r pct0(kreg_rate("H2", "claps_protocol"))`.
 
 # The Sampling Plan
 
 Every team will collect usable data from 80 participants, replacing any participant who is
-excluded, a number fixed in advance because each team must state its sample size to its ethics
-committee. Each language will use as close to 72 verbs as its supply of suitable verbs allows.
+excluded. The number is fixed in advance because each team must state its sample size to its
+ethics committee. Each language will use as close to 72 verbs as its supply of suitable verbs
+allows. Every language enters the pooled tests whatever its pilot showed, Turkish included, since
+leaving a language out on the strength of its pilot would amount to choosing languages by their
+results. The H2 rates above already allow for the Turkish reversal. @tbl-design summarises the
+planned analyses and their detection rates.
+
+<!-- The table follows the paragraph that introduces it, ahead of the stopping rule. Placed
+     after the stopping rule, it could not fit at the foot of that page and pushed the last
+     paragraph of Limitations onto a page of its own. Check the rendered pages whenever the
+     text above changes. -->
+
+| Analysis | Coefficient and direction | Test | Detection rate |
+|:---------------|:------------------------|:------------------------------|:------------------------------|
+| H1, primary | Active by affectedness, mean across languages, negative | Directional Bayes factor of 10 in the two-stage synthesis | `r pct0(kreg_rate("H1"))` with `r K_PLAN` languages |
+| H2, secondary | Pseudo-passive by affectedness, mean across languages, negative | As for H1, in the languages with a pseudo-passive | `r pct0(kreg_rate("H2"))` with the `r K_PLAN_PP` of those `r K_PLAN` that have one |
+| Robustness check | Both interactions in a single model across languages | Reported with its directional Bayes factors, deciding neither hypothesis | About `r pct0(kk("seven", K_PLAN))` and `r pct0(kpp_rate("seven"))`, by an analysis calibrated to behave like it |
+
+: Planned Analyses and Their Detection Rates {#tbl-design}
+
+`\vspace{-8pt}`{=latex}
+
+*Note.* The rates are at 80 participants per language, with `r K_PLAN` languages, on the spread
+across the measured languages that carry the interaction.
+
+`\vspace{12pt}`{=latex}
 
 *Nature Human Behaviour* sets its 0.95 power requirement for frequentist analysis plans. For a
 Bayesian plan, it asks that data collection continue until the Bayes factor is "at least 10 times in
@@ -690,48 +758,12 @@ favour of the experimental hypothesis over the null hypothesis (or vice versa)".
 limited resources may instead state a maximum feasible sample, "sufficiently large that
 inconclusive results at this sample size would nevertheless be an important message for the
 field". CLAPS takes the second route for both hypotheses. Each team stops at 80 participants, the
-most the collecting teams can provide, and a test whose Bayes factor has reached neither 10 nor
-1/10 by then is reported as inconclusive. At that sample, each language is close to the limit its
-verbs set, so further participants would add little to the chance of reaching the threshold, and an
-inconclusive result would still reflect an estimate with nearly the precision the language's verbs
-allow. @tbl-design summarises the planned analyses and their detection rates.
-
-<!-- The table starts on a fresh page, after the paragraph that introduces it, so that the
-     text after it fills the rest of that page. Left to flow, it began at the foot of a page
-     with its header and one row. Check the rendered pages whenever the text above changes. -->
-
-`\newpage`{=latex}
-
-| Analysis | Coefficient and direction | Test | Detection rate |
-|:---------------|:------------------------|:------------------------------|:------------------------------|
-| H1, primary | Active by affectedness, negative | Directional Bayes factor of 10, in each language | English `r pct0(da_rate("English", 80))`, Norwegian `r pct0(da_rate("Norwegian", 80))` and Turkish `r pct0(da_rate("Turkish", 80))` |
-| H2, secondary | Pseudo-passive by affectedness, negative | Directional Bayes factor of 10, in each language with a pseudo-passive | English `r pct0(da_rate("English", 80, "n_h2b"))`. In Turkish, `r pct0(da_rate("Turkish", 80, "n_h2a"))` give evidence against it |
-| Pooled, H1 | Active by affectedness across languages, negative | Directional Bayes factor, reported as a synthesis with no confirmatory claim | `r pct0(pooled_combined()$p)` with the three pilot languages, and `r pct0(kk("seven", K_PLAN))` with `r K_PLAN` including the seven measured ones |
-| Pooled, H2 | Pseudo-passive by affectedness across languages, negative | As above, in the languages with a pseudo-passive | `r pct0(kpp_rate("seven"))` with the `r K_PLAN_PP` of those `r K_PLAN` that have one |
-
-: Planned Analyses and Their Detection Rates {#tbl-design}
-
-`\vspace{-8pt}`{=latex}
-
-*Note.* The per-language rates are at 80 participants. The three-language pooled rate combines
-simulations at `r min(pooled_combined()$ns)` to `r max(pooled_combined()$ns)` participants per
-language. The `r K_PLAN`-language rates are at 80 participants per language, on the spread across
-the measured languages that carry the interaction.
-
-`\vspace{12pt}`{=latex}
-
-The Bayes factor to be registered is directional [@moreyWagenmakers2014]. Each hypothesis is
-represented by the half-normal given in the Design-Analysis Method, one of the forms the journal
-names for representing a prediction, and its competitor is the reversed effect, represented by the
-same half-normal on the other side. A Bayes factor of 10 is therefore strong evidence for the
-hypothesis over its reversal, and one of 1/10 or less is equally strong evidence against it.
-
-Turkish follows the same route. Its H1 interaction reaches a Bayes factor of 10 in
-`r pct0(da_rate("Turkish", 80))` of simulated studies and in at most `r ceil_txt("Turkish")` with
-unlimited participants, so an inconclusive Turkish result would be informative for the reason given
-above, and its pilot points against H2. Turkish is tested on both hypotheses like every other
-language, since leaving a language out on the strength of its pilot would amount to choosing
-languages by their results.
+most the collecting teams can provide, and data collection closes on a date fixed in advance. A
+test whose Bayes factor has reached neither 10 nor 1/10 by then is reported as inconclusive. At
+that sample, each language is close to the limit its verbs set, so further participants would add
+little. An inconclusive result from at least `r K_PLAN` languages and
+`r format(80 * K_PLAN, big.mark = ",")` participants would still be an important message for the
+field.
 
 # Limitations
 
@@ -739,21 +771,22 @@ At 80 participants, no simulated fit has a divergent transition or a saturated t
 Confirmatory fits must also reach an R-hat below 1.01 and bulk and tail effective sample sizes of at
 least 400. With the shorter runs used for simulation, `r da("English", 80, "n_converged")` of
 `r da_reps` English fits meet those thresholds, as do `r da("Norwegian", 80, "n_converged")`
-Norwegian and `r da("Turkish", 80, "n_converged")` Turkish fits. Every rate counts all fits. Over
-the passing fits alone, the rates are `r pct0(jval("English", 80, "p_h1b_converged"))` in English,
-`r pct0(jval("Norwegian", 80, "p_h1b_converged"))` in Norwegian and
+Norwegian and `r da("Turkish", 80, "n_converged")` Turkish fits. The rates above count all fits,
+and restricting them to the passing fits gives `r pct0(jval("English", 80, "p_h1b_converged"))`
+in English, `r pct0(jval("Norwegian", 80, "p_h1b_converged"))` in Norwegian and
 `r pct0(jval("Turkish", 80, "p_h1b_converged"))` in Turkish, each within what a random subset of
-that size would show. The confirmatory chains will also be half as long again, and sixteen of them
-will give six times the post-warm-up draws.
+that size would show. With longer chains and four times as many of them, the confirmatory fits
+will have six times the post-warm-up draws.
 
-Fitted to the combined pilot data, 75,528 ratings over 210 verbs, the pooled model estimated the
-interaction at about $-0.24$ logits per standard deviation of affectedness, with a 95% credible
-interval from $-0.51$ to $+0.15$. That estimate is close to the average of the three pilot
-estimates, `r mnum2(mean(pp$interaction_per_sd))`. The pooled model is harder to fit than the
-per-language ones, however. It saturated the maximum treedepth on three quarters of its iterations,
-and confirmatory fits must show none. A pooled fit to the collected data that misses the criteria
-falls back to the two-stage synthesis of the per-language estimates, the analysis behind the
-`r K_PLAN`-language rates above.
+Fitted to the combined pilot data, 75,528 ratings over 210 verbs, a single model across languages
+estimated the interaction at about $-0.24$ logits per standard deviation of affectedness, with a
+95% credible interval from $-0.51$ to $+0.15$. That is close to the average of the three pilot
+estimates, `r mnum2(mean(pp$interaction_per_sd))`, but the model is much harder to fit than the
+per-language ones. It saturated the maximum treedepth on three quarters of its iterations, a
+problem longer chains do not fix. In simulations with `r K_PLAN` languages of 20 verbs each, no
+form more complex than one with sentence-type slopes for participants and verbs and uncorrelated
+by-language slopes converged. The robustness check's model ladder is therefore expected to end at
+that form.
 
 The `r K_PLAN`-language figures rest on an assumed population of languages. The seven measured so
 far are a convenience sample from five families in two macroareas, and the simulations treat the
@@ -818,11 +851,11 @@ This appendix sets out how the two agent-gender versions of each stimulus are ba
 participants, and why. Each participant will see one version of each verb, so the balance has to
 come from the assignment of versions to participants.
 
-Balance matters because agent gender moves the interaction in English. In a linear mixed model of
-the 1-to-7 pilot ratings, used here only to gauge the relative size of the gender term, with agent
-gender coded plus or minus a half, the English interaction is
+Balance matters because agent gender moves the interaction in English. A linear mixed model of the
+1-to-7 pilot ratings, used here only to gauge the relative size of the gender term, codes agent
+gender as plus or minus a half. In it, the English interaction is
 `r mnum2(gv_per_sd(gvev("English", GV_TERM_H1B, "h1b_estimate")))` rating points per standard
-deviation of affectedness and its gender-by-active-by-affectedness term is
+deviation of affectedness, and its gender-by-active-by-affectedness term is
 `r snum3(gv_per_sd(gvev("English", GV_TERM_H1B)))` (*SE* =
 `r num3(gv_per_sd(gvev("English", GV_TERM_H1B, "se")))`). The interaction is therefore markedly
 stronger for man-agent items than for woman-agent ones. A design in which every participant saw
@@ -830,19 +863,22 @@ only woman-agent versions, or only man-agent ones, would move the English intera
 `r pct0(gv_shift("English"))`, against `r pct0(gv_shift("Turkish"))` in Turkish and
 `r pct0(gv_shift("Norwegian"))` in Norwegian.
 
-Two complementary lists remove that shift without lengthening the session. The verbs are split into
-two sets of `r ppv("English", "n_verbs") / 2`, or `r ppv("Norwegian", "n_verbs") / 2` in Norwegian,
-matched on affectedness and verb class, and the participants into two lists. List 1 shows the first
-set with woman agents and the second with man agents, and list 2 the reverse. Each participant
-therefore sees both agent genders equally often, each verb is rated in each version by half the
-sample, and the estimand remains the slope averaged over agent gender. Because both lists show both
-agent genders on matched verb sets, an unequal split between the lists leaves the interaction
-essentially unchanged. Even so, assigning participants to the lists alternately, and replacing
+Counterbalanced lists remove that shift without lengthening the session. Each list shows woman
+agents on half the verbs and man agents on the other half, with the same agent across a verb's
+sentence types, and across the lists each verb appears equally often with each agent. Each
+participant therefore sees both agent genders equally often, each verb is rated in each version by
+half the sample, and the estimand remains the slope averaged over agent gender. The protocol uses
+eight such lists, although two would be enough. With two, the verbs would be split into two sets
+of `r ppv("English", "n_verbs") / 2`, or `r ppv("Norwegian", "n_verbs") / 2` in Norwegian, matched
+on affectedness and verb class. One list would show the first set with woman agents and the second
+with man agents, and the other the reverse. As long as every list shows both agent genders on
+matched verb sets, unequal numbers of participants across the lists leave the interaction
+essentially unchanged. Even so, assigning participants to the lists in turn, and replacing
 exclusions within the same list, keeps each verb's two versions evenly rated. Splitting the
 agent-gender versions across participants in this way follows Ambridge et al.
 [-@ambridgeBidgoodPineRowlandFreudenthal2016, Study 3] and the Hebrew study of Ambridge et al.
 [-@ambridgeArnonBekman2023].
 
-Both versions stay in the affectedness rating task, which asks for one judgement per verb and agent
-gender and is short. Halving it would leave each agent-specific score resting on half as many
-raters and would attenuate every slope estimated from those scores.
+Both agent-gender versions should stay in the affectedness rating task, which asks for one
+judgement per verb and agent gender and is short. Halving it would leave each agent-specific score
+resting on half as many raters and would attenuate every slope estimated from those scores.

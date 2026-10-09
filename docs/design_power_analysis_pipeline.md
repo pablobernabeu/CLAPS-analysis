@@ -229,6 +229,32 @@ JR=$(sbatch --parsable --dependency=afterok:$JA            hpc/submit_render_rep
 echo "single=$JS gender=$JG cross=$JC aggregate=$JA render=$JR"
 ```
 
+## The pooled tests across languages (workstation)
+
+The pooled tests use the meta-analytic engine in `R/13_simulate_klanguage_pooled.R`,
+which fits no Stan model and so runs on a workstation in base R, plus `yaml` for one
+config file. Each script is run from `design_analysis/`. Run without an output
+directory, each stops rather than replace the reported tables in
+`outputs/design_summary_pilot/`: give it one (`--out=` for the first script, `--outdir=`
+for the others), or pass `--overwrite-reported` to replace them deliberately. Each
+writes a log with the git state, the R version and the MD5 of its inputs. Run them in
+this order, since steps 2 and 4 check themselves against tables written before them:
+
+1. `scripts/run_klanguage_design_analysis.R` writes `klanguage_known7.csv` and the
+   other `klanguage_*.csv` tables for H1.
+2. `scripts/run_klanguage_pseudo_passive.R` writes `klanguage_pseudo_passive.csv` for
+   H2, after re-creating one reported cell of `klanguage_known7.csv`.
+3. `scripts/estimate_per_language_approximations.R` writes
+   `per_language_approximations.csv`.
+4. `scripts/run_klanguage_registered.R` writes `klanguage_registered.csv`, the
+   registered two-stage test. It re-creates the simulated studies of the reported cells
+   in steps 1 and 2 and stops unless every one of those rates comes back exactly.
+
+All four read the gitignored pilot extracts in `outputs/pilot_models/`, whose checksums
+are in `config/pilot_models_sha256.csv`. The report reads the tables they write.
+`scripts/build_registered_arc_check.R` repeats step 4 under ARC's R 4.4.2 without
+writing there (`docs/reproducibility.md`, "The K-language tables").
+
 ## Outputs (project storage, not the repo)
 
 `$DATA/PROJECT_GROUP = /data/PROJECT_GROUP/PROJECT_ID/PROJECT_GROUP`

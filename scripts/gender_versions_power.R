@@ -559,9 +559,8 @@ SE_VERB <- mean(PP$se_floor_h1b  * PP$affectedness_sd)
 SE_POST <- mean(PP$slope_post_sd * PP$affectedness_sd)
 SE_PPT  <- sqrt(max(SE_POST^2 - SE_VERB^2, 0))
 SE_LANG <- sqrt(SE_VERB^2 + SE_PPT^2)
-RHO_EFF <- 0.164
-SE_SHARED <- SE_VERB * sqrt(RHO_EFF)
-SE_INDEP  <- sqrt(SE_VERB^2 * (1 - RHO_EFF) + SE_PPT^2)
+SE_SHARED <- SE_VERB * sqrt(RHO_EFF_VERB)
+SE_INDEP  <- sqrt(SE_VERB^2 * (1 - RHO_EFF_VERB) + SE_PPT^2)
 kp <- read.csv(file.path(OUT, "klanguage_power.csv"))
 if (abs(SE_INDEP - kp$se_lang[1]) > 1e-9 || abs(SE_SHARED - kp$shared_verb_sd[1]) > 1e-9)
   stop("per-language SE split has drifted from klanguage_power.csv; re-read run_klanguage_design_analysis.R")
@@ -588,7 +587,7 @@ split_for <- function(r, variant) {
   if (variant == "all") return(c(indep = r * SE_INDEP, shared = r * SE_SHARED))
   ppt2 <- r^2 * SE_LANG^2 - SE_VERB^2
   if (ppt2 < 0) return(c(indep = NA, shared = NA))
-  c(indep = sqrt(SE_VERB^2 * (1 - RHO_EFF) + ppt2), shared = SE_SHARED)
+  c(indep = sqrt(SE_VERB^2 * (1 - RHO_EFF_VERB) + ppt2), shared = SE_SHARED)
 }
 
 pooled <- do.call(rbind, lapply(names(POPS), function(pn) do.call(rbind, lapply(c(3L, 6L, 12L), function(K) {

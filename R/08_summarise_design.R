@@ -17,7 +17,10 @@
 #
 # Outputs (written by write_design_summary into out_dir)
 #   failure_summary.csv        Counts by status, plus the overall failure rate.
-#   bf_exceedance.csv          P(BF > threshold) per design point. The main result.
+#   bf_exceedance.csv          P(BF > threshold) per design point and arm. The main
+#                              result. The gender arm keeps its own rows; the maximal
+#                              feasible model and the recommendation below are read
+#                              from the baseline arm.
 #   prior_sensitivity.csv      How far a single simulated data set's BF moves
 #                              when only the prior regime changes.
 #   ladder_selection.csv       How often each model-ladder level was run.
@@ -45,6 +48,23 @@ suppressPackageStartupMessages({
 })
 
 source("R/05_hypothesis_tests.R")
+
+#' Rows of the baseline arm: cells whose model carries no referent-gender term.
+#'
+#' The gender arm runs the same design points with a gender term in the model. Its
+#' rows are kept apart from the baseline arm's wherever rates are summarised, and the
+#' maximal feasible model and the recommended sample size are read from the baseline
+#' arm alone (code audit of September 2026, finding SEP-3).
+#'
+#' @param df Cell or summary rows, which may carry gender_spec or include_gender.
+#' @return The rows whose gender_spec is "none" or missing and whose include_gender is
+#'   not TRUE. Rows without either column all count as baseline.
+baseline_arm <- function(df) {
+  keep <- rep(TRUE, nrow(df))
+  if ("gender_spec" %in% names(df)) keep <- keep & (is.na(df$gender_spec) | df$gender_spec == "none")
+  if ("include_gender" %in% names(df)) keep <- keep & !(df$include_gender %in% TRUE)
+  df[keep, , drop = FALSE]
+}
 
 #' Read every per-cell .rds file in a directory into one long data frame.
 #'
@@ -102,6 +122,11 @@ load_design_cells <- function(out_dir = "outputs/design_analysis") {
 #' @param group_vars Columns defining a design point. Everything not named here
 #'   is averaged over, so the default deliberately retains `hypothesis`: H1a and
 #'   H1b have different power and must not be pooled.
+#' @param arm_vars Columns that mark a separate arm of the design, added to
+#'   group_vars wherever the cells carry them. The gender arm runs the same design
+#'   points with a referent-gender term in the model, and averaging its cells with the
+#'   single-language arm's would report a rate neither arm has (code audit of
+#'   September 2026, finding SEP-3). Cells without the column group together as NA.
 #' @param bf_threshold Primary BF threshold; 10 as preregistered.
 #' @param bf_threshold_secondary Secondary, more lenient threshold; 3.
 #' @return One row per design point, with `n_sims` (seeds behind the estimate),
@@ -118,8 +143,10 @@ load_design_cells <- function(out_dir = "outputs/design_analysis") {
 compute_bf_exceedance <- function(df, group_vars = c("language", "model_level",
                                                      "n_participants", "n_verbs",
                                                      "prior_regime", "hypothesis"),
+                                  arm_vars = c("gender_spec", "include_gender"),
                                   bf_threshold = 10,
                                   bf_threshold_secondary = 3) {
+  group_vars <- union(group_vars, intersect(arm_vars, names(df)))
   df |>
     dplyr::filter(status == "success") |>
     dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) |>
@@ -208,7 +235,9 @@ failure_summary <- function(df) {
 #' model"). Feasible = fit succeeded AND met the publication-grade convergence
 #' criteria (convergence_ok). Level rank is the L-number in the level name.
 #'
-#' @param df Combined cell data frame.
+#' @param df Combined cell data frame. Only its baseline arm is read (baseline_arm()),
+#'   since a level reached only with a gender term would point the recommendation at
+#'   a model the baseline cells never fitted.
 #' @return One row per language, naming the level and its rank, or a zero-row
 #'   tibble of the same shape when nothing converged. Returning the empty tibble
 #'   rather than NULL keeps the downstream join in recommended_sample_size()
@@ -221,7 +250,7 @@ failure_summary <- function(df) {
 #'   than `== TRUE` because the column is NA for cells that never fitted, and
 #'   `%in%` returns FALSE there where `==` would return NA and keep the row.
 maximal_feasible_model <- function(df) {
-  ok <- dplyr::filter(df, status == "success", convergence_ok %in% TRUE)
+  ok <- dplyr::filter(baseline_arm(df), status == "success", convergence_ok %in% TRUE)
   if (nrow(ok) == 0) {
     return(tibble::tibble(language = character(), maximal_feasible_model = character(),
                           level_rank = integer(), n_converged_cells = integer()))
@@ -242,7 +271,9 @@ maximal_feasible_model <- function(df) {
 #' target, evaluated at that language's maximal feasible model under the primary
 #' prior regime. NA if the target is not reached anywhere in the grid.
 #'
-#' @param exc Output of compute_bf_exceedance().
+#' @param exc Output of compute_bf_exceedance(). Only its baseline arm is read
+#'   (baseline_arm()); with the gender arm's rows included, a design point would hold
+#'   two rows per hypothesis and fail the check below.
 #' @param mfm Output of maximal_feasible_model().
 #' @param target Required exceedance probability; 0.80 by convention.
 #' @param focal The hypotheses that must *both* be powered. H2 is excluded
@@ -280,7 +311,7 @@ recommended_sample_size <- function(exc, mfm, target = 0.80,
   if (is.null(exc) || nrow(exc) == 0 || nrow(mfm) == 0) return(empty)
   if (!all(c("language", "model_level") %in% names(exc))) return(empty)
 
-  d <- exc |>
+  d <- baseline_arm(exc) |>
     dplyr::inner_join(dplyr::select(mfm, language, model_level = maximal_feasible_model),
                       by = c("language", "model_level")) |>
     dplyr::filter(prior_regime == regime, hypothesis %in% focal)

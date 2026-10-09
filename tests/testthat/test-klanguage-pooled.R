@@ -43,7 +43,7 @@ load_design_inputs <- function() {
   claps_se <- setNames(vapply(seq_along(langs), function(i) sd(raw[[i]]) * sdx[i], numeric(1)), langs)
   se_verb <- mean(PP$se_floor_h1b * PP$affectedness_sd)
   se_ppt <- sqrt(max(mean(PP$slope_post_sd * PP$affectedness_sd)^2 - se_verb^2, 0))
-  list(hc = prepare_language_table(H, claps_se), sp = split_se(se_verb, se_ppt, 0.164),
+  list(hc = prepare_language_table(H, claps_se), sp = split_se(se_verb, se_ppt, RHO_EFF_VERB),
        pilot_draws = lapply(seq_along(langs), function(i) raw[[i]] * sdx[i]), PP = PP)
 }
 
@@ -523,6 +523,116 @@ test_that("on the real inputs, two of the seven change sign under the alternativ
 })
 
 # ---------------------------------------------------------------------------
+# The generation step, and the registered two-stage analysis
+# ---------------------------------------------------------------------------
+
+test_that("the exposed generation step draws exactly the studies run_partly_known_cell analyses", {
+  # scripts/run_klanguage_registered.R re-analyses the reported cells' studies, so the
+  # generator and the cell must consume the random stream identically. Analysing the
+  # generator's studies the cell's way has to return the cell's rate to the replicate.
+  known <- data.frame(y = c(-0.40, -0.10, 0.05), s = c(0.10, 0.12, 0.15),
+                      source = c("CLAPS_pilot", "Glossa2023", "Glossa2023"))
+  pop <- data.frame(y = c(-0.40, -0.10, 0.05, -0.25), s = c(0.10, 0.12, 0.15, 0.09))
+  tsd <- transfer_sd_by_source(known, 0.15)
+  cell <- run_partly_known_cell(K = 8, known = known, n_reps = 300L, se_lang = 0.09, pop = pop,
+                                shared_verb_sd = 0.04, transfer_sd = tsd, seed = 77L)
+  gen <- simulate_partly_known_estimates(8, known, 300L, 0.09, pop = pop, shared_verb_sd = 0.04,
+                                         transfer_sd = tsd, seed = 77L)
+  expect_equal(dim(gen$Y), c(300L, 8L))
+  expect_equal(gen$tsd, tsd)
+  p <- ra_meta_batch(gen$Y, 0.09, prior_tau_scale = CALIBRATED_TAU_PRIOR_SCALE)$p_mu_negative
+  expect_equal(detection_rate(p)$power, cell$power)
+  # The seed is set inside, so what ran before cannot change the studies.
+  set.seed(1)
+  again <- simulate_partly_known_estimates(8, known, 300L, 0.09, pop = pop, shared_verb_sd = 0.04,
+                                           transfer_sd = tsd, seed = 77L)
+  expect_identical(again$Y, gen$Y)
+})
+
+test_that("stage 1 of the two-stage analysis is the conjugate normal posterior", {
+  # One language whose estimate is 0.3 with SE 0.1, under a normal(0, 0.25) prior. The
+  # posterior mean and SD computed by brute-force integration must match the shrinkage
+  # the function applies before stage 2.
+  y <- 0.3
+  s <- 0.1
+  prior_sd <- 0.25
+  grid <- seq(-2, 2, length.out = 400001)
+  dens <- dnorm(y, grid, s) * dnorm(grid, 0, prior_sd)
+  dens <- dens / sum(dens)
+  m <- sum(grid * dens)
+  v <- sum((grid - m)^2 * dens)
+  w <- prior_sd^2 / (prior_sd^2 + s^2)
+  expect_equal(w * y, m, tolerance = 1e-8)
+  expect_equal(sqrt(w) * s, sqrt(v), tolerance = 1e-6)
+  # The function feeds exactly those means and SDs to the meta-analysis.
+  Y <- matrix(c(-0.30, -0.10, 0.05, -0.20, -0.45, 0.10), nrow = 2, byrow = TRUE)
+  expect_equal(two_stage_p_negative(Y, s, prior_sd),
+               ra_meta_batch(w * Y, sqrt(w) * s, prior_mu_sd = prior_sd,
+                             prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE)$p_mu_negative)
+})
+
+test_that("a per-language standard error shrinks each language by its own factor", {
+  Y <- matrix(c(-0.30, -0.10, 0.05), nrow = 1)
+  s <- c(0.08, 0.12, 0.20)
+  prior_sd <- 0.25
+  w <- prior_sd^2 / (prior_sd^2 + s^2)
+  expect_equal(two_stage_p_negative(Y, s, prior_sd),
+               ra_meta_batch(Y * w, sqrt(w) * s, prior_mu_sd = prior_sd,
+                             prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE)$p_mu_negative)
+})
+
+test_that("the two-stage analysis tends to the flat-prior meta-analysis as the prior widens", {
+  Y <- matrix(c(-0.30, -0.10, 0.05, -0.20), nrow = 1)
+  wide <- two_stage_p_negative(Y, 0.1, prior_sd = 1e4)
+  flat <- ra_meta_batch(Y, 0.1, prior_mu_sd = Inf, prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE)$p_mu_negative
+  expect_equal(wide, flat, tolerance = 1e-6)
+})
+
+test_that("the two-stage analysis treats the two signs symmetrically", {
+  # Both priors are centred at zero, so reversing every estimate reverses the sign
+  # probability. A sign convention slipping in either stage would break this.
+  Y <- matrix(c(-0.30, -0.10, 0.05, -0.20, 0.15, -0.05, -0.40, 0.25), nrow = 2, byrow = TRUE)
+  expect_equal(two_stage_p_negative(-Y, 0.1, 0.25), 1 - two_stage_p_negative(Y, 0.1, 0.25),
+               tolerance = 1e-10)
+})
+
+test_that("the two-stage analysis refuses inputs it cannot interpret", {
+  Y <- matrix(c(-0.3, -0.1), nrow = 1)
+  expect_error(two_stage_p_negative(Y, c(0.1, 0.1, 0.1), 0.25))
+  expect_error(two_stage_p_negative(Y, 0, 0.25))
+  expect_error(two_stage_p_negative(Y, 0.1, Inf))
+  expect_error(two_stage_p_negative(Y, 0.1, c(0.25, 0.3)))
+})
+
+test_that("the detection rate counts Bayes factors above the threshold and gives the exact interval", {
+  # Under the symmetric prior P(mu < 0) = 0.95 is a Bayes factor of 19, 0.999 one of
+  # 999, 0.9 one of 9 and 0.5 one of 1. A probability of exactly 10/11 is not used:
+  # in floating point its Bayes factor lands a hair under 10.
+  p <- c(rep(0.95, 3), rep(0.5, 4), 0.9, rep(0.999, 2))
+  r <- detection_rate(p)
+  expect_equal(r$power, 0.5)
+  expect_equal(r$n_reps, 10L)
+  expect_equal(c(r$power_lo, r$power_hi), binom.test(5, 10)$conf.int[1:2])
+  expect_equal(detection_rate(p, bf_threshold = 8)$power, 0.6)
+})
+
+test_that("the seven-digit pilot scaling matches the pilot table and stops when it does not", {
+  pp <- data.frame(language = c("English", "Turkish", "Norwegian"),
+                   affectedness_sd = c(0.5035004896972983, 0.5035004896972982, 0.5038147325657889))
+  expect_identical(claps_pilot_sdx(pp), c(0.5035005, 0.5035005, 0.5038147))
+  expect_identical(claps_pilot_sdx(pp, c("Norwegian", "English")), c(0.5038147, 0.5035005))
+  expect_error(claps_pilot_sdx(pp, "Hebrew"), "no longer matches")
+  pp$affectedness_sd[1] <- 0.6
+  expect_error(claps_pilot_sdx(pp), "no longer matches")
+})
+
+test_that("the shared verb correlation and the registered tau prior are the documented values", {
+  # Every run script reads these from here, so a change moves every table.
+  expect_identical(RHO_EFF_VERB, 0.164)
+  expect_identical(REGISTERED_TAU_PRIOR_SCALE, 0.5)
+})
+
+# ---------------------------------------------------------------------------
 # The reported numbers, where their inputs are present
 # ---------------------------------------------------------------------------
 
@@ -556,6 +666,21 @@ test_that("the PI's construction reproduces the scratch cross-check of 23 Septem
   }
   expect_equal(round(run(10), 3), 0.831)
   expect_equal(round(run(20), 3), 0.889)
+})
+
+test_that("the registered two-stage analysis reproduces the reported 20-language H1 rate", {
+  # The seven regime of klanguage_registered.csv: the same studies as the K = 20 cell
+  # above, analysed in two stages with the per-language prior of the active interaction.
+  skip_if_not(have_pilot())
+  inp <- load_design_inputs()
+  pops <- build_populations(inp$hc)
+  k7 <- pops$seven
+  prior_sd <- 0.5 * mean(inp$PP$affectedness_sd)
+  Y <- simulate_partly_known_estimates(20, k7, 4000L, inp$sp$indep, pop = pops$seven,
+                                       shared_verb_sd = inp$sp$shared,
+                                       transfer_sd = transfer_sd_by_source(k7, 0.15), seed = 7020L)$Y
+  r <- detection_rate(two_stage_p_negative(Y, sqrt(inp$sp$indep^2 + inp$sp$shared^2), prior_sd))
+  expect_equal(r$power, 0.8785)
 })
 
 test_that("the PI's construction under the alternative reading uses that reading throughout", {

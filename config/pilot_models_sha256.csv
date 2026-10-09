@@ -1,0 +1,4 @@
+file,bytes,sha256,file_date,recorded,used_by
+outputs/pilot_models/pilot_dgp_v2_pilot_English.rds,685512,b727e9101529a99ce6f2fbcb55e70d9e45d04ebbb6f78fe10efc940096832d3e,2026-09-10,2026-10-08,K-language scripts and estimate_per_language_approximations.R
+outputs/pilot_models/pilot_dgp_v2_pilot_Turkish.rds,688798,0d11b05b37557995ce5caf7511830fe475270926a0d40f856a9bdd0bfbe1e08d,2026-09-10,2026-10-08,K-language scripts and estimate_per_language_approximations.R
+outputs/pilot_models/pilot_dgp_v2_pilot_Norwegian.rds,569601,16dfa9f9ebfbef952a19f8253edacc9b4fb416b0130abfea16a614b2ac0d1ab3,2026-09-10,2026-10-08,K-language scripts and estimate_per_language_approximations.R

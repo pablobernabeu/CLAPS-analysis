@@ -39,10 +39,13 @@
 #
 # Inputs: outputs/design_summary_pilot/{cross_language_effects_harmonised,
 #   pilot_params_ceilings,klanguage_known7}.csv and the pilot posteriors in
-#   outputs/pilot_models (gitignored).
-# Output: outputs/design_summary_pilot/klanguage_pseudo_passive.csv
-#   and klanguage_pseudo_passive_populations.csv.
-# Run from design_analysis/:  Rscript scripts/run_klanguage_pseudo_passive.R [--reps=4000]
+#   outputs/pilot_models (gitignored; checksums in config/pilot_models_sha256.csv).
+# Output: klanguage_pseudo_passive.csv and klanguage_pseudo_passive_populations.csv in
+#   --outdir, and a run log. Writing into outputs/design_summary_pilot replaces the
+#   reported tables, so it needs --overwrite-reported, and the log then goes to
+#   outputs/logs.
+# Run from design_analysis/:
+#   Rscript scripts/run_klanguage_pseudo_passive.R --outdir=DIR [--reps=4000] [--log=FILE]
 # ---------------------------------------------------------------------------
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -50,16 +53,24 @@ aval <- function(flag, default) {
   hit <- grep(paste0("^", flag, "="), args, value = TRUE)
   if (length(hit)) sub(paste0("^", flag, "="), "", hit[1]) else default
 }
-REPS <- as.integer(aval("--reps", 4000L))
+REPS <- suppressWarnings(as.integer(aval("--reps", "4000")))
+if (is.na(REPS) || REPS < 1L) stop("--reps must be a positive whole number")
 IN <- "outputs/design_summary_pilot"
 OUT <- aval("--outdir", IN)
 PILOT_MODELS <- aval("--pilot-models", "outputs/pilot_models")
 
 source("R/13_simulate_klanguage_pooled.R")
+writes_reported <- guard_reported_dir(OUT, args)
+LOG <- aval("--log", file.path(if (writes_reported) "outputs/logs" else OUT, "klanguage_pseudo_passive.log"))
+log_con <- start_run_log(LOG,
+                         c(file.path(IN, c("cross_language_effects_harmonised.csv", "pilot_params_ceilings.csv",
+                                           "klanguage_known7.csv")),
+                           file.path(PILOT_MODELS, paste0("pilot_dgp_v2_pilot_",
+                                                          c("English", "Turkish", "Norwegian"), ".rds"))),
+                         replicates = REPS, out = OUT)
 
 H  <- read.csv(file.path(IN, "cross_language_effects_harmonised.csv"))
 PP <- read.csv(file.path(IN, "pilot_params_ceilings.csv"))
-RHO_EFF <- 0.164  # as in run_klanguage_design_analysis.R
 
 # ---------------------------------------------------------------------------
 # 1. Check: this script calls the engine exactly as the main run does
@@ -69,11 +80,10 @@ RHO_EFF <- 0.164  # as in run_klanguage_design_analysis.R
 SE_VERB <- mean(PP$se_floor_h1b  * PP$affectedness_sd)
 SE_POST <- mean(PP$slope_post_sd * PP$affectedness_sd)
 SE_PPT  <- sqrt(max(SE_POST^2 - SE_VERB^2, 0))
-sp_h1b  <- split_se(SE_VERB, SE_PPT, RHO_EFF)
+sp_h1b  <- split_se(SE_VERB, SE_PPT, RHO_EFF_VERB)
 CLAPS_LANGS <- c("English", "Turkish", "Norwegian")
-# Written out as the main run writes them, so that the check reproduces it exactly.
-CLAPS_SDX   <- c(0.5035005, 0.5035005, 0.5038147)
-stopifnot(isTRUE(all.equal(CLAPS_SDX, PP$affectedness_sd[match(CLAPS_LANGS, PP$language)], tolerance = 1e-6)))
+# The seven-digit scaling the main run uses, so that the check reproduces it exactly.
+CLAPS_SDX   <- claps_pilot_sdx(PP, CLAPS_LANGS)
 claps_h1b   <- read_claps_interaction_draws(PILOT_MODELS, CLAPS_LANGS)
 claps_se    <- setNames(vapply(seq_along(CLAPS_LANGS), function(i) sd(claps_h1b[[i]]) * CLAPS_SDX[i],
                                numeric(1)), CLAPS_LANGS)
@@ -107,7 +117,9 @@ stopifnot(vapply(pil, function(p) identical(p$s_types, c("Passive", "Active", "P
 
 # Verb floor for the term: the by-verb SD of the pseudo-passive contrast over
 # sqrt(sxx), as se_floor_h1b is built from the Active contrast's (Sigma_verb[2, 2]).
-floor_pp <- vapply(seq_along(PP_LANGS), function(i) sqrt(pil[[i]]$Sigma_verb[3, 3] / sxx[i]) * sdx[i], numeric(1))
+floor_pp <- vapply(seq_along(PP_LANGS), function(i) {
+  sqrt(pil[[i]]$Sigma_verb["S_TypePseudo_Passive", "S_TypePseudo_Passive"] / sxx[i]) * sdx[i]
+}, numeric(1))
 post_pp  <- vapply(pp_draws, sd, numeric(1))
 N_PILOT <- c(English = 70, Turkish = 70)
 SE_VERB2 <- mean(floor_pp)
@@ -115,21 +127,19 @@ SE_POST2 <- mean(post_pp)
 # The participant part shrinks with N; the verb part does not.
 SE_PPT2  <- sqrt(max(SE_POST2^2 - SE_VERB2^2, 0)) * sqrt(mean(N_PILOT) / 80)
 SE_LANG2 <- sqrt(SE_VERB2^2 + SE_PPT2^2)
-sp <- split_se(SE_VERB2, SE_PPT2, RHO_EFF)
+sp <- split_se(SE_VERB2, SE_PPT2, RHO_EFF_VERB)
 
-# Glossa single-language models (OSF dumps), Passive as reference: the
-# pseudo-passive-by-Semantics term, rescaled per SD with the harmonised sd_x.
-glossa_raw <- data.frame(language = c("Balinese", "Indonesian", "Mandarin"),
-                         construction = c("Pseudo_Passive (Passive_basic)", "Non_Canonical_Passive",
-                                          "Notional_Passive"),
-                         file = c("Balinese_Sem_Only_Bayes_redux.txt", "Indonesian_Sem_Only_Bayes.txt",
-                                  "Mandarin_Sem_Only_Bayes.txt"),
-                         raw_est = c(-0.53, -0.34, -1.09), raw_se = c(0.13, 0.10, 0.18))
-# These are ALT_PASSIVE_CONTRASTS' b_other, typed from the same dumps.
-stopifnot(isTRUE(all.equal(glossa_raw$raw_est, ALT_PASSIVE_CONTRASTS$b_other[match(glossa_raw$language,
-                                                                               ALT_PASSIVE_CONTRASTS$language)])))
+# Glossa single-language models (OSF dumps Balinese_Sem_Only_Bayes_redux.txt,
+# Indonesian_Sem_Only_Bayes.txt and Mandarin_Sem_Only_Bayes.txt), Passive as reference:
+# the pseudo-passive-by-Semantics term, rescaled per SD with the harmonised sd_x. The
+# engine's ALT_PASSIVE_CONTRASTS holds the terms (b_other, se_other), typed from the dumps.
+GL <- c("Balinese", "Indonesian", "Mandarin")
+alt <- ALT_PASSIVE_CONTRASTS[match(GL, ALT_PASSIVE_CONTRASTS$language), ]
+glossa_raw <- data.frame(language = GL, construction = alt$construction,
+                         raw_est = alt$b_other, raw_se = alt$se_other)
 gx <- H[H$source == "Glossa2023", ]
 glossa_raw$sd_x <- gx$sd_x[match(glossa_raw$language, gx$language)]
+stopifnot(!anyNA(glossa_raw$raw_est), !anyNA(glossa_raw$raw_se), !anyNA(glossa_raw$sd_x))
 
 known5 <- rbind(
   data.frame(language = PP_LANGS, source = "CLAPS_pilot",
@@ -212,7 +222,8 @@ res <- do.call(rbind, lapply(names(POPS2), function(pn) {
   }))
 }))
 # The number of draws must not depend on the population when nothing is drawn.
-k5 <- res[res$K_pp == 5 & res$known_set != "English and Turkish only" & res$prior_tau_scale == 1.1, ]
+k5 <- res[res$K_pp == 5 & res$known_set != "English and Turkish only" &
+            res$prior_tau_scale == CALIBRATED_TAU_PRIOR_SCALE, ]
 stopifnot(all(tapply(k5$power, k5$known_set, function(x) diff(range(x))) == 0))
 
 res$se_lang_total <- SE_LANG2
@@ -223,7 +234,7 @@ write.csv(cbind(pop_tab, se_lang_total = SE_LANG2, se_indep = sp$indep, se_share
 # ---------------------------------------------------------------------------
 # 5. Summary on the K of the main-interaction figures
 # ---------------------------------------------------------------------------
-head_rows <- res[res$mode == "assurance" & res$prior_tau_scale == 1.1, ]
+head_rows <- res[res$mode == "assurance" & res$prior_tau_scale == CALIBRATED_TAU_PRIOR_SCALE, ]
 for (ks in unique(head_rows$known_set)) {
   cat("\n", ks, ", assurance, P(BF >= 10) by languages with a pseudo-passive:\n", sep = "")
   d <- head_rows[head_rows$known_set == ks, ]
@@ -242,3 +253,4 @@ br <- res[res$mode == "assurance" & res$known_set == "five, drawn, Glossa widene
 cat("\nCalibration bracket, five-language spread:\n")
 print(round(tapply(br$power, list(br$prior_tau_scale, br$K_pp), function(x) x[1]), 3))
 cat("\nMonte-Carlo error at most", sprintf("%.3f", max(res$mcse)), "\n")
+stop_run_log(log_con)
