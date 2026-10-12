@@ -507,7 +507,9 @@ the four languages the pilot does not cover, and there they carry extra uncertai
 the change of protocol. Their average, `r mnum2(kpop("glossa_protocol", "mean_effect"))` per
 standard deviation of affectedness, is close to the three pilots'
 `r mnum2(kpop("claps_protocol", "mean_effect"))`, so they show no sign of inflation relative to
-the CLAPS protocol.
+the CLAPS protocol. Like the pilot data, the published data serve only to plan the study. Neither
+will enter the confirmatory tests, which will use only new data collected under the registered
+protocol.
 
 Affectedness is a property of the verb. In the study, it will be rated in a separate norming task,
 in which twenty further speakers of each language rate the affectedness of the patient in each
@@ -660,11 +662,8 @@ so the affectedness slope is steeper for Turkish pseudo-passives than for passiv
 simulations draw their effects from that posterior and inherit the reversal. At 80 participants,
 `r pct0(da_rate("Turkish", 80, "n_h2a"))` of simulated Turkish studies give a Bayes factor for H2 of
 1/10 or less, evidence against it, and the remaining `r da("Turkish", 80, "n_h2_inconclusive")` of
-`r da_reps` are inconclusive.
-
-The negative pseudo-passive interaction also appears in Balinese, Indonesian and Mandarin in the
-per-language models of the meta-analysis. Those studies inform the planning, but the confirmatory
-data will be collected under the CLAPS protocol alone.
+`r da_reps` are inconclusive. By contrast, the per-language models of the meta-analysis show the
+negative interaction in Balinese, Indonesian and Mandarin.
 
 ## The Confirmatory Pooled Test
 

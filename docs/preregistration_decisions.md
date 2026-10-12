@@ -115,6 +115,8 @@ Pilot data are used **only** for:
 
 They are **never included** in the confirmatory analysis dataset. The `split_pilot_confirmatory()` function in `R/01_read_validate_data.R` enforces this.
 
+**Amendment (2026-10-12):** the list above omits the design analysis, which takes its effects and each language's precision from the pilot models. The published per-language estimates of @ambridgeArnonBekman2023 serve the design analysis as well, and nothing else. Neither the pilot data nor the published data enter the confirmatory analyses, which use only new data collected under the registered protocol.
+
 **Literature basis**: Including pilot data in the confirmatory model and basing prior centres on the same data inflates the apparent precision of confirmatory estimates, biases effect-size-based design analyses upward [@albersLakens2018], and is incompatible with the prior-conditioning logic of Bayes factors [@schadNicenboimBurknerBetancourtVasishth2023].
 
 **Locked**: Yes.
