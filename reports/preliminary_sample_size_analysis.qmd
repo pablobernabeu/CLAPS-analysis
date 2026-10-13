@@ -368,8 +368,8 @@ gv_trials <- function(lang) GV_VERSIONS * GV_S_TYPES_ADMINISTERED * ppv(lang, "n
 ```
 
 `\begin{abstract}\normalsize\noindent`{=latex} CLAPS asks whether affectedness, how strongly
-an event affects the person or thing it happens to, matters more for the acceptability of
-passive sentences than of active ones, and whether that pattern holds across languages. The
+an event affects the person or thing it happens to, influences the acceptability of passive
+sentences more than that of active ones, and whether that pattern holds across languages. The
 primary hypothesis (H1) holds that the affectedness slope is steeper for passives than for
 actives, and the secondary hypothesis (H2) that it is also steeper for passives than for
 pseudo-passives. This report evaluates by simulation what the planned design, 80 participants per
@@ -439,13 +439,13 @@ pushed", the last a cleft that puts the patient first without the passive's morp
 sentence type is treated as the same construction in every language that has it. The passive is
 the reference level, and the active and the pseudo-passive are compared with it.
 
-The study tests two hypotheses, each across languages. H1, the primary hypothesis, holds that the
-affectedness slope is steeper for passives than for actives, so that the active-by-affectedness
-interaction is negative. H2, the secondary hypothesis, holds that the slope is also steeper for
-passives than for pseudo-passives, so that the pseudo-passive-by-affectedness interaction is
-negative. The passive slope itself carries no prediction. Affectedness might raise or lower the
-acceptability of sentences in general, and the theory requires only that it matter more for
-passives, so each test compares the passive slope with another slope, whatever their signs. H1 is
+H1, the primary hypothesis, holds that the affectedness slope is steeper for passives than for
+actives, so that the active-by-affectedness interaction is negative. H2, the secondary hypothesis,
+holds that the slope is also steeper for passives than for pseudo-passives, so that the
+pseudo-passive-by-affectedness interaction is negative. The passive slope itself carries no
+prediction. Affectedness might raise or lower the acceptability of sentences in general, and the
+theory requires only that its slope be steeper for passives, so each test compares the passive
+slope with another slope, whatever their signs. H1 is
 tested on the mean across all languages, and H2 on the mean across the languages with a
 pseudo-passive, which the Norwegian materials do not include.
 
@@ -539,8 +539,8 @@ the random-effect standard deviations Student-*t* priors with three degrees of f
 of 1. Their correlations take an LKJ prior with a shape of 2 [@gelman2006;
 @lewandowskiKurowickaJoe2009].
 
-The confirmatory test combines the languages in two stages. Each language is first analysed on
-its own with this model, so it keeps its own rating thresholds, participants and verbs. A verb's
+In the confirmatory test, each language is first analysed on its own with this model, so it keeps
+its own rating thresholds, participants and verbs. A verb's
 effects are therefore estimated separately in each language. This suits verbs whose translations
 mean similar but never identical things, and across the meta-analysis languages verb effects
 correlate only about 0.2. The per-language posterior means and standard deviations of each
@@ -896,8 +896,8 @@ This appendix sets out how the two agent-gender versions of each stimulus are ba
 participants, and why. Each participant will see one version of each verb, so the balance has to
 come from the assignment of versions to participants.
 
-Balance matters because agent gender moves the interaction in English. A linear mixed model of the
-1-to-7 pilot ratings, used here only to gauge the relative size of the gender term, codes agent
+The versions need balancing because agent gender moves the interaction in English. A linear mixed
+model of the 1-to-7 pilot ratings, used here only to gauge the relative size of the gender term, codes agent
 gender as plus or minus a half. In it, the English interaction is
 `r mnum2(gv_per_sd(gvev("English", GV_TERM_H1B, "h1b_estimate")))` rating points per standard
 deviation of affectedness, and its gender-by-active-by-affectedness term is

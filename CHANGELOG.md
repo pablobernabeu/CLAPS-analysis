@@ -36,6 +36,13 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   per-language approximation (1.165, read from `per_language_approximations.csv`). No
   rate falls by more than 0.4 points (H1 from 87.85% to 87.48%, H2 from 88.85% to
   88.60%), and the report says so. `klanguage_registered.csv` is unchanged (2026-10-09).
+- `scripts/run_klanguage_registered.R --n-verbs=72,60,48,36,24`, which writes
+  `klanguage_registered_verbs.csv`: the registered test on the same simulated studies,
+  with every language using that many verbs, so that the verb part of its standard error
+  grows by the square root of 72 over the count, as `se_for()` scales it. With 24 verbs in
+  every language, H1 falls from 87.85% to 86.0% and H2 from 88.85% to 88.0%. The rows for
+  72 verbs are the registered rates, and `klanguage_registered.csv` is unchanged
+  (2026-10-13).
 - Three columns in `glossa_tau_refit_summary.csv`, from
   `scripts/summarise_glossa_tau_refit.R`: the share of each verb term's variance common
   to all languages in the refit's verb-split arms, 0.16 (M1) and 0.18 (M2) for the

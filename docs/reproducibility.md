@@ -31,7 +31,9 @@ On the workstation, every regenerated table is byte-identical to the reported on
 8 and 9 October 2026 that held for the calibration, populations, partly-known,
 known-languages, outcomes, pseudo-passive, per-language and registered tables. The
 registered test with widened standard errors (`klanguage_registered_se_scaled.csv`,
-added on 9 October 2026) comes from the same script and the same simulated studies. On
+added on 9 October 2026) comes from the same script and the same simulated studies, as
+does the test with fewer verbs per language (`klanguage_registered_verbs.csv`, added on
+13 October 2026), whose rows for 72 verbs are the registered rates. On
 ARC, `scripts/build_registered_arc_check.R` runs the registered test under R 4.4.2
 without writing anything there. On 9 October 2026 it reproduced
 `klanguage_registered.csv` exactly, and with it the six reported cells of

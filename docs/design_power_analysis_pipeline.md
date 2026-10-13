@@ -251,7 +251,9 @@ this order, since steps 2 and 4 check themselves against tables written before t
    in steps 1 and 2 and stops unless every one of those rates comes back exactly. Run
    again with `--se-scale=calibrated`, it writes `klanguage_registered_se_scaled.csv`,
    the same test with every language's standard error widened by the calibration factor
-   that step 3 records.
+   that step 3 records. Run with `--n-verbs=72,60,48,36,24`, it writes
+   `klanguage_registered_verbs.csv`, the same test with every language using each of
+   those numbers of verbs.
 
 All four read the gitignored pilot extracts in `outputs/pilot_models/`, whose checksums
 are in `config/pilot_models_sha256.csv`. The report reads the tables they write.
