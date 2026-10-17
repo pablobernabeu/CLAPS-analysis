@@ -47,7 +47,8 @@ CLAPS_REQUIREMENTS <- list(
                 "readr", "assertr", "yaml", "purrr", "stringr", "tidyr"),
   modelling = c("brms", "posterior"),
   fitting   = c("cmdstanr", "MASS", "ordinal", "bridgesampling"),
-  pipeline  = c("optparse", "targets", "tarchetypes"),
+  # bayesmeta computes the registered Stage 2 meta-analysis (stage2/04_meta_analysis.R).
+  pipeline  = c("optparse", "targets", "tarchetypes", "bayesmeta"),
   reporting = c("quarto", "bib2df", "httr2", "ggplot2")
 )
 

@@ -114,9 +114,9 @@ K_PLAN <- 20L
 K_PLAN_PP <- 15L
 
 # The per-language model's prior SDs for the two interactions (primary regime). They
-# are read from the config that R/00_reference_audit.R keeps in step with
-# R/03_define_priors.R, and expressed per SD of affectedness, which the 2-SD scaling
-# halves.
+# are read from config/prior_grid.yaml, which a unit test in tests/testthat/test-priors.R
+# checks against R/03_define_priors.R, and expressed per SD of affectedness, which the
+# 2-SD scaling halves.
 normal_sd <- function(spec) {
   x <- suppressWarnings(as.numeric(sub("^normal\\(0, *([0-9.]+)\\)$", "\\1", spec)))
   if (is.na(x)) stop("expected a zero-centred normal prior, got ", spec)

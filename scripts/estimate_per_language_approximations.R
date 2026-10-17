@@ -66,8 +66,9 @@ H   <- read.csv(file.path(IN, "cross_language_effects_harmonised.csv"))
 N_PLAN <- 80
 Z10 <- qnorm(10 / 11)
 # Prior SDs of the two interactions on the model's scale (primary regime), read from
-# the config that R/00_reference_audit.R keeps in step with R/03_define_priors.R. Per SD
-# of affectedness they are halved with the 2-SD scaling of Semantics_scaled.
+# config/prior_grid.yaml, which a unit test in tests/testthat/test-priors.R checks against
+# R/03_define_priors.R. Per SD of affectedness they are halved with the 2-SD scaling of
+# Semantics_scaled.
 normal_sd <- function(spec) {
   x <- suppressWarnings(as.numeric(sub("^normal\\(0, *([0-9.]+)\\)$", "\\1", spec)))
   if (is.na(x)) stop("expected a zero-centred normal prior, got ", spec)

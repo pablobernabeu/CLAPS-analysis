@@ -35,8 +35,7 @@
 #
 # Same engine and settings as the existing pooled grids: assurance mode, the
 # L5_cross_maximal cross-language model, randomised draw indices over the pilot
-# posterior. prior_regime is "primary", which is the key ARC still runs; off ARC
-# the same regime is called "primary".
+# posterior, and the zero-centred primary prior regime.
 #
 # Seed base 1300000 with spacing 10 (languages use +0/1/2). This grid first took
 # 940000, which generate_databased_v2_decision_grid.R has held since it entered

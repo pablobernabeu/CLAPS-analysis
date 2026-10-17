@@ -74,3 +74,26 @@ test_that("prior_sensitivity_grid has 8 rows (4 regimes x 2 modes)", {
   expect_setequal(grid$regime_name, names(PRIOR_REGIMES))
   expect_setequal(grid$threshold_mode, THRESHOLD_MODES)
 })
+
+# ---------------------------------------------------------------------------
+# config/prior_grid.yaml against PRIOR_REGIMES
+# ---------------------------------------------------------------------------
+# The registered two-stage scripts read their interaction prior SDs from the YAML,
+# while every model fit takes its priors from PRIOR_REGIMES, so the two must not drift.
+
+test_that("config/prior_grid.yaml carries exactly the priors in PRIOR_REGIMES", {
+  skip_if_not_installed("yaml")
+  cfg <- yaml::read_yaml(here::here("config", "prior_grid.yaml"))
+  regimes <- cfg$prior_regimes
+  expect_setequal(names(regimes), names(PRIOR_REGIMES))
+  squash <- function(x) gsub("[[:space:]]+", "", x)
+  for (r in names(PRIOR_REGIMES)) {
+    got <- regimes[[r]]$priors
+    want <- PRIOR_REGIMES[[r]]
+    expect_setequal(names(got), names(want))
+    for (k in names(want)) {
+      expect_identical(squash(got[[k]]), squash(want[[k]]), info = paste(r, k))
+    }
+  }
+  expect_setequal(names(cfg$threshold_modes), THRESHOLD_MODES)
+})

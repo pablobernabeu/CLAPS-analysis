@@ -13,7 +13,8 @@
 #   advance which simplifications are permitted, and in what order, keeps that
 #   trade-off from becoming a data-dependent choice made after seeing the
 #   results. The levels are defined in R/04_model_formulas.R and listed in the
-#   README's model-ladder table.
+#   README's model-ladder table. The Stage 2 single model across languages is
+#   walked by the same function, with the ladder defined in R/14_stage2.R.
 #
 # The rule this file enforces
 #   Descend only on failure, never for convenience. A level is abandoned only if
@@ -66,14 +67,19 @@ FALLBACK_TRIGGERS <- c(
 #' @param control_args List passed to brm's `control` (adapt_delta, max_treedepth).
 #' @param has_pseudo_passive Logical; FALSE drops the Pseudo_Passive terms for
 #'   languages without that construction.
-#' @param start_level Ladder level to begin at, defaulting to the maximal L5.
-#'   Lower values exist for resuming a run, not for choosing a simpler model.
+#' @param start_level Ladder level to begin at, defaulting to the most complex level
+#'   of the ladder (L5 on the single-language ladder). Lower values exist for
+#'   resuming a run, not for choosing a simpler model.
 #' @param out_dir Directory for saved fits and diagnostics.
 #' @param language,prior_label Labels used to build the output filenames.
 #' @param include_gender Logical; if TRUE, fit the gender model variation. The
 #'   data frame must then contain a Gender column.
 #' @param overwrite Logical; if FALSE, an existing converged fit at a level is
 #'   reused instead of refitted.
+#' @param ladder Optional named list of brmsformula objects, most complex first,
+#'   in place of the single-language ladder. The Stage 2 single model across
+#'   languages passes build_single_model_ladder() (R/14_stage2.R) here, so both of
+#'   the report's ladders are walked by this one function under the same rule.
 #' @return A list with `selected_model` (the level name, or NA if every level
 #'   failed), `fit` (the brmsfit, or NULL) and `ladder_log`, a per-level record of
 #'   status, diagnostics and runtime. Note that the returned list has no
@@ -92,15 +98,21 @@ run_model_ladder <- function(df,
                              sampling_args,
                              control_args,
                              has_pseudo_passive = TRUE,
-                             start_level        = "L5_correlated_maximal",
+                             start_level        = NULL,
                              out_dir            = "outputs/models",
                              language           = "unknown",
                              prior_label        = "primary",
                              include_gender     = FALSE,
-                             overwrite          = FALSE) {
-  ladder      <- build_model_ladder(has_pseudo_passive = has_pseudo_passive,
-                                    include_gender = include_gender)
-  level_order <- ladder_names()
+                             overwrite          = FALSE,
+                             ladder             = NULL) {
+  if (is.null(ladder)) {
+    ladder      <- build_model_ladder(has_pseudo_passive = has_pseudo_passive,
+                                      include_gender = include_gender)
+    level_order <- ladder_names()
+  } else {
+    level_order <- names(ladder)
+  }
+  if (is.null(start_level)) start_level <- level_order[1]
   start_idx   <- match(start_level, level_order)
 
   if (is.na(start_idx)) stop("[ladder] Unknown start_level: ", start_level)
@@ -153,7 +165,10 @@ run_model_ladder <- function(df,
           # have. brms treats an unmatched prior as an error, so the prior is
           # filtered to this level's parameters at each step.
           prior        = align_prior_to_model(prior_obj, formula, df),
-          backend      = "cmdstanr",
+          # cmdstanr, unless brms's own option says otherwise. Nothing on the cluster
+          # sets it; it lets the Stage 2 dry run use rstan on a Windows machine, where
+          # cmdstanr reads every chain's draws through an external grep.
+          backend      = getOption("brms.backend", "cmdstanr"),
           sample_prior = "yes",
           control      = control_args
         ),

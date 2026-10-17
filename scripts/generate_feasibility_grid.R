@@ -14,9 +14,6 @@
 #
 # Standalone by design: it does NOT touch the power-analysis grids or the main
 # generate_design_grid.R. It writes ONE new file, config/design_grid_feasibility.csv.
-# prior_regime is written with whichever regime key the copy of R/03_define_priors.R
-# deployed on the cluster defines. That deployment lags the name used here, so the value
-# below is deliberately the cluster's key rather than this repository's.
 #
 # Usage (from design_analysis/ root):
 #   Rscript scripts/generate_feasibility_grid.R \
@@ -72,7 +69,7 @@ conditions <- tidyr::expand_grid(
 ) |>
   dplyr::mutate(
     language                = "AllLanguages",
-    prior_regime            = "primary",   # cluster regime key; see header
+    prior_regime            = "primary",   # the zero-centred primary regime
     threshold_mode          = "broad",
     n_participants          = N_FEAS,
     n_verbs                 = 20L,

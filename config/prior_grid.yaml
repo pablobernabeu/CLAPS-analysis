@@ -2,9 +2,10 @@
 #
 # Complete prior sensitivity grid for the CLAPS Bayesian ordinal workflow.
 # Four prior regimes x two threshold modes = 8 cells per language per
-# model level. Authoritative implementation is in R/03_define_priors.R;
-# the values here are kept synchronised for documentation and for the
-# R/00_reference_audit.R cross-check.
+# model level. Authoritative implementation is PRIOR_REGIMES in
+# R/03_define_priors.R. The values here must match it, and a unit test in
+# tests/testthat/test-priors.R checks that they do, because the registered
+# two-stage scripts read their interaction priors from this file.
 #
 # Citation keys refer to entries in references.bib.
 

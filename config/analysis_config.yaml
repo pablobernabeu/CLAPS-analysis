@@ -107,6 +107,45 @@ design_analysis:
   success_metric: "bayes_factor"   # Never change to posterior_probability
 
 # ---------------------------------------------------------------------------
+# Stage 2: the confirmatory analysis registered in the Stage 1 report
+# ---------------------------------------------------------------------------
+# Every value here is fixed by the Stage 1 report and read by R/14_stage2.R and the
+# scripts in stage2/. Changing one after in-principle acceptance is a deviation from
+# the registered protocol. The meta-analytic prior SDs are not set here: they are
+# derived from the per-language interaction priors in R/03_define_priors.R.
+stage2:
+  sampler:                    # Individual-language models, the single model and the family model
+    chains: 16
+    iter: 5000
+    warmup: 2000
+    cores: 16
+    adapt_delta: 0.99
+    max_treedepth: 12
+  seed_base: 2027000          # Variety i (row i of the language table) uses seed_base + i
+  exclusions:
+    attention_trials:         # Per participant; must match the final formr materials
+      acceptability: 10
+      ratings: 10
+    attention_min_correct: 8  # Fewer correct answers than this excludes the participant
+    straightline_share: 0.9   # The same rating on this share of test trials or more excludes
+  samples:
+    acceptability: 80         # Analysed participants per variety
+    ratings: 20               # Analysed raters per variety
+    min_verbs: 60
+    max_verbs: 72
+  outcome_neutral:
+    min_affectedness_sd: 0.5  # Minimum SD of the verbs' mean ratings, 7-point scale
+  inference:
+    bf_threshold: 10
+    tau_prior_halfnormal_scale: 0.5   # Between-language SD; also the between-family SD
+  languages_table: "config/stage2_languages.csv"
+  paths:
+    raw: "data/stage2/raw"
+    processed: "outputs/stage2/processed"
+    fits: "outputs/stage2/fits"
+    results: "outputs/stage2/results"
+
+# ---------------------------------------------------------------------------
 # HPC resource defaults (ARC arc cluster)
 # ---------------------------------------------------------------------------
 hpc:

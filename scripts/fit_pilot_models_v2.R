@@ -8,7 +8,7 @@
 # be added downstream without this re-fit.
 #
 # --regime selects the prior the DGP is extracted under:
-#   * "primary" (zero-centred; = the local "primary") -> prior_source "pilot":
+#   * "primary" (the zero-centred primary regime) -> prior_source "pilot":
 #       data-dominated DGP, NOT blended with the literature.
 #   * "literature_centred" (centred on the pooled anchors 0.47/-0.31/-0.36)
 #       -> prior_source "blend": the DGP blends pilot + published evidence

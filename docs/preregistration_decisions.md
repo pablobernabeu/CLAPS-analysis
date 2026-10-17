@@ -127,7 +127,7 @@ They are **never included** in the confirmatory analysis dataset. The `split_pil
 
 **Primary**: $P(BF_{10} \geq 10)$ for H1 and for H2, each in its own right, in the two-stage synthesis at the planned sample: 88% for H1 with 20 languages and 89% for H2 with the 15 of them that have a pseudo-passive, on the spread across the measured languages (`outputs/design_summary_pilot/klanguage_registered.csv`, amended 2026-10-08 from per-language rates when the hypotheses became tests across languages).
 
-**Amendment (2026-10-06):** the joint H1a-and-H1b criterion and the secondary $P(BF_{10} > 3)$ are withdrawn with H1a (§3). The primary to the PI of 1 October 2026 replaces the power threshold with the route *Nature Human Behaviour* offers Bayesian plans with limited resources: a maximum feasible sample of 80 participants per language, fixed in advance, at which a test that has reached neither 10 nor 1/10 is reported as inconclusive. The design analysis then reports detection rates as information rather than as a requirement. The PI asked on 6 October what the route means, and his draft protocol of 8 October takes it; the closing date it needs is in §11.
+**Amendment (2026-10-06):** the joint H1a-and-H1b criterion and the secondary $P(BF_{10} > 3)$ are withdrawn with H1a (§3). The proposal to the PI of 1 October 2026 replaces the power threshold with the route *Nature Human Behaviour* offers Bayesian plans with limited resources: a maximum feasible sample of 80 participants per language, fixed in advance, at which a test that has reached neither 10 nor 1/10 is reported as inconclusive. The design analysis then reports detection rates as information rather than as a requirement. The PI asked on 6 October what the route means, and his draft protocol of 8 October takes it; the closing date it needs is in §11.
 
 **Sensitivity requirement**: The above probabilities must be robust across the `primary`, `weak`, and `heavy_tailed` prior regimes (no regime reversal of the BF category) following the sensitivity workflow of @schadNicenboimBurknerBetancourtVasishth2023.
 
@@ -193,7 +193,7 @@ Selection is documented in `outputs/design_summary/ladder_selection.csv`.
 
 ## 12. The cross-linguistic synthesis and the number of language teams
 
-Added 2026-09-10, in response to the project lead's primary of 7 September that the Stage 1
+Added 2026-09-10, in response to the project lead's proposal of 7 September that the Stage 1
 report carry a rule of the form "we proceed to the Stage 2 paper only if we have a minimum of
 Y languages", with Y at least 6 and possibly 8 or 10.
 

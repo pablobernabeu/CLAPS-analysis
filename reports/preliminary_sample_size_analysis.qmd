@@ -381,13 +381,10 @@ Hebrew, Indonesian and Mandarin from published estimates, and those of further l
 population like these seven. With `r K_PLAN` languages, the synthesis reaches a directional Bayes
 factor of 10 in `r pct0(kreg_rate("H1"))` of simulated studies on H1, and in
 `r pct0(kreg_rate("H2"))` on H2 across the `r K_PLAN_PP` languages with a pseudo-passive. These
-rates depend mainly on how much the effect varies between languages. Within a single pilot
-language at 80 participants, H1 reaches a Bayes factor of 10 in `r pct0(da_rate("English", 80))`
-of simulated English studies, `r pct0(da_rate("Norwegian", 80))` of Norwegian ones and
-`r pct0(da_rate("Turkish", 80))` of Turkish ones. H2 reaches it in
-`r pct0(da_rate("English", 80, "n_h2b"))` of English studies, whereas the Turkish pilot points the
-other way. Because affectedness is a property of the verb, the verbs bound the precision of each
-language's estimate, and beyond 80 participants the rates barely change.
+rates depend mainly on how much the effect varies between languages. In the pilots, the active
+interaction runs in the predicted direction in all three languages, and the pseudo-passive
+interaction in English but not in Turkish. Because affectedness is a property of the verb, the
+verbs bound the precision of each language's estimate.
 `\end{abstract}`{=latex}
 
 <!-- The body starts on its own page. Left to flow, it followed the abstract down the
@@ -547,9 +544,9 @@ correlate only about 0.2. The per-language posterior means and standard deviatio
 interaction are then combined in a Bayesian random-effects meta-analysis, with language as the
 random effect. The mean across languages takes a normal prior with the standard deviation of the
 per-language prior, and the between-language standard deviation, $\tau$, a half-normal prior with
-a scale of 0.5. One- and two-stage analyses of data from many studies agree when each study is
-large and both are specified alike [@burkeEnsorRiley2017], and each language here contributes 80
-participants and about 72 verbs. A single model across all languages proved hard to fit (see
+a scale of 0.5. One- and two-stage analyses of data from many studies give very similar results
+when each study is large and both make the same modelling assumptions [@burkeEnsorRiley2017],
+and each language here contributes 80 participants and about 72 verbs. A single model across all languages proved hard to fit (see
 Limitations), so it is kept as a planned robustness check, reported beside the confirmatory test
 but deciding neither hypothesis.
 
@@ -569,124 +566,61 @@ participant will see one version of each verb, so an English or Turkish session 
 `r gv_trials("English") / 2` sentences, and the simulations describe that session. The versions
 are balanced across participants by counterbalanced lists (Appendix B).
 
-The per-language results rest on a dedicated set of `r da_reps` simulated studies at each of
-`r and_list(da_ns)` participants per language, each scored for both hypotheses. The studies keep
-the pilot's verb counts, `r ppv("English", "n_verbs")` in English and Turkish and
-`r ppv("Norwegian", "n_verbs")` in Norwegian. `r grid_extra_txt` Each study is fitted with four
-chains of 3,000 iterations at a target acceptance rate of .99 and a maximum treedepth of 12. After
-1,000 warm-up iterations per chain, 8,000 post-warm-up draws remain. The confirmatory analysis will
-use sixteen chains of 5,000 iterations with 2,000 of warm-up. The shorter chains add Monte-Carlo
-noise to each simulated Bayes factor without shifting it systematically. Each per-language rate in
-@tbl-power carries an exact 95% interval. Over `r da_reps` studies, a rate near 90% has a
-Monte-Carlo standard error of about three percentage points, so differences of a few points
-between neighbouring sample sizes are noise.
+The per-language simulations comprise `r da_reps` simulated studies at each of
+`r and_list(da_ns)` participants per language. The studies keep the pilot's verb counts,
+`r ppv("English", "n_verbs")` in English and Turkish and `r ppv("Norwegian", "n_verbs")` in
+Norwegian. Each study is fitted with four chains of 3,000 iterations at a target acceptance rate of
+.99 and a maximum treedepth of 12. After 1,000 warm-up iterations per chain, 8,000 post-warm-up
+draws remain. The confirmatory analysis will use sixteen chains of 5,000 iterations with 2,000 of
+warm-up. These simulations serve to check the normal approximation with which the simulations of
+`r K_PLAN` languages represent each language's estimate (see Limitations).
 
 The simulations ran on the University of Oxford's Advanced Research Computing service under R
 4.4.2, with brms 2.21.0 and the cmdstanr backend on CmdStan 2.39.0, and the lockfile `renv.lock`
 fixes the package versions. The analysis code, the simulation settings and the aggregated results
 are openly available at <https://github.com/pablobernabeu/CLAPS-analysis>, where H1 and H2 carry the
-labels h1b and h2b. This report rebuilds from those results without the raw pilot data, which are
-not yet public.
+labels h1b and h2b. The registered analysis itself is in the repository's `stage2` folder, as
+numbered scripts with the order in which they will be run. This report rebuilds from those results
+without the raw pilot data, which are not yet public.
 
 # Results
 
-@tbl-power gives, for each pilot language analysed on its own, the detection rate for each
-hypothesis by sample size. These per-language rates are not registered tests. They show how
-precisely one language's data estimate each interaction, which the confirmatory pooled test
-builds on.
+## The Pilot Estimates
 
-```{r tbl-power}
-#| tbl-cap: "Detection Rates by Language and Participant Count"
+@tbl-pilot-estimates gives the two interactions in each pilot language, from the planned model
+fitted to the pilot ratings. The active interaction runs in the predicted direction in all three
+languages, most weakly in Turkish. The pseudo-passive interaction runs in the predicted direction in
+English but the other way in Turkish, where the affectedness slope is steeper for pseudo-passives
+than for passives. The simulations draw the Turkish effect from that posterior and so inherit the
+reversal. By contrast, the per-language models of the meta-analysis show the negative
+pseudo-passive interaction in Balinese, Indonesian and Mandarin.
 
-# One entry per prediction and cell, as a rate with its exact interval. A language
-# without a pseudo-passive carries NA in the H2 counts and prints as a dash.
-rate_cell <- function(k, n) {
-  if (is.na(k)) return("--")
-  sprintf("%s %s", pct0(k / n), pct_ci(k, n))
-}
-tp <- ppd |>
-  mutate(language = lang_factor(language)) |>
-  arrange(language, n_participants)
-tp <- tibble(
-  Language       = ifelse(duplicated(tp$language), "", as.character(tp$language)),
-  Participants   = tp$n_participants,
-  H1             = mapply(rate_cell, tp$n_h1b, tp$reps),
-  H2             = mapply(rate_cell, tp$n_h2b, tp$reps),
-  `Against H2`   = mapply(rate_cell, tp$n_h2a, tp$reps))
-# The format is named because, left to choose it, kable under Quarto drops linesep, and
-# the gap that closes each language would fall every fifth row instead.
-kable(tp, format = "latex", booktabs = TRUE, longtable = TRUE, align = "lrrrr",
-      linesep = c("", "", "\\addlinespace")) |>
-  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```{r tbl-pilot-estimates}
+#| tbl-cap: "Pilot Estimates of the Two Interactions"
+
+# From scripts/summarise_pilot_interactions.R, which reads the pilot posterior draws, so
+# the public copy of this report needs only the summary.
+pint <- read_csv("../outputs/design_summary_pilot/pilot_interactions.csv", show_col_types = FALSE)
+pe <- pint |>
+  mutate(language = lang_factor(language),
+         Estimate = sprintf("%s [%s, %s]", snum2(per_sd_mean), snum2(per_sd_lo95),
+                            snum2(per_sd_hi95))) |>
+  select(language, hypothesis, Estimate) |>
+  pivot_wider(names_from = hypothesis, values_from = Estimate, values_fill = "--") |>
+  arrange(language) |>
+  rename(Language = language, `H1, active` = H1, `H2, pseudo-passive` = H2)
+kable(pe, align = "lrr")
 ```
 
 `\vspace{-8pt}`{=latex}
 
-*Note.* Each row rests on `r da_reps` simulated studies. Entries are the percentage of studies
-reaching a directional Bayes factor of 10, with an exact 95% interval in brackets. H1 is the
-active-by-affectedness interaction and H2 the pseudo-passive-by-affectedness interaction, both
-predicted negative. The last column gives the percentage of studies in which the Bayes factor for H2
-is 1/10 or less, evidence against it. The Norwegian materials include no pseudo-passive.
+*Note.* Posterior means with 95% credible intervals, in logits per standard deviation of
+affectedness. Both interactions are predicted to be negative. The Norwegian materials include no
+pseudo-passive.
 
 `\vspace{12pt}`{=latex}
 
-## H1 in Each Pilot Language
-
-At 80 participants, H1 reaches a Bayes factor of 10 in `r pct0(da_rate("English", 80))`
-`r da_ci("English", 80)` of simulated English studies, `r pct0(da_rate("Norwegian", 80))`
-`r da_ci("Norwegian", 80)` of Norwegian ones and `r pct0(da_rate("Turkish", 80))`
-`r da_ci("Turkish", 80)` of Turkish ones. The Turkish pilot interaction is the weakest of the
-three, at `r mnum2(ppv("Turkish", "interaction_per_sd"))` logits per standard deviation of
-affectedness against `r mnum2(ppv("English", "interaction_per_sd"))` in English and
-`r mnum2(ppv("Norwegian", "interaction_per_sd"))` in Norwegian.
-
-The rates change little between 80 and 100 participants, as the verb limit predicts, so recruiting
-beyond 80 would add little in any language. Even with unlimited participants, and averaging over
-the pilot posterior, the interaction would reach a Bayes factor of 10 in `r ceil_txt("English")`
-of English studies, `r ceil_txt("Norwegian")` of Norwegian ones and `r ceil_txt("Turkish")` of
-Turkish ones.
-
-## H2 in Each Pilot Language
-
-In English, the pilot's pseudo-passive-by-affectedness interaction is
-`r snum2(h2post("English", "per_sd_mean"))` logits per standard deviation, with a
-95% credible interval from `r snum2(h2post("English", "per_sd_lo95"))` to
-`r snum2(h2post("English", "per_sd_hi95"))` and `r h2draws("English")` posterior draws below zero.
-At 80 participants, H2 reaches a Bayes factor of 10 in `r pct0(da_rate("English", 80, "n_h2b"))`
-`r da_ci("English", 80, "n_h2b")` of simulated studies, more often than H1.
-
-In Turkish, the pilot interaction runs the other way, at
-`r snum2(h2post("Turkish", "per_sd_mean"))` per standard deviation, with a 95% credible interval
-from `r snum2(h2post("Turkish", "per_sd_lo95"))` to `r snum2(h2post("Turkish", "per_sd_hi95"))`,
-so the affectedness slope is steeper for Turkish pseudo-passives than for passives. The
-simulations draw their effects from that posterior and inherit the reversal. At 80 participants,
-`r pct0(da_rate("Turkish", 80, "n_h2a"))` of simulated Turkish studies give a Bayes factor for H2 of
-1/10 or less, evidence against it, and the remaining `r da("Turkish", 80, "n_h2_inconclusive")` of
-`r da_reps` are inconclusive. By contrast, the per-language models of the meta-analysis show the
-negative interaction in Balinese, Indonesian and Mandarin.
-
 ## The Confirmatory Pooled Test
-
-The per-language rates above come from the three pilot languages, and
-`r K_PLAN - max(k7$n_known)` of the `r K_PLAN` planned languages have no data yet. A normal
-approximation to the per-language test, calibrated against the three pilots' simulated rates,
-gives the expected rate for such a language analysed on its own. If its effect comes from the
-population described below, with the spread across the measured languages, it reaches a Bayes
-factor of 10 in about `r pct0(pla_rate("h1"))` of studies on H1 and `r pct0(pla_rate("h2"))` on
-H2. Across the three spreads considered there, the rates run from `r pla_range("h1")` for H1 and
-from `r pla_range("h2")` for H2.
-
-A test on the mean across languages needs more than a few languages. With the three pilots
-analysed together in the single model across languages, the active interaction reaches a Bayes
-factor of 10 in only `r pooled_combined()$txt` of `r pooled_combined()$n` simulated studies at
-`r min(pooled_combined()$ns)` to `r max(pooled_combined()$ns)` participants per language. The rate
-shows no trend over that range. It is held down by the variation of the effect between languages,
-which neither verbs nor participants reduce and three languages estimate poorly. These
-simulations used the structure of the published meta-analysis model, with its by-verb
-affectedness slope. Another `r pooled_missing$missing` of the `r pooled_missing$planned` planned
-studies, `r pooled_missing$at_max` of them at `r max(pooled_combined()$ns)` participants,
-returned no result, and counting them as failures would lower the rate to
-`r pct0(pooled_missing$worst)`.
 
 The collaborators expect at least `r K_PLAN` languages, `r K_PLAN_PP` of them with a
 pseudo-passive, so the confirmatory test is simulated with `r K_PLAN` languages. The seven
@@ -799,16 +733,14 @@ field.
 
 # Limitations
 
-At 80 participants, no simulated fit has a divergent transition or a saturated treedepth.
-Confirmatory fits must also reach an R-hat below 1.01 and bulk and tail effective sample sizes of at
-least 400. With the shorter runs used for simulation, `r da("English", 80, "n_converged")` of
-`r da_reps` English fits meet those thresholds, as do `r da("Norwegian", 80, "n_converged")`
-Norwegian and `r da("Turkish", 80, "n_converged")` Turkish fits. The rates above count all fits,
-and restricting them to the passing fits gives `r pct0(jval("English", 80, "p_h1b_converged"))`
-in English, `r pct0(jval("Norwegian", 80, "p_h1b_converged"))` in Norwegian and
-`r pct0(jval("Turkish", 80, "p_h1b_converged"))` in Turkish, each within what a random subset of
-that size would show. With longer chains and four times as many of them, the confirmatory fits
-will have six times the post-warm-up draws.
+At 80 participants, no simulated per-language fit has a divergent transition or a saturated
+treedepth. Confirmatory fits must also reach an R-hat below 1.01 and bulk and tail effective sample
+sizes of at least 400. With the shorter runs used for simulation, `r da("English", 80, "n_converged")`
+of `r da_reps` English fits meet those thresholds, as do `r da("Norwegian", 80, "n_converged")`
+Norwegian and `r da("Turkish", 80, "n_converged")` Turkish fits. The fits that met them gave the
+same results as the others, within what random subsets of their size would show. With longer
+chains and four times as many of them, the confirmatory fits will have six times the post-warm-up
+draws.
 
 <!-- The figures in the next paragraph are typed, because their source stays on the
      cluster: the pooled refit of 20-27 August 2026 (job 8614954, model level

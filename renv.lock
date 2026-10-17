@@ -201,6 +201,40 @@
       ],
       "Hash": "0c54cf3a08cc0e550fbd64ad33166143"
     },
+    "bayesmeta": {
+      "Package": "bayesmeta",
+      "Version": "3.5",
+      "Source": "Repository",
+      "Priority": null,
+      "Depends": [
+        "forestplot (>= 2.0.0)",
+        "metafor (>= 2.0-0)",
+        "mvtnorm (>= 1.1-1)",
+        "numDeriv (>= 2016.8-1.1)"
+      ],
+      "Imports": [
+        null
+      ],
+      "LinkingTo": [
+        null
+      ],
+      "Suggests": [
+        "compute.es",
+        "knitr",
+        "rmarkdown",
+        "R.rsp"
+      ],
+      "Enhances": [
+        null
+      ],
+      "License": "GPL (>= 2)",
+      "License_is_FOSS": null,
+      "License_restricts_use": null,
+      "OS_type": null,
+      "NeedsCompilation": "no",
+      "Repository": "CRAN",
+      "Type": "source"
+    },
     "bayesplot": {
       "Package": "bayesplot",
       "Version": "1.15.0",
@@ -741,6 +775,50 @@
       ],
       "Hash": "1a0a9a3d5083d0d573c4214576f1e690"
     },
+    "forestplot": {
+      "Package": "forestplot",
+      "Version": "3.2.0",
+      "Source": "Repository",
+      "Priority": null,
+      "Depends": [
+        "R (>= 4.1.0)",
+        "grid",
+        "checkmate",
+        "abind"
+      ],
+      "Imports": [
+        null
+      ],
+      "LinkingTo": [
+        null
+      ],
+      "Suggests": [
+        "dplyr",
+        "Gmisc",
+        "Greg",
+        "knitr",
+        "purrr",
+        "rlang",
+        "rmarkdown",
+        "rmeta",
+        "rms",
+        "testthat",
+        "tibble",
+        "tidyr",
+        "tidyselect",
+        "tidyverse"
+      ],
+      "Enhances": [
+        null
+      ],
+      "License": "GPL-2",
+      "License_is_FOSS": null,
+      "License_restricts_use": null,
+      "OS_type": null,
+      "NeedsCompilation": "no",
+      "Repository": "CRAN",
+      "Type": "source"
+    },
     "fs": {
       "Package": "fs",
       "Version": "1.6.5",
@@ -1267,6 +1345,34 @@
       ],
       "Hash": "7ce2733a9826b3aeb1775d56fd305472"
     },
+    "mathjaxr": {
+      "Package": "mathjaxr",
+      "Version": "2.0-0",
+      "Source": "Repository",
+      "Priority": null,
+      "Depends": [
+        null
+      ],
+      "Imports": [
+        null
+      ],
+      "LinkingTo": [
+        null
+      ],
+      "Suggests": [
+        null
+      ],
+      "Enhances": [
+        null
+      ],
+      "License": "GPL-3",
+      "License_is_FOSS": null,
+      "License_restricts_use": null,
+      "OS_type": null,
+      "NeedsCompilation": "no",
+      "Repository": "CRAN",
+      "Type": "source"
+    },
     "matrixStats": {
       "Package": "matrixStats",
       "Version": "1.5.0",
@@ -1287,6 +1393,120 @@
         "rlang"
       ],
       "Hash": "e2817ccf4a065c5d9d7f2cfbe7c1d78c"
+    },
+    "metadat": {
+      "Package": "metadat",
+      "Version": "1.6-0",
+      "Source": "Repository",
+      "Priority": null,
+      "Depends": [
+        "R (>= 4.0.0)"
+      ],
+      "Imports": [
+        "utils",
+        "tools",
+        "mathjaxr"
+      ],
+      "LinkingTo": [
+        null
+      ],
+      "Suggests": [
+        "metafor",
+        "numDeriv",
+        "BiasedUrn",
+        "dfoptim",
+        "igraph",
+        "ape",
+        "testthat",
+        "digest",
+        "lme4",
+        "clubSandwich",
+        "meta",
+        "netmeta",
+        "mvtnorm",
+        "gridExtra",
+        "rms",
+        "bayesmeta",
+        "ellipse",
+        "metasens",
+        "mada"
+      ],
+      "Enhances": [
+        null
+      ],
+      "License": "GPL (>= 2)",
+      "License_is_FOSS": null,
+      "License_restricts_use": null,
+      "OS_type": null,
+      "NeedsCompilation": "no",
+      "Repository": "CRAN",
+      "Type": "source"
+    },
+    "metafor": {
+      "Package": "metafor",
+      "Version": "5.0-1",
+      "Source": "Repository",
+      "Depends": [
+        "R (>= 4.0.0)",
+        "methods",
+        "Matrix",
+        "metadat",
+        "numDeriv"
+      ],
+      "Imports": [
+        "stats",
+        "utils",
+        "graphics",
+        "grDevices",
+        "nlme",
+        "mathjaxr",
+        "pbapply",
+        "digest"
+      ],
+      "Suggests": [
+        "lme4",
+        "pracma",
+        "minqa",
+        "nloptr",
+        "dfoptim",
+        "ucminf",
+        "lbfgsb3c",
+        "subplex",
+        "BB",
+        "Rsolnp",
+        "alabama",
+        "optimParallel",
+        "optimx",
+        "CompQuadForm",
+        "mvtnorm",
+        "BiasedUrn",
+        "Epi",
+        "survival",
+        "GLMMadaptive",
+        "glmmTMB",
+        "car",
+        "multcomp",
+        "gsl",
+        "sp",
+        "ape",
+        "boot",
+        "clubSandwich",
+        "crayon",
+        "R.rsp",
+        "testthat",
+        "rmarkdown",
+        "wildmeta",
+        "emmeans",
+        "estmeansd",
+        "metaBLUE",
+        "rstudioapi",
+        "glmulti",
+        "MuMIn",
+        "mice",
+        "Amelia",
+        "calculus"
+      ],
+      "Repository": "CRAN"
     },
     "mgcv": {
       "Package": "mgcv",
@@ -1431,6 +1651,23 @@
         "utils"
       ],
       "Hash": "3ac8b1c7e85ecaf8c54413d1ebc5503a"
+    },
+    "pbapply": {
+      "Package": "pbapply",
+      "Version": "1.7-4",
+      "Source": "Repository",
+      "Depends": [
+        "R (>= 3.2.0)"
+      ],
+      "Imports": [
+        "parallel"
+      ],
+      "Suggests": [
+        "shiny",
+        "future",
+        "future.apply"
+      ],
+      "Repository": "CRAN"
     },
     "pillar": {
       "Package": "pillar",

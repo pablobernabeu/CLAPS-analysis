@@ -1,0 +1,55 @@
+# config/stage2_languages.csv
+# One row per variety (language team), mapping it to its language and family as
+# defined by Glottolog 5.3 (Hammarstrom et al., 2026), as the Stage 1 report
+# registers. Varieties of one language are averaged into one estimate before the
+# meta-analysis and count once towards the minimum of 20 languages. The variety
+# labels must match the Variety column of the teams' data. Rows are the teams
+# recruited by October 2026; the note column flags the cases where Glottolog
+# splits a name into several languages and the team's variety decides which.
+variety,language,family,note
+Afrikaans,Afrikaans,Indo-European,
+Kaaps,Afrikaans,Indo-European,variety of Afrikaans
+Namakwalands,Afrikaans,Indo-European,variety of Afrikaans
+Albanian,Albanian,Indo-European,Glottolog splits Gheg and Tosk Albanian; set from the team's variety
+Amharic,Amharic,Afro-Asiatic,
+Brazilian Portuguese,Portuguese,Indo-European,
+Cantonese,Yue Chinese,Sino-Tibetan,
+Croatian,Serbian-Croatian-Bosnian,Indo-European,Glottolog treats Croatian as a variety of Serbian-Croatian-Bosnian
+Dutch,Dutch,Indo-European,
+English,English,Indo-European,
+Farsi,Western Farsi,Indo-European,
+French,French,Indo-European,
+Georgian,Georgian,Kartvelian,
+German,Standard German,Indo-European,
+Gilaki,Gilaki,Indo-European,
+Greek,Modern Greek,Indo-European,
+Hebrew,Modern Hebrew,Afro-Asiatic,
+Hijazi Arabic,Hijazi Arabic,Afro-Asiatic,
+Indonesian,Indonesian,Austronesian,
+Italian,Italian,Indo-European,
+Japanese,Japanese,Japonic,
+Kurmanji,Northern Kurdish,Indo-European,
+Luri,Luri,Indo-European,Glottolog splits Northern and Southern Luri; set from the team's variety
+Mandarin (Mainland),Mandarin Chinese,Sino-Tibetan,
+Mandarin (Taiwanese),Mandarin Chinese,Sino-Tibetan,variety of Mandarin Chinese
+Marathi,Marathi,Indo-European,
+Najdi Arabic,Najdi Arabic,Afro-Asiatic,
+Nama,Khoekhoe,Khoe-Kwadi,Glottolog lists Nama under Khoekhoe
+Norwegian,Norwegian,Indo-European,
+Oromo,Oromo,Afro-Asiatic,Glottolog splits Oromo into several languages; set from the team's variety
+Papuan Malay,Papuan Malay,Austronesian,
+Polish,Polish,Indo-European,
+Romanian,Romanian,Indo-European,
+Russian,Russian,Indo-European,
+Slovak,Slovak,Indo-European,
+Slovenian,Slovenian,Indo-European,
+Spanish (Castilian),Spanish,Indo-European,
+Spanish (Colombian),Spanish,Indo-European,variety of Spanish
+Spanish (Yucatec),Spanish,Indo-European,variety of Spanish
+Spanish (Chilean),Spanish,Indo-European,variety of Spanish
+Tagalog,Tagalog,Austronesian,
+Tunisian Arabic,Tunisian Arabic,Afro-Asiatic,
+Turkish,Turkish,Turkic,
+Urdu,Urdu,Indo-European,
+Vietnamese,Vietnamese,Austroasiatic,
+Zazaki,Zazaki,Indo-European,Glottolog splits Zazaki into Dimli and Kirmanjki; set from the team's variety
