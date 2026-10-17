@@ -1,110 +1,100 @@
-# CLAPS: Bayesian Ordinal Design and Power Analysis
+# CLAPS: analysis materials for the Registered Report
 
-Public analysis materials for the CLAPS study. CLAPS asks whether the acceptability
-of passive and related sentence types tracks semantic affectedness, and whether that
-relationship differs by sentence type, across English, Norwegian and Turkish. This
-repository holds the Bayesian cumulative-ordinal modelling workflow, the Bayes-factor
-design (power) analysis and the resulting reports.
+CLAPS (A Crosslinguistic Approach to Passive Semantics) asks whether the acceptability of
+passive sentences tracks how strongly the event affects the person it happens to, more than
+the acceptability of actives and pseudo-passives does, and whether this holds across languages.
+Teams in at least 20 languages will each collect acceptability judgments from 80 participants
+and affectedness ratings from 20 more. This repository holds the analysis registered in the
+Stage 1 Registered Report, the design analysis behind its sampling plan, and the report of
+that design analysis.
 
-> **Data availability.** The raw pilot and participant data are **not** included in
-> this repository. They are held private to the CLAPS project until it reaches a more
-> advanced stage. The design-analysis results here come from simulated data sets (a
-> Monte-Carlo design analysis), so the summary tables under `outputs/` and the
-> rendered reports need no participant data. Scripts that process the pilot data (for
-> example `scripts/00_harmonise_pilot_data.R` and `scripts/02_fit_pilot_models.R`) are
-> included for transparency but cannot be run without the withheld data.
+> **Data.** No participant data are included here. The design analysis rests on simulated data,
+> and the summaries it reads are under `outputs/`. Scripts that process the pilot data are
+> included for transparency but cannot be run without them.
 
-## What the analysis does
+## The hypotheses
 
-- **Model**: Bayesian cumulative (ordered-logit) mixed-effects model in `brms` /
-  `cmdstanr`.
-- **Inference**: directional Savage–Dickey Bayes factors, with bridge sampling as a
-  calibration check.
-- **Design analysis**: a Monte-Carlo Bayes-factor design analysis estimating, by
-  simulation, the probability of decisive evidence at each sample size, prior regime
-  and model-ladder level.
+| | Coefficient | Prediction | Tested on |
+|---|---|---|---|
+| H1 | Active by affectedness interaction | Negative: the affectedness slope is steeper for passives than for actives | The mean across all languages |
+| H2 | Pseudo-passive by affectedness interaction | Negative: the slope is steeper for passives than for pseudo-passives | The mean across the languages with a pseudo-passive |
 
-## Headline result
+Each language is analysed with a Bayesian cumulative-logit mixed-effects model, and the
+per-language estimates are combined in a Bayesian random-effects meta-analysis. Each hypothesis
+is decided by a directional Bayes factor: 10 or more is strong evidence for it, 1/10 or less
+strong evidence that the interaction runs the other way, and anything in between is
+inconclusive. In the code and output files, H1 and H2 carry the labels `h1b` and `h2b`.
 
-Power is governed mainly by the number of verbs in the materials, not by the number of
-participants. In the data-grounded analysis at the current verb counts, Norwegian reaches
-the conventional 80% joint-power target at about 100 participants, while English and
-Turkish plateau below it as participants are added. A pooled cross-linguistic analysis is
-therefore the preferred feasible design. Its first cell, at 50 participants per language,
-has 96% joint power at the moderate Bayes-factor threshold of 3 but 36% at the
-strong-evidence threshold of 10; larger pooled cells are still awaited. The independent
-literature-anchored cross-check is more optimistic, reaching target at or below 50
-participants with the full verb set. Full operating characteristics and the remaining
-design choices are in the current report under `reports/`
-(`CLAPS_preliminary_sample_size_analysis_<date>.pdf`).
+## The registered analysis
 
-## Repository structure
+`stage2/` holds the confirmatory analysis as six numbered scripts, run in this order from the
+repository root:
 
-```
-R/         Analysis modules (model formulas, priors, hypothesis tests, ...)
-scripts/   Runnable pipeline scripts (grid generation, fitting, aggregation, ...)
-hpc/       SLURM batch and array scripts (University of Oxford ARC)
-config/    YAML and CSV configuration, including the design grids
-reports/   Reproducible public QMD, rendered report PDF and citation style
-outputs/   Aggregated design-analysis result tables (CSV)
-docs/      Pipeline, submission and preregistration documentation
-references.bib, renv.lock, targets.R
-```
+| Order | Script | What it does |
+|---|---|---|
+| 1 | `stage2/01_check_and_exclude.R` | Checks the teams' data and applies the registered exclusions |
+| 2 | `stage2/02_affectedness.R` | Builds the affectedness predictor and runs the outcome-neutral check |
+| 3 | `stage2/03_fit_language_models.R` | Fits each language's model by the registered ladder |
+| 4 | `stage2/04_meta_analysis.R` | Tests H1 and H2 |
+| 5 | `stage2/05_robustness_single_model.R` | Robustness check: a single model across languages |
+| 6 | `stage2/06_robustness_families.R` | Robustness check: languages nested within families |
+
+`stage2/README.md` describes the input format, the decisions each step makes and the cluster
+scripts, and `stage2/dry_run/` runs every step end to end on simulated data. The functions are
+in `R/14_stage2.R`, and their tests in `tests/testthat/test-stage2.R`. The registered settings
+are in the `stage2` block of `config/analysis_config.yaml`.
+
+## The design analysis
+
+With 20 languages, 15 of them with a pseudo-passive, and 80 participants per language, the
+registered test reaches a directional Bayes factor of 10 in 88% of simulated studies for H1 and
+89% for H2 (`outputs/design_summary_pilot/klanguage_registered.csv`, from
+`scripts/run_klanguage_registered.R`). These rates take the spread of the effect between
+languages from the seven languages measured so far: the three CLAPS pilots (English, Norwegian
+and Turkish) and the four further languages of Ambridge, Arnon and Bekman (2023). The spread is
+what limits the test, and the report gives the rates under other plausible spreads.
 
 ## The report
 
-The current report is provided as both
-`reports/preliminary_sample_size_analysis.qmd` and the pre-rendered
-`reports/CLAPS_preliminary_sample_size_analysis_<date>.pdf`. The public QMD retains the
-report's text, figures, tables and appendices, while remaining independent of
-participant-level pilot data. It reads the simulation summaries committed under
-`outputs/`, embeds the disclosure-reviewed report figure at
-`outputs/figures/pilot_acceptability_by_gender_report.png`, and reads aggregate
-sample-composition counts from
-`outputs/design_summary_pilot/pilot_sample_composition.csv`.
-
-A second and separate image, `outputs/figures/raw_gender_comparison.png`, is the standalone
-gender robustness check produced by `scripts/12_plot_raw_gender_comparison.R`. It does not
-appear in the report. The scripts that build both images from the raw pilot data are
-included for transparency but cannot be run without the withheld data. The private report
-source generates the report figure and the sample counts directly from the pilot data,
-whereas the public source uses only the committed derivatives.
-
-### Rebuilding the public report
-
-With R, Quarto and a LaTeX distribution installed, restore the locked R environment and
-render from the repository root:
+`reports/CLAPS_preliminary_sample_size_analysis_<date>.pdf` is the current report, and
+`reports/preliminary_sample_size_analysis.qmd` its source. The public source reads only the
+summaries committed under `outputs/`, a disclosure-reviewed raster of its first figure and
+aggregate sample counts, so it rebuilds without participant data. With R, Quarto and a LaTeX
+distribution installed, restore the locked R environment and render from the repository root:
 
 ```sh
 Rscript -e "renv::restore(prompt = FALSE)"
 quarto render reports/preliminary_sample_size_analysis.qmd
 ```
 
-The rebuild requires no participant-level data. It should reproduce the content, tables and
-pagination of the committed PDF alongside it, which is the reference to compare against. It
-is not expected to be byte-identical. The source carries the render date, TeX records
-creation metadata, and the public build embeds a disclosure-reviewed raster of Figure 1
-where the private build generates that figure directly from pilot rows.
+The rebuild should reproduce the content, tables and pagination of the committed PDF, though not
+byte for byte: the source carries the render date, TeX records creation metadata, and the public
+build embeds the raster of Figure 1 where the private build draws it from the pilot ratings.
 
-## Focal hypotheses
+## Repository structure
 
-| ID    | Parameter                         | Direction          |
-|-------|-----------------------------------|--------------------|
-| H1a   | Affectedness slope (passive)      | > 0                |
-| H1b   | Active × affectedness interaction | < 0                |
-| H2a/b | Pseudo-passive × affectedness     | Both (secondary)   |
+```
+stage2/    The registered Stage 2 analysis, numbered in run order
+R/         Analysis modules (model formulas, priors, ladder, meta-analysis, ...)
+scripts/   Runnable scripts of the design analysis (fitting, simulation, aggregation, ...)
+hpc/       SLURM batch and array scripts (University of Oxford ARC)
+config/    YAML and CSV configuration, including the design grids and the language table
+reports/   Report source, rendered PDF and citation style
+outputs/   Aggregated design-analysis results (CSV)
+tests/     Unit tests
+docs/      Pipeline, submission and preregistration documentation
+references.bib, renv.lock, targets.R
+```
 
-## Prior regimes
+## Priors
 
-| Regime               | Role                                                                |
-|----------------------|---------------------------------------------------------------------|
-| `primary`            | Weakly-to-moderately informative, the prespecified analysis prior   |
-| `weak`               | Wider scales, a sensitivity check                                   |
-| `literature_centred` | Direction-encoding, a sensitivity check (shown as LC in the report) |
-| `heavy_tailed`       | Student-t scales, a robustness check                                |
+Every reported result uses the `primary` prior regime in `R/03_define_priors.R`: zero-centred
+normal priors on the focal slopes, so that neither sign is favoured. The `weak`,
+`literature_centred` and `heavy_tailed` regimes in the same file were used only to check the
+design analysis's sensitivity to the priors.
 
 ## Compute
 
-The fits were run CPU-only on the University of Oxford ARC cluster. The `hpc/` scripts
-use placeholder identifiers (`PROJECT_ID`, `PROJECT_GROUP`) and absolute paths in place
-of a specific cluster allocation. Set these for your own project before use.
+The fits run CPU-only on the University of Oxford's ARC cluster. The `hpc/` scripts use
+placeholder identifiers (`PROJECT_ID`, `PROJECT_GROUP`) in place of a specific allocation; set
+these for your own project before use.

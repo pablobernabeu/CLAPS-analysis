@@ -22,9 +22,14 @@ outputs/**/prior_sensitivity.csv
 
 # Heavy raw fit outputs (kept on the cluster, not distributed)
 outputs/design_analysis/
+outputs/design_pooled_v2/
 outputs/cmdstan_tmp/
 outputs/logs/
 outputs/pilot_models/
+
+# Stage 2: the fits, and the dry run, which stage2/dry_run/simulate_data.R regenerates
+outputs/stage2/fits/
+outputs/stage2_dry_run/
 
 # OS cruft
 .DS_Store
