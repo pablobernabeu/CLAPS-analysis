@@ -43,6 +43,14 @@
 # The rates go to klanguage_registered_verbs.csv, one set per count; at 72 verbs they
 # are the registered table's. This option and --se-scale cannot be combined.
 #
+# The registered table assumes that the measured languages take part, seven for H1
+# and five for H2, each with its effect drawn from its estimate. With --known=none
+# none of them does, and every one of the K languages is drawn from the population
+# estimated from them, as the "none known" rows of klanguage_known7.csv were drawn.
+# The seeds are unchanged and the rates go to a table with "_none_known" added to its
+# name. The H1 studies are checked against those reported rows; no reported H2 cell
+# draws every language, so H2 has no check.
+#
 # Inputs: outputs/design_summary_pilot/{cross_language_effects_harmonised,
 #   pilot_params_ceilings,klanguage_known7,klanguage_pseudo_passive}.csv,
 #   config/prior_grid.yaml and the pilot posteriors in outputs/pilot_models
@@ -50,11 +58,12 @@
 #   --se-scale=calibrated, per_language_approximations.csv.
 # Output: klanguage_registered.csv in --outdir, or klanguage_registered_se_scaled.csv
 #   when the SEs are widened, or klanguage_registered_verbs.csv for other verb counts,
-#   and a run log. Writing into outputs/design_summary_pilot replaces the reported
-#   table, so it needs --overwrite-reported, and the log then goes to outputs/logs.
+#   each with "_none_known" added under --known=none, and a run log. Writing into
+#   outputs/design_summary_pilot replaces the reported table, so it needs
+#   --overwrite-reported, and the log then goes to outputs/logs.
 # Run from design_analysis/:
 #   Rscript scripts/run_klanguage_registered.R --outdir=DIR [--reps=4000]
-#     [--se-scale=calibrated | --n-verbs=72,48,36] [--log=FILE]
+#     [--se-scale=calibrated | --n-verbs=72,48,36] [--known=none] [--log=FILE]
 # ---------------------------------------------------------------------------
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -93,6 +102,11 @@ OUT_NAME <- if (VERBS_RUN) {
 } else {
   "klanguage_registered_se_scaled"
 }
+# Whether the measured languages take part: "measured" for the registered table.
+KNOWN <- aval("--known", "measured")
+if (!KNOWN %in% c("measured", "none")) stop("--known must be 'measured' or 'none'")
+NONE_KNOWN <- KNOWN == "none"
+if (NONE_KNOWN) OUT_NAME <- paste0(OUT_NAME, "_none_known")
 
 source("R/13_simulate_klanguage_pooled.R")
 writes_reported <- guard_reported_dir(OUT, args)
@@ -103,7 +117,7 @@ INPUTS <- c(file.path(IN, c("cross_language_effects_harmonised.csv", "pilot_para
             file.path(PILOT_MODELS, paste0("pilot_dgp_v2_pilot_", c("English", "Turkish", "Norwegian"), ".rds")),
             if (identical(SE_SCALE_ARG, "calibrated")) APPROX_TABLE)
 log_con <- start_run_log(LOG, INPUTS, replicates = REPS, se_scale = SE_SCALE,
-                         n_verbs = paste(N_VERBS, collapse = ","), out = OUT)
+                         n_verbs = paste(N_VERBS, collapse = ","), known = KNOWN, out = OUT)
 
 H  <- read.csv(file.path(IN, "cross_language_effects_harmonised.csv"))
 PP <- read.csv(file.path(IN, "pilot_params_ceilings.csv"))
@@ -202,22 +216,24 @@ variant_rows <- function(Y0, sp0, variants, draw, lead, prior_sd) {
 }
 
 variants1 <- se_variants(SE_VERB, SE_PPT1)
+known1 <- if (NONE_KNOWN) P1$seven[0, ] else P1$seven
 
 h1 <- do.call(rbind, lapply(names(TSD1), function(pn) {
+  tsd <- if (NONE_KNOWN) 0 else TSD1[[pn]]
   draw <- function(sp) {
-    simulate_partly_known_estimates(K_PLAN, P1$seven, REPS, sp$indep, pop = P1[[pn]],
+    simulate_partly_known_estimates(K_PLAN, known1, REPS, sp$indep, pop = P1[[pn]],
                                     shared_verb_sd = sp$shared,
-                                    transfer_sd = transfer_sd_by_source(P1$seven, TSD1[[pn]]),
+                                    transfer_sd = transfer_sd_by_source(known1, tsd),
                                     seed = 7000L + K_PLAN)$Y
   }
   Y0 <- draw(sp1)
+  ks <- if (NONE_KNOWN) "none known" else sprintf("seven, drawn, 2023 widened %.2f", tsd)
   check_reported(Y0, sp1,
                  ref1[ref1$reading_variant == "canonical" & ref1$population == pn &
-                        ref1$mode == "assurance" & ref1$K == K_PLAN &
-                        ref1$known_set == sprintf("seven, drawn, 2023 widened %.2f", TSD1[[pn]]), ],
+                        ref1$mode == "assurance" & ref1$K == K_PLAN & ref1$known_set == ks, ],
                  paste("H1,", pn))
   variant_rows(Y0, sp1, variants1, draw,
-               data.frame(hypothesis = "H1", population = pn, K = K_PLAN, transfer_sd = TSD1[[pn]],
+               data.frame(hypothesis = "H1", population = pn, K = K_PLAN, transfer_sd = tsd,
                           prior_mu_sd = P_H1, prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE),
                P_H1)
 }))
@@ -266,22 +282,28 @@ P2 <- list(claps_protocol = k5[k5$source == "CLAPS_pilot", ], five = k5,
 ref2 <- read.csv(file.path(IN, "klanguage_pseudo_passive.csv"))
 
 variants2 <- se_variants(mean(fl), se_ppt2)
+known2 <- if (NONE_KNOWN) k5[0, ] else k5
+tsd2 <- if (NONE_KNOWN) 0 else 0.15
 
 h2 <- do.call(rbind, lapply(names(P2), function(pn) {
   draw <- function(sp) {
-    simulate_partly_known_estimates(K_PLAN_PP, k5, REPS, sp$indep, pop = P2[[pn]],
+    simulate_partly_known_estimates(K_PLAN_PP, known2, REPS, sp$indep, pop = P2[[pn]],
                                     shared_verb_sd = sp$shared,
-                                    transfer_sd = transfer_sd_by_source(k5, 0.15),
+                                    transfer_sd = transfer_sd_by_source(known2, tsd2),
                                     seed = 8000L + K_PLAN_PP)$Y
   }
   Y0 <- draw(sp2)
-  check_reported(Y0, sp2,
-                 ref2[ref2$population == pn & ref2$known_set == "five, drawn, Glossa widened 0.15" &
-                        ref2$mode == "assurance" & ref2$K_pp == K_PLAN_PP &
-                        ref2$prior_tau_scale == CALIBRATED_TAU_PRIOR_SCALE, ],
-                 paste("H2,", pn))
+  if (NONE_KNOWN) {
+    cat("check skipped for H2,", pn, ": no reported cell draws every language\n")
+  } else {
+    check_reported(Y0, sp2,
+                   ref2[ref2$population == pn & ref2$known_set == "five, drawn, Glossa widened 0.15" &
+                          ref2$mode == "assurance" & ref2$K_pp == K_PLAN_PP &
+                          ref2$prior_tau_scale == CALIBRATED_TAU_PRIOR_SCALE, ],
+                   paste("H2,", pn))
+  }
   variant_rows(Y0, sp2, variants2, draw,
-               data.frame(hypothesis = "H2", population = pn, K = K_PLAN_PP, transfer_sd = 0.15,
+               data.frame(hypothesis = "H2", population = pn, K = K_PLAN_PP, transfer_sd = tsd2,
                           prior_mu_sd = P_H2, prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE),
                P_H2)
 }))
@@ -289,6 +311,7 @@ h2 <- do.call(rbind, lapply(names(P2), function(pn) {
 out <- rbind(h1, h2)
 # The registered table keeps its columns; a widened run records its factor.
 if (SE_SCALE != 1) out$se_scale <- SE_SCALE
+if (NONE_KNOWN) out$known <- KNOWN
 print(out, row.names = FALSE, digits = 3)
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 out_file <- file.path(OUT, paste0(OUT_NAME, ".csv"))

@@ -43,6 +43,13 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   every language, H1 falls from 87.85% to 86.0% and H2 from 88.85% to 88.0%. The rows for
   72 verbs are the registered rates, and `klanguage_registered.csv` is unchanged
   (2026-10-13).
+- `scripts/run_klanguage_registered.R --known=none`, which writes
+  `klanguage_registered_none_known.csv`: the registered test when none of the measured
+  languages takes part, so that every language is drawn from the population estimated
+  from them, with the same seeds. H1 falls from 87.85% to 81.2% [80.0, 82.4] and H2
+  from 88.85% to 82.3% [81.1, 83.5]. Analysed the earlier way, the H1 studies reproduce
+  the "none known" rows of `klanguage_known7.csv` exactly, and `klanguage_registered.csv`
+  is unchanged (2026-10-21).
 - Three columns in `glossa_tau_refit_summary.csv`, from
   `scripts/summarise_glossa_tau_refit.R`: the share of each verb term's variance common
   to all languages in the refit's verb-split arms, 0.16 (M1) and 0.18 (M2) for the
