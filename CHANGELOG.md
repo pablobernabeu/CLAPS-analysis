@@ -50,6 +50,24 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   from 88.85% to 82.3% [81.1, 83.5]. Analysed the earlier way, the H1 studies reproduce
   the "none known" rows of `klanguage_known7.csv` exactly, and `klanguage_registered.csv`
   is unchanged (2026-10-21).
+- The same option with `--n-verbs=60,72` and with `--se-scale=calibrated`, which write
+  `klanguage_registered_verbs_none_known.csv` and
+  `klanguage_registered_se_scaled_none_known.csv`. With 60 verbs per language, H1 falls
+  from 81.225% to 81.125% and H2 stays at 82.3%. With widened standard errors, H1 falls
+  to 80.8% and H2 to 82.175% (2026-10-22).
+- Three options of `scripts/run_klanguage_registered.R`: `--mode=point` holds each
+  population's mean and between-language SD at the posterior mean and median, as the
+  reported "point" cells held them; `--k=20,25,30` runs those numbers of languages, three
+  quarters of them with a pseudo-passive; `--bf-bands` adds the shares of studies whose
+  Bayes factor ends at or below 1/10 and between 1/10 and 10. Each adds a word to the
+  table's name. Cells that were reported are checked against them, and the default and
+  `--known=none` tables are byte-identical (2026-10-24).
+- `klanguage_registered_point_bands_none_known.csv` and
+  `klanguage_registered_languages_bands_none_known.csv`, from those options with
+  `--known=none`. At the estimated mean and spread, H1 reaches a Bayes factor of 10 in
+  95.45% of studies and H2 in 97.5%, and no study ends at or below 1/10. Averaged over the
+  uncertainty, 0.875% (H1) and 1.225% (H2) end at or below 1/10. With 25 and 30 languages,
+  H1 reaches 83.725% at both, and H2 84.9% with 19 and 87.15% with 23 (2026-10-24).
 - Three columns in `glossa_tau_refit_summary.csv`, from
   `scripts/summarise_glossa_tau_refit.R`: the share of each verb term's variance common
   to all languages in the refit's verb-split arms, 0.16 (M1) and 0.18 (M2) for the
@@ -58,6 +76,12 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
 
 ### Changed
 
+- The report quotes the registered rates with no measured language taking part, H1 81%
+  and H2 82% (`docs/preregistration_decisions.md`, section 8, amendment of 2026-10-22),
+  and no longer gives the rates under the other two spreads between languages, at the
+  PI's request of 16 and 19 October. Its robustness-check row gives no rate, its
+  limitation on widened standard errors is quoted from the matching table, and its
+  stopping rule closes data collection six months after the 20th language (2026-10-22).
 - Constants that several scripts typed separately are defined once in
   `R/13_simulate_klanguage_pooled.R`: `RHO_EFF_VERB` (0.164), `CLAPS_PILOT_SDX` and
   `REGISTERED_TAU_PRIOR_SCALE` (0.5). The Glossa pseudo-passive terms are read from

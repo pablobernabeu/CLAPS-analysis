@@ -253,7 +253,14 @@ this order, since steps 2 and 4 check themselves against tables written before t
    the same test with every language's standard error widened by the calibration factor
    that step 3 records. Run with `--n-verbs=72,60,48,36,24`, it writes
    `klanguage_registered_verbs.csv`, the same test with every language using each of
-   those numbers of verbs.
+   those numbers of verbs. Adding `--known=none` to any of these runs draws every
+   language from the population, none of the measured ones taking part, and appends
+   `_none_known` to the table's name. The report quotes the three tables run this way:
+   `--known=none` alone, with `--se-scale=calibrated` and with `--n-verbs=60,72`.
+   `--mode=point` gives the power at the estimated mean and spread, `--k=20,25,30` other
+   numbers of languages and `--bf-bands` the shares of studies ending at or below 1/10
+   and between 1/10 and 10; each adds a word (`_point`, `_languages`, `_bands`) to the
+   table's name.
 
 All four read the gitignored pilot extracts in `outputs/pilot_models/`, whose checksums
 are in `config/pilot_models_sha256.csv`. The report reads the tables they write.

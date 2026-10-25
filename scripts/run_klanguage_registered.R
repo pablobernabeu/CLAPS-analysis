@@ -51,6 +51,17 @@
 # name. The H1 studies are checked against those reported rows; no reported H2 cell
 # draws every language, so H2 has no check.
 #
+# The registered table is an assurance: each study draws the population's mean and
+# between-language SD from their posterior. With --mode=point both are held at the
+# posterior mean and median, as the reported "point" cells held them, which gives the
+# power at the estimated effect. With --k=20,25,30 the studies have those numbers of
+# languages, three quarters of them (rounded half up) with a pseudo-passive, each with
+# its own seed, 7000 + K or 8000 + the H2 count, as the reported cells seeded theirs.
+# --bf-bands adds the shares of studies whose Bayes factor ends at or below 1/10 and
+# between 1/10 and 10. Each option adds a word to the table's name ("_point",
+# "_languages", "_bands"), so the registered tables are never overwritten. A study
+# whose cell was reported is checked against it; the others say that no check exists.
+#
 # Inputs: outputs/design_summary_pilot/{cross_language_effects_harmonised,
 #   pilot_params_ceilings,klanguage_known7,klanguage_pseudo_passive}.csv,
 #   config/prior_grid.yaml and the pilot posteriors in outputs/pilot_models
@@ -58,12 +69,13 @@
 #   --se-scale=calibrated, per_language_approximations.csv.
 # Output: klanguage_registered.csv in --outdir, or klanguage_registered_se_scaled.csv
 #   when the SEs are widened, or klanguage_registered_verbs.csv for other verb counts,
-#   each with "_none_known" added under --known=none, and a run log. Writing into
-#   outputs/design_summary_pilot replaces the reported table, so it needs
-#   --overwrite-reported, and the log then goes to outputs/logs.
+#   each with the words above and "_none_known" (under --known=none) added, and a run
+#   log. Writing into outputs/design_summary_pilot replaces the reported table, so it
+#   needs --overwrite-reported, and the log then goes to outputs/logs.
 # Run from design_analysis/:
 #   Rscript scripts/run_klanguage_registered.R --outdir=DIR [--reps=4000]
-#     [--se-scale=calibrated | --n-verbs=72,48,36] [--known=none] [--log=FILE]
+#     [--se-scale=calibrated | --n-verbs=72,48,36 | --k=20,25,30] [--mode=point]
+#     [--bf-bands] [--known=none] [--log=FILE]
 # ---------------------------------------------------------------------------
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -95,6 +107,17 @@ if (!length(N_VERBS) || anyNA(N_VERBS) || any(N_VERBS < 1L | N_VERBS > 72L) || a
 }
 VERBS_RUN <- !identical(N_VERBS, 72L)
 if (VERBS_RUN && SE_SCALE != 1) stop("--n-verbs and --se-scale cannot be combined")
+# The numbers of languages for H1: 20 for the registered table.
+K_LIST <- suppressWarnings(as.integer(strsplit(aval("--k", "20"), ",", fixed = TRUE)[[1]]))
+if (!length(K_LIST) || anyNA(K_LIST) || any(K_LIST < 2L) || anyDuplicated(K_LIST)) {
+  stop("--k must list distinct whole numbers of at least 2")
+}
+K_RUN <- !identical(K_LIST, 20L)
+if (K_RUN && (VERBS_RUN || SE_SCALE != 1)) stop("--k cannot be combined with --n-verbs or --se-scale")
+# How each study's population mean and SD are set: drawn ("assurance") for the registered table.
+MODE <- aval("--mode", "assurance")
+if (!MODE %in% c("assurance", "point")) stop("--mode must be 'assurance' or 'point'")
+BANDS <- "--bf-bands" %in% args
 OUT_NAME <- if (VERBS_RUN) {
   "klanguage_registered_verbs"
 } else if (SE_SCALE == 1) {
@@ -102,6 +125,9 @@ OUT_NAME <- if (VERBS_RUN) {
 } else {
   "klanguage_registered_se_scaled"
 }
+if (K_RUN) OUT_NAME <- paste0(OUT_NAME, "_languages")
+if (MODE == "point") OUT_NAME <- paste0(OUT_NAME, "_point")
+if (BANDS) OUT_NAME <- paste0(OUT_NAME, "_bands")
 # Whether the measured languages take part: "measured" for the registered table.
 KNOWN <- aval("--known", "measured")
 if (!KNOWN %in% c("measured", "none")) stop("--known must be 'measured' or 'none'")
@@ -117,7 +143,8 @@ INPUTS <- c(file.path(IN, c("cross_language_effects_harmonised.csv", "pilot_para
             file.path(PILOT_MODELS, paste0("pilot_dgp_v2_pilot_", c("English", "Turkish", "Norwegian"), ".rds")),
             if (identical(SE_SCALE_ARG, "calibrated")) APPROX_TABLE)
 log_con <- start_run_log(LOG, INPUTS, replicates = REPS, se_scale = SE_SCALE,
-                         n_verbs = paste(N_VERBS, collapse = ","), known = KNOWN, out = OUT)
+                         n_verbs = paste(N_VERBS, collapse = ","), known = KNOWN,
+                         k = paste(K_LIST, collapse = ","), mode = MODE, bf_bands = BANDS, out = OUT)
 
 H  <- read.csv(file.path(IN, "cross_language_effects_harmonised.csv"))
 PP <- read.csv(file.path(IN, "pilot_params_ceilings.csv"))
@@ -126,6 +153,10 @@ PP <- read.csv(file.path(IN, "pilot_params_ceilings.csv"))
 # 15 of them with a pseudo-passive. The report checks that this table carries the same K.
 K_PLAN <- 20L
 K_PLAN_PP <- 15L
+# The H2 count for any number of languages: three quarters with a pseudo-passive, the
+# protocol's assumption, rounded half up.
+k_pp <- function(K) as.integer(floor(0.75 * K + 0.5))
+stopifnot(k_pp(K_PLAN) == K_PLAN_PP)
 
 # The per-language model's prior SDs for the two interactions (primary regime). They
 # are read from config/prior_grid.yaml, which a unit test in tests/testthat/test-priors.R
@@ -161,6 +192,30 @@ check_reported <- function(Y, sp, ref, label) {
   if (!isTRUE(all.equal(got$power, ref$power))) {
     stop("[check] ", label, " no longer reproduces the reported cell")
   }
+}
+
+#' check_reported() where a reported cell exists, and otherwise a note that none does.
+#'
+#' The registered cell (20 languages for H1, 15 for H2, assurance) must always be found,
+#' so check_reported() is called for it even when the row is missing, and stops.
+#'
+#' @param registered Whether this is the registered cell.
+#' @inheritParams check_reported
+check_if_reported <- function(Y, sp, ref, label, registered) {
+  if (!registered && nrow(ref) == 0L) {
+    cat("check skipped for", label, ": no reported cell\n")
+    return(invisible(NULL))
+  }
+  check_reported(Y, sp, ref, label)
+}
+
+#' The point values of a population's mean and SD, as the reported "point" cells set them.
+#'
+#' @param pop Anchor set with columns y and s.
+#' @return list(mu, tau): the posterior mean of the mean and the posterior median of tau.
+point_values <- function(pop) {
+  post <- ra_meta_posterior(pop$y, pop$s, prior_tau_scale = DESIGN_TAU_PRIOR_SCALE)
+  list(mu = post$mu_mean, tau = post$tau_median)
 }
 
 #' A standard-error split from split_se() with both parts multiplied by one factor.
@@ -209,8 +264,14 @@ ref1 <- read.csv(file.path(IN, "klanguage_known7.csv"))
 variant_rows <- function(Y0, sp0, variants, draw, lead, prior_sd) {
   do.call(rbind, lapply(variants, function(v) {
     Y <- if (identical(v$sp, sp0)) Y0 else draw(v$sp)
-    row <- cbind(lead, detection_rate(two_stage_p_negative(Y, sqrt(v$sp$indep^2 + v$sp$shared^2), prior_sd)))
+    p <- two_stage_p_negative(Y, sqrt(v$sp$indep^2 + v$sp$shared^2), prior_sd)
+    row <- cbind(lead, detection_rate(p))
     if (VERBS_RUN) row$n_verbs <- v$n_verbs
+    if (BANDS) {
+      bf <- bf_from_p_negative(p)
+      row$p_bf_low <- mean(bf <= 1 / 10)
+      row$p_inconclusive <- mean(bf > 1 / 10 & bf < 10)
+    }
     row
   }))
 }
@@ -218,25 +279,32 @@ variant_rows <- function(Y0, sp0, variants, draw, lead, prior_sd) {
 variants1 <- se_variants(SE_VERB, SE_PPT1)
 known1 <- if (NONE_KNOWN) P1$seven[0, ] else P1$seven
 
-h1 <- do.call(rbind, lapply(names(TSD1), function(pn) {
+#' H1 rows for one number of languages and one population.
+#'
+#' @param K Number of languages.
+#' @param pn Name of the population in P1.
+h1_cell <- function(K, pn) {
   tsd <- if (NONE_KNOWN) 0 else TSD1[[pn]]
+  pv <- point_values(P1[[pn]])
   draw <- function(sp) {
-    simulate_partly_known_estimates(K_PLAN, known1, REPS, sp$indep, pop = P1[[pn]],
+    simulate_partly_known_estimates(K, known1, REPS, sp$indep, pop = P1[[pn]],
                                     shared_verb_sd = sp$shared,
                                     transfer_sd = transfer_sd_by_source(known1, tsd),
-                                    seed = 7000L + K_PLAN)$Y
+                                    mode = MODE, mu_point = pv$mu, tau_point = pv$tau,
+                                    seed = 7000L + K)$Y
   }
   Y0 <- draw(sp1)
   ks <- if (NONE_KNOWN) "none known" else sprintf("seven, drawn, 2023 widened %.2f", tsd)
-  check_reported(Y0, sp1,
-                 ref1[ref1$reading_variant == "canonical" & ref1$population == pn &
-                        ref1$mode == "assurance" & ref1$K == K_PLAN & ref1$known_set == ks, ],
-                 paste("H1,", pn))
+  check_if_reported(Y0, sp1,
+                    ref1[ref1$reading_variant == "canonical" & ref1$population == pn &
+                           ref1$mode == MODE & ref1$K == K & ref1$known_set == ks, ],
+                    sprintf("H1, %s, K = %d", pn, K), registered = K == K_PLAN && MODE == "assurance")
   variant_rows(Y0, sp1, variants1, draw,
-               data.frame(hypothesis = "H1", population = pn, K = K_PLAN, transfer_sd = tsd,
+               data.frame(hypothesis = "H1", population = pn, K = K, transfer_sd = tsd,
                           prior_mu_sd = P_H1, prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE),
                P_H1)
-}))
+}
+h1 <- do.call(rbind, lapply(K_LIST, function(K) do.call(rbind, lapply(names(TSD1), h1_cell, K = K))))
 
 # --- H2 ---------------------------------------------------------------------------
 # Inputs rebuilt as run_klanguage_pseudo_passive.R builds them.
@@ -285,32 +353,41 @@ variants2 <- se_variants(mean(fl), se_ppt2)
 known2 <- if (NONE_KNOWN) k5[0, ] else k5
 tsd2 <- if (NONE_KNOWN) 0 else 0.15
 
-h2 <- do.call(rbind, lapply(names(P2), function(pn) {
+#' H2 rows for one number of languages with a pseudo-passive and one population.
+#'
+#' @param kp Number of languages with a pseudo-passive.
+#' @param pn Name of the population in P2.
+h2_cell <- function(kp, pn) {
+  pv <- point_values(P2[[pn]])
   draw <- function(sp) {
-    simulate_partly_known_estimates(K_PLAN_PP, known2, REPS, sp$indep, pop = P2[[pn]],
+    simulate_partly_known_estimates(kp, known2, REPS, sp$indep, pop = P2[[pn]],
                                     shared_verb_sd = sp$shared,
                                     transfer_sd = transfer_sd_by_source(known2, tsd2),
-                                    seed = 8000L + K_PLAN_PP)$Y
+                                    mode = MODE, mu_point = pv$mu, tau_point = pv$tau,
+                                    seed = 8000L + kp)$Y
   }
   Y0 <- draw(sp2)
+  label <- sprintf("H2, %s, K = %d", pn, kp)
   if (NONE_KNOWN) {
-    cat("check skipped for H2,", pn, ": no reported cell draws every language\n")
+    cat("check skipped for", label, ": no reported cell draws every language\n")
   } else {
-    check_reported(Y0, sp2,
-                   ref2[ref2$population == pn & ref2$known_set == "five, drawn, Glossa widened 0.15" &
-                          ref2$mode == "assurance" & ref2$K_pp == K_PLAN_PP &
-                          ref2$prior_tau_scale == CALIBRATED_TAU_PRIOR_SCALE, ],
-                   paste("H2,", pn))
+    check_if_reported(Y0, sp2,
+                      ref2[ref2$population == pn & ref2$known_set == "five, drawn, Glossa widened 0.15" &
+                             ref2$mode == MODE & ref2$K_pp == kp &
+                             ref2$prior_tau_scale == CALIBRATED_TAU_PRIOR_SCALE, ],
+                      label, registered = kp == K_PLAN_PP && MODE == "assurance")
   }
   variant_rows(Y0, sp2, variants2, draw,
-               data.frame(hypothesis = "H2", population = pn, K = K_PLAN_PP, transfer_sd = tsd2,
+               data.frame(hypothesis = "H2", population = pn, K = kp, transfer_sd = tsd2,
                           prior_mu_sd = P_H2, prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE),
                P_H2)
-}))
+}
+h2 <- do.call(rbind, lapply(k_pp(K_LIST), function(kp) do.call(rbind, lapply(names(P2), h2_cell, kp = kp))))
 
 out <- rbind(h1, h2)
 # The registered table keeps its columns; a widened run records its factor.
 if (SE_SCALE != 1) out$se_scale <- SE_SCALE
+if (MODE == "point") out$mode <- MODE
 if (NONE_KNOWN) out$known <- KNOWN
 print(out, row.names = FALSE, digits = 3)
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
