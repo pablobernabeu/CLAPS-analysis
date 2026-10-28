@@ -252,18 +252,51 @@ kreg <- read_csv(paste0(K_DIR, "klanguage_registered_none_known.csv"), show_col_
 stopifnot(all(kreg$known == "none"), length(unique(kreg$n_reps)) == 1)
 # The registered table names its sets as the two population tables above do.
 KREG_POPS <- list(H1 = setNames(K_POPS, K_POPS), H2 = KPP_POPS)
-kreg_row <- function(h, pop = "seven") {
-  x <- kreg[kreg$hypothesis == h & kreg$population == KREG_POPS[[h]][[pop]], ]
+kreg_row <- function(h, pop = "seven", tab = kreg, K = if (h == "H1") K_PLAN else K_PLAN_PP) {
+  x <- tab[tab$hypothesis == h & tab$population == KREG_POPS[[h]][[pop]] & tab$K == K, ]
   stopifnot(nrow(x) == 1)
   x
 }
-kreg_rate <- function(h, pop = "seven") kreg_row(h, pop)$power
-kreg_ci <- function(h, pop = "seven") {
-  x <- kreg_row(h, pop)
+kreg_rate <- function(h, pop = "seven", ...) kreg_row(h, pop, ...)$power
+kreg_ci <- function(h, pop = "seven", ...) {
+  x <- kreg_row(h, pop, ...)
   sprintf("[%.0f, %.0f]", 100 * x$power_lo, 100 * x$power_hi)
 }
 stopifnot(all(kreg$K[kreg$hypothesis == "H1"] == K_PLAN),
           all(kreg$K[kreg$hypothesis == "H2"] == K_PLAN_PP))
+# The same tests at the estimated effect, with the population's mean and spread held at
+# their posterior mean and median as a conventional power analysis holds them (--mode=point
+# --bf-bands --known=none), and with the measured languages whose teams are recruited
+# taking part (--known=recruited).
+kpoint <- read_csv(paste0(K_DIR, "klanguage_registered_point_bands_none_known.csv"),
+                   show_col_types = FALSE)
+krecr <- read_csv(paste0(K_DIR, "klanguage_registered_recruited_known.csv"),
+                  show_col_types = FALSE)
+stopifnot(all(kpoint$mode == "point"), all(kpoint$known == "none"),
+          all(krecr$known == "recruited"))
+n_recruited_h1 <- unique(krecr$n_known[krecr$hypothesis == "H1"])
+n_recruited_h2 <- unique(krecr$n_known[krecr$hypothesis == "H2"])
+# The text names Balinese as the one measured language without a recruited team.
+stopifnot(n_recruited_h1 == 6L, n_recruited_h2 == 4L)
+# The assurance runs with --bf-bands at 20, 25 and 30 languages (--k=20,25,30
+# --known=none). Their 20- and 15-language rows must be the quoted rates. They give the
+# share of studies ending at a Bayes factor of 1/10 or less, and the H1 rate with more
+# languages, which the text quotes once for 25 and 30 and so stops the render if the two
+# differ. The text also says that no study at the estimated effect ends that low.
+kbands <- read_csv(paste0(K_DIR, "klanguage_registered_languages_bands_none_known.csv"),
+                   show_col_types = FALSE)
+stopifnot(all(kbands$known == "none"),
+          isTRUE(all.equal(kreg_rate("H1", tab = kbands), kreg_rate("H1"))),
+          isTRUE(all.equal(kreg_rate("H2", tab = kbands), kreg_rate("H2"))),
+          pct0(kreg_rate("H1", tab = kbands, K = 25)) == pct0(kreg_rate("H1", tab = kbands, K = 30)),
+          kreg_row("H1", tab = kpoint)$p_bf_low == 0, kreg_row("H2", tab = kpoint)$p_bf_low == 0)
+bf_low <- function(h) sprintf("%.1f%%", 100 * kreg_row(h, tab = kbands)$p_bf_low)
+# A rate that falls exactly on a half, such as 3,460 of 4,000 studies, is given to one
+# decimal, since sprintf() rounds halves to even and would print 86.5% as 86%.
+pct_h <- function(x) {
+  p2 <- 200 * x
+  if (isTRUE(all.equal(p2, round(p2))) && round(p2) %% 2 == 1) sprintf("%.1f%%", p2 / 2) else pct0(x)
+}
 # The same tests with 60 verbs per language, the fewest the protocol allows, from the same
 # script with --n-verbs=60,72. Its 72-verb rows must be the quoted rates, and the render
 # stops if either quoted rate falls by half a percentage point or more, which the text rules
@@ -351,7 +384,11 @@ Turkish and Norwegian in the CLAPS pilot, and Balinese, Hebrew, Indonesian and M
 published studies. With `r K_PLAN` languages, the synthesis reaches a directional Bayes
 factor of 10 in `r pct0(kreg_rate("H1"))` of simulated studies on H1, and in
 `r pct0(kreg_rate("H2"))` on H2 across the `r K_PLAN_PP` languages with a pseudo-passive. These
-rates depend mainly on how much the effect varies between languages. In the pilots, the active
+rates allow for uncertainty about the size of the effect, and depend mainly on how much it varies
+between languages. They rise to `r pct_h(kreg_rate("H1", tab = krecr))` and
+`r pct_h(kreg_rate("H2", tab = krecr))` if the measured languages whose teams are already
+recruited take part, and at the estimated effect itself, the usual basis of a power analysis, they
+are `r pct_h(kreg_rate("H1", tab = kpoint))` and `r pct_h(kreg_rate("H2", tab = kpoint))`. In the pilots, the active
 interaction runs in the predicted direction in all three languages, and the pseudo-passive
 interaction in English but not in Turkish. Because affectedness is a property of the verb, the
 verbs bound the precision of each language's estimate.
@@ -593,8 +630,8 @@ pseudo-passive.
 
 The collaborators expect at least `r K_PLAN` languages, `r K_PLAN_PP` of them with a
 pseudo-passive, so the confirmatory test is simulated with `r K_PLAN` languages. Which languages
-will take part is not yet known, so no simulated study assumes that any of the seven measured so
-far, the three CLAPS pilots and the four other meta-analysis languages, is among them. Instead,
+will take part is not yet known, so the main simulations do not assume that any of the seven
+measured so far, the three CLAPS pilots and the four other meta-analysis languages, is among them. Instead,
 every language's effect is drawn from a population whose mean and between-language spread are
 estimated from those seven. Each language's estimate is simulated at the precision that 80
 participants and 72 verbs achieve, and each simulated study is analysed as registered. H2 is
@@ -605,8 +642,24 @@ On these assumptions, the pooled test of H1 reaches a Bayes factor of 10 in
 `r pct0(kreg_rate("H1"))` of `r format(unique(kreg$n_reps), big.mark = ",")` simulated studies
 (95% Monte Carlo interval `r kreg_ci("H1")`), and the pooled test of H2 in
 `r pct0(kreg_rate("H2"))` (`r kreg_ci("H2")`). With 60 verbs in every language, the fewest the
-protocol allows, neither rate falls by as much as half a percentage point. Both rates depend mainly
-on how much the effect varies between languages, which seven languages can estimate only roughly.
+protocol allows, neither rate falls by as much as half a percentage point. Like the per-language
+rates, these are assurances, since each simulated study draws the population's mean and spread
+from their posterior. With the mean and spread held at their estimates (the posterior mean and
+median), as in a conventional power analysis, the rates are `r pct_h(kreg_rate("H1", tab = kpoint))`
+`r kreg_ci("H1", tab = kpoint)` for H1 and `r pct_h(kreg_rate("H2", tab = kpoint))`
+`r kreg_ci("H2", tab = kpoint)` for H2. Of the seven measured languages, `r num_word(n_recruited_h1)`
+(all but Balinese) already have recruited teams. If they take part, each
+with its effect drawn around its estimate, the assurance for H1 is
+`r pct_h(kreg_rate("H1", tab = krecr))` `r kreg_ci("H1", tab = krecr)`, and with the
+`r num_word(n_recruited_h2)` of them that have a pseudo-passive, the assurance for H2 is
+`r pct_h(kreg_rate("H2", tab = krecr))` `r kreg_ci("H2", tab = krecr)`.
+
+A Bayes factor of 1/10 or less, strong evidence against a hypothesis, arises in `r bf_low("H1")`
+of simulated studies for H1 and `r bf_low("H2")` for H2, and in none at the estimated effect, so
+nearly every study that misses 10 is inconclusive. The assurances depend mainly on how much the
+effect varies between languages, which seven languages can estimate only roughly. More languages
+would add little, since no number of them makes up for a mean effect that proves close to zero:
+with 25 or 30 languages, H1 reaches `r pct0(kreg_rate("H1", tab = kbands, K = 25))`.
 
 # The Sampling Plan
 
@@ -615,7 +668,7 @@ excluded. The number is fixed in advance because each team must state its sample
 ethics committee. Each language will use as close to 72 verbs as its supply of suitable verbs
 allows. Every language enters the pooled tests whatever its pilot showed, Turkish included, since
 leaving a language out on the strength of its pilot would amount to choosing languages by their
-results. The H2 rate above already allows for the Turkish reversal, since Turkish is one of the
+results. The H2 rates above already allow for the Turkish reversal, since Turkish is one of the
 `r num_word(n_measured_pp)` languages behind its population. @tbl-design summarises the
 planned analyses and their detection rates.
 
@@ -625,17 +678,19 @@ planned analyses and their detection rates.
      text above changes. -->
 
 | Analysis | Coefficient and direction | Test | Detection rate |
-|:--------------|:------------------------------|:----------------------------------|:---------------------|
-| H1, primary | Active by affectedness, mean across languages, negative | Directional Bayes factor of 10 in the two-stage synthesis | `r pct0(kreg_rate("H1"))` with `r K_PLAN` languages |
-| H2, secondary | Pseudo-passive by affectedness, mean across languages, negative | As for H1, in the languages with a pseudo-passive | `r pct0(kreg_rate("H2"))` with `r K_PLAN_PP` languages |
+|:-------------|:--------------------------|:-----------------------------|:-----------------------------|
+| H1, primary | Active by affectedness, mean across languages, negative | Directional Bayes factor of 10 in the two-stage synthesis | `r pct_h(kreg_rate("H1", tab = kpoint))` at the estimated effect, `r pct_h(kreg_rate("H1"))` to `r pct_h(kreg_rate("H1", tab = krecr))` allowing for its uncertainty |
+| H2, secondary | Pseudo-passive by affectedness, mean across languages, negative | As for H1, in the languages with a pseudo-passive | `r pct_h(kreg_rate("H2", tab = kpoint))` at the estimated effect, `r pct_h(kreg_rate("H2"))` to `r pct_h(kreg_rate("H2", tab = krecr))` allowing for its uncertainty |
 | Robustness check | Both interactions in a single model across languages | Reported with its directional Bayes factors, deciding neither hypothesis | Not used to plan the sample |
 
 : Planned Analyses and Their Detection Rates {#tbl-design}
 
 `\vspace{-8pt}`{=latex}
 
-*Note.* The rates are at 80 participants per language, with `r K_PLAN` languages drawn from the
-population estimated from the measured languages that carry the interaction.
+*Note.* The rates are at 80 participants per language, with `r K_PLAN` languages for H1 and
+`r K_PLAN_PP` for H2. Allowing for uncertainty about the effect, the lower rate draws every
+language from the population estimated from the measured languages, and the higher lets the
+measured languages with recruited teams take part.
 
 `\vspace{12pt}`{=latex}
 
@@ -687,8 +742,8 @@ far are a convenience sample from five families in two macroareas, and the simul
 every language as a draw from a population like them. They also give each language's estimate the
 standard error of a normal approximation to its analysis. The calibration behind the rates for a
 language without a pilot widens that standard error by a factor of `r num2(kreg_shift$k)`, and
-with it neither rate falls by more than `r sprintf("%.1f", 100 * kreg_shift$max_fall)` of a
-percentage point.
+with it neither of the rates with no measured language taking part falls by more than
+`r sprintf("%.1f", 100 * kreg_shift$max_fall)` of a percentage point.
 
 {{< pagebreak >}}
 

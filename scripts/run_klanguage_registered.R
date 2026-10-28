@@ -49,7 +49,11 @@
 # estimated from them, as the "none known" rows of klanguage_known7.csv were drawn.
 # The seeds are unchanged and the rates go to a table with "_none_known" added to its
 # name. The H1 studies are checked against those reported rows; no reported H2 cell
-# draws every language, so H2 has no check.
+# draws every language, so H2 has no check. With --known=recruited only the measured
+# languages whose teams are in config/stage2_languages.csv take part (in October 2026
+# all but Balinese), and the rest are drawn from the population. No reported cell has
+# these languages taking part, so nothing is checked, and the table gets
+# "_recruited_known" added to its name.
 #
 # The registered table is an assurance: each study draws the population's mean and
 # between-language SD from their posterior. With --mode=point both are held at the
@@ -66,16 +70,17 @@
 #   pilot_params_ceilings,klanguage_known7,klanguage_pseudo_passive}.csv,
 #   config/prior_grid.yaml and the pilot posteriors in outputs/pilot_models
 #   (gitignored; checksums in config/pilot_models_sha256.csv), and with
-#   --se-scale=calibrated, per_language_approximations.csv.
+#   --se-scale=calibrated, per_language_approximations.csv, and with --known=recruited,
+#   config/stage2_languages.csv.
 # Output: klanguage_registered.csv in --outdir, or klanguage_registered_se_scaled.csv
 #   when the SEs are widened, or klanguage_registered_verbs.csv for other verb counts,
-#   each with the words above and "_none_known" (under --known=none) added, and a run
+#   each with the words above and "_none_known" or "_recruited_known" added, and a run
 #   log. Writing into outputs/design_summary_pilot replaces the reported table, so it
 #   needs --overwrite-reported, and the log then goes to outputs/logs.
 # Run from design_analysis/:
 #   Rscript scripts/run_klanguage_registered.R --outdir=DIR [--reps=4000]
 #     [--se-scale=calibrated | --n-verbs=72,48,36 | --k=20,25,30] [--mode=point]
-#     [--bf-bands] [--known=none] [--log=FILE]
+#     [--bf-bands] [--known=none | --known=recruited] [--log=FILE]
 # ---------------------------------------------------------------------------
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -130,9 +135,12 @@ if (MODE == "point") OUT_NAME <- paste0(OUT_NAME, "_point")
 if (BANDS) OUT_NAME <- paste0(OUT_NAME, "_bands")
 # Whether the measured languages take part: "measured" for the registered table.
 KNOWN <- aval("--known", "measured")
-if (!KNOWN %in% c("measured", "none")) stop("--known must be 'measured' or 'none'")
+if (!KNOWN %in% c("measured", "none", "recruited")) {
+  stop("--known must be 'measured', 'none' or 'recruited'")
+}
 NONE_KNOWN <- KNOWN == "none"
-if (NONE_KNOWN) OUT_NAME <- paste0(OUT_NAME, "_none_known")
+if (KNOWN != "measured") OUT_NAME <- paste0(OUT_NAME, "_", KNOWN, "_known")
+RECRUITED_TABLE <- "config/stage2_languages.csv"
 
 source("R/13_simulate_klanguage_pooled.R")
 writes_reported <- guard_reported_dir(OUT, args)
@@ -141,7 +149,8 @@ INPUTS <- c(file.path(IN, c("cross_language_effects_harmonised.csv", "pilot_para
                             "klanguage_known7.csv", "klanguage_pseudo_passive.csv")),
             "config/prior_grid.yaml",
             file.path(PILOT_MODELS, paste0("pilot_dgp_v2_pilot_", c("English", "Turkish", "Norwegian"), ".rds")),
-            if (identical(SE_SCALE_ARG, "calibrated")) APPROX_TABLE)
+            if (identical(SE_SCALE_ARG, "calibrated")) APPROX_TABLE,
+            if (KNOWN == "recruited") RECRUITED_TABLE)
 log_con <- start_run_log(LOG, INPUTS, replicates = REPS, se_scale = SE_SCALE,
                          n_verbs = paste(N_VERBS, collapse = ","), known = KNOWN,
                          k = paste(K_LIST, collapse = ","), mode = MODE, bf_bands = BANDS, out = OUT)
@@ -218,6 +227,30 @@ point_values <- function(pop) {
   list(mu = post$mu_mean, tau = post$tau_median)
 }
 
+# The recruited teams, under --known=recruited. The table names a team by its variety
+# ("Mandarin (Mainland)") and the measured languages are named by language, so the
+# bracketed variety is dropped before matching.
+RECRUITED <- if (KNOWN == "recruited") {
+  unique(sub(" \\(.*\\)$", "", read.csv(RECRUITED_TABLE, comment.char = "#")$variety))
+}
+
+#' The measured languages that take part as new samples, as --known sets them.
+#'
+#' @param measured Anchor set with a language column.
+#' @return All of it ("measured"), none of it ("none"), or the rows whose language has a
+#'   recruited team ("recruited").
+take_part <- function(measured) {
+  kept <- switch(KNOWN,
+                 measured = measured,
+                 none = measured[0, ],
+                 recruited = measured[measured$language %in% RECRUITED, ])
+  if (KNOWN == "recruited") {
+    if (!nrow(kept)) stop("no measured language has a team in ", RECRUITED_TABLE)
+    cat("taking part:", paste(kept$language, collapse = ", "), "\n")
+  }
+  kept
+}
+
 #' A standard-error split from split_se() with both parts multiplied by one factor.
 scale_se <- function(sp, k) list(shared = sp$shared * k, indep = sp$indep * k)
 
@@ -277,7 +310,7 @@ variant_rows <- function(Y0, sp0, variants, draw, lead, prior_sd) {
 }
 
 variants1 <- se_variants(SE_VERB, SE_PPT1)
-known1 <- if (NONE_KNOWN) P1$seven[0, ] else P1$seven
+known1 <- take_part(P1$seven)
 
 #' H1 rows for one number of languages and one population.
 #'
@@ -294,11 +327,16 @@ h1_cell <- function(K, pn) {
                                     seed = 7000L + K)$Y
   }
   Y0 <- draw(sp1)
-  ks <- if (NONE_KNOWN) "none known" else sprintf("seven, drawn, 2023 widened %.2f", tsd)
-  check_if_reported(Y0, sp1,
-                    ref1[ref1$reading_variant == "canonical" & ref1$population == pn &
-                           ref1$mode == MODE & ref1$K == K & ref1$known_set == ks, ],
-                    sprintf("H1, %s, K = %d", pn, K), registered = K == K_PLAN && MODE == "assurance")
+  label <- sprintf("H1, %s, K = %d", pn, K)
+  if (KNOWN == "recruited") {
+    cat("check skipped for", label, ": no reported cell has these languages taking part\n")
+  } else {
+    ks <- if (NONE_KNOWN) "none known" else sprintf("seven, drawn, 2023 widened %.2f", tsd)
+    check_if_reported(Y0, sp1,
+                      ref1[ref1$reading_variant == "canonical" & ref1$population == pn &
+                             ref1$mode == MODE & ref1$K == K & ref1$known_set == ks, ],
+                      label, registered = K == K_PLAN && MODE == "assurance")
+  }
   variant_rows(Y0, sp1, variants1, draw,
                data.frame(hypothesis = "H1", population = pn, K = K, transfer_sd = tsd,
                           prior_mu_sd = P_H1, prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE),
@@ -350,7 +388,7 @@ P2 <- list(claps_protocol = k5[k5$source == "CLAPS_pilot", ], five = k5,
 ref2 <- read.csv(file.path(IN, "klanguage_pseudo_passive.csv"))
 
 variants2 <- se_variants(mean(fl), se_ppt2)
-known2 <- if (NONE_KNOWN) k5[0, ] else k5
+known2 <- take_part(k5)
 tsd2 <- if (NONE_KNOWN) 0 else 0.15
 
 #' H2 rows for one number of languages with a pseudo-passive and one population.
@@ -370,6 +408,8 @@ h2_cell <- function(kp, pn) {
   label <- sprintf("H2, %s, K = %d", pn, kp)
   if (NONE_KNOWN) {
     cat("check skipped for", label, ": no reported cell draws every language\n")
+  } else if (KNOWN == "recruited") {
+    cat("check skipped for", label, ": no reported cell has these languages taking part\n")
   } else {
     check_if_reported(Y0, sp2,
                       ref2[ref2$population == pn & ref2$known_set == "five, drawn, Glossa widened 0.15" &
@@ -388,7 +428,8 @@ out <- rbind(h1, h2)
 # The registered table keeps its columns; a widened run records its factor.
 if (SE_SCALE != 1) out$se_scale <- SE_SCALE
 if (MODE == "point") out$mode <- MODE
-if (NONE_KNOWN) out$known <- KNOWN
+if (KNOWN != "measured") out$known <- KNOWN
+if (KNOWN == "recruited") out$n_known <- ifelse(out$hypothesis == "H1", nrow(known1), nrow(known2))
 print(out, row.names = FALSE, digits = 3)
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 out_file <- file.path(OUT, paste0(OUT_NAME, ".csv"))

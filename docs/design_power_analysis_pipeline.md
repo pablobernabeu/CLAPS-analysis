@@ -260,7 +260,10 @@ this order, since steps 2 and 4 check themselves against tables written before t
    `--mode=point` gives the power at the estimated mean and spread, `--k=20,25,30` other
    numbers of languages and `--bf-bands` the shares of studies ending at or below 1/10
    and between 1/10 and 10; each adds a word (`_point`, `_languages`, `_bands`) to the
-   table's name.
+   table's name. The report also quotes `--mode=point --bf-bands --known=none` and
+   `--k=20,25,30 --bf-bands --known=none`. With `--known=recruited`, only the measured
+   languages with a team in `config/stage2_languages.csv` take part, and the report quotes
+   that run alone (`klanguage_registered_recruited_known.csv`).
 
 All four read the gitignored pilot extracts in `outputs/pilot_models/`, whose checksums
 are in `config/pilot_models_sha256.csv`. The report reads the tables they write.

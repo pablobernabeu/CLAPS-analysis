@@ -68,6 +68,13 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   95.45% of studies and H2 in 97.5%, and no study ends at or below 1/10. Averaged over the
   uncertainty, 0.875% (H1) and 1.225% (H2) end at or below 1/10. With 25 and 30 languages,
   H1 reaches 83.725% at both, and H2 84.9% with 19 and 87.15% with 23 (2026-10-24).
+- `scripts/run_klanguage_registered.R --known=recruited`, under which only the measured
+  languages with a team in `config/stage2_languages.csv` take part, all but Balinese for
+  H1 and English, Turkish, Indonesian and Mandarin for H2, and
+  `klanguage_registered_recruited_known.csv` from it: H1 90.65% [89.7, 91.5] and H2
+  86.5% [85.4, 87.5]. Both reproduce exactly the check behind the reply of 16 October
+  (`reports/correspondence_checks/no_balinese.R`), and the default and `--known=none`
+  tables are byte-identical (2026-10-28).
 - Three columns in `glossa_tau_refit_summary.csv`, from
   `scripts/summarise_glossa_tau_refit.R`: the share of each verb term's variance common
   to all languages in the refit's verb-split arms, 0.16 (M1) and 0.18 (M2) for the
@@ -76,6 +83,12 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
 
 ### Changed
 
+- The report gives the registered rates three ways (`docs/preregistration_decisions.md`,
+  section 8, amendment of 2026-10-28): at the estimated effect (H1 95%, H2 97.5%), and
+  allowing for uncertainty about it, with no measured language taking part (81%, 82%) or
+  with the measured languages that have recruited teams (91%, 86.5%). It adds the share
+  of studies ending at or below 1/10 and the H1 rate with 25 or 30 languages, and gives a
+  rate that falls exactly on a half to one decimal (2026-10-28).
 - The report quotes the registered rates with no measured language taking part, H1 81%
   and H2 82% (`docs/preregistration_decisions.md`, section 8, amendment of 2026-10-22),
   and no longer gives the rates under the other two spreads between languages, at the
