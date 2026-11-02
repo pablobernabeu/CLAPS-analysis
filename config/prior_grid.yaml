@@ -17,7 +17,7 @@ prior_regimes:
       Weakly-to-moderately informative, zero-centred Gaussian priors on
       focal slopes with scales chosen to cover the previously observed
       cross-language range of passive affectedness effects without
-      pre-loading the directional Bayes-factor test.
+      favouring either sign of the effect.
     citations:
       - "@gelmanJakulinPittauSu2008"
       - "@gelmanSimpsonBetancourt2017"

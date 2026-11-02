@@ -13,7 +13,8 @@
 #   only the remaining places are unknown; run_partly_known_cell() covers that.
 #   The confirmatory test registered on 8 October 2026 is a two-stage synthesis of
 #   the per-language posteriors, which two_stage_p_negative() applies to the same
-#   simulated studies (section 8).
+#   simulated studies (section 8). Since 2 November 2026 its Bayes factor is one-sided
+#   against a zero mean, which two_stage_log_bf_null() computes (section 8b).
 #
 # WHY IT IS NOT THE POOLED SIMULATOR IN R/11
 #   R/11_simulate_pooled_v2.R simulates participant-level data for three FIXED
@@ -55,8 +56,9 @@
 #
 # THE ENGINE
 #   Two-stage: simulate each language's interaction estimate, then combine them in a
-#   Bayesian random-effects meta-analysis and read the directional Bayes factor off
-#   the posterior for the population mean. The two-stage step is not assumed to be
+#   Bayesian random-effects meta-analysis and read the Bayes factor off the posterior
+#   for the population mean: directional for the tables reported until 2 November 2026,
+#   one-sided against a zero mean since (section 8b). The two-stage step is not assumed to be
 #   adequate; it is checked twice. Against the published one-stage hierarchical fit,
 #   where meta-analysing the five Ambridge, Arnon & Bekman (2023) single-language
 #   estimates returns tau = 0.48 against the published 0.45 (scripts/extract_cross_language_effects.R,
@@ -1209,13 +1211,8 @@ run_partly_known_cell <- function(K, known, n_reps, se_lang,
 #' @return Each study's posterior probability that the mean across languages is negative.
 two_stage_p_negative <- function(Y, se_total, prior_sd,
                                  prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE) {
-  Y <- as.matrix(Y)
-  stopifnot(length(se_total) %in% c(1L, ncol(Y)), all(is.finite(se_total)), all(se_total > 0),
-            length(prior_sd) == 1L, is.finite(prior_sd), prior_sd > 0)
-  w <- prior_sd^2 / (prior_sd^2 + se_total^2)
-  shrunk <- if (length(w) == 1L) w * Y else sweep(Y, 2L, w, `*`)
-  ra_meta_batch(shrunk, sqrt(w) * se_total, prior_mu_sd = prior_sd,
-                prior_tau_scale = prior_tau_scale)$p_mu_negative
+  st <- stage1_posteriors(Y, se_total, prior_sd)
+  ra_meta_batch(st$Y, st$s, prior_mu_sd = prior_sd, prior_tau_scale = prior_tau_scale)$p_mu_negative
 }
 
 #' Rate at which a set of simulated studies reaches the Bayes-factor threshold.
@@ -1227,6 +1224,104 @@ detection_rate <- function(p, bf_threshold = 10) {
   k <- sum(bf_from_p_negative(p) >= bf_threshold)
   ci <- binom.test(k, length(p))$conf.int
   data.frame(power = k / length(p), power_lo = ci[1], power_hi = ci[2], n_reps = length(p))
+}
+
+# ---------------------------------------------------------------------------
+# 8b. The one-sided Bayes factor against a zero mean
+# ---------------------------------------------------------------------------
+# On 2 November 2026 the PI replaced the directional Bayes factor (a negative mean
+# against a positive one) with a one-sided Bayes factor against the null, so that a
+# Bayes factor of 1/10 or less is evidence for no effect (docs/preregistration_decisions.md,
+# section 8, amendment of 2026-11-02). The functions above stay, since the reported
+# directional tables and their checks use them.
+
+#' Log Bayes factor of a negative mean against a zero mean, for many studies at once.
+#'
+#' H-: mu < 0, with the negative half of a normal(0, prior_mu_sd) prior, a half-normal,
+#' against H0: mu = 0, with the same half-normal prior on tau under both, so that the
+#' languages vary around the mean under either hypothesis. Given tau both marginal
+#' likelihoods are closed-form, and restricting mu to be negative multiplies the
+#' unrestricted one by 2 P(mu < 0 | y, tau) (Morey & Wagenmakers, 2014, Theorem 1,
+#' doi:10.1016/j.spl.2014.05.010). tau is integrated on the grid of ra_meta_batch(),
+#' with the same quadrature weights. The result is the order-restricted Savage-Dickey
+#' ratio of Wagenmakers et al. (2010, section 5.2, doi:10.1016/j.cogpsych.2009.12.001),
+#' inverted to favour H-.
+#'
+#' @param Y Matrix of per-language estimates, one row per study.
+#' @param s Standard errors, one per column of Y, or a single value for all.
+#' @param prior_mu_sd SD of the normal prior whose negative half represents H-.
+#' @param prior_tau_scale Half-normal scale of the prior on tau, under both hypotheses.
+#' @param tau_grid,chunk As in ra_meta_batch().
+#' @return Each study's log Bayes factor for H- against H0.
+ra_meta_log_bf_null_batch <- function(Y, s, prior_mu_sd,
+                                      prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE,
+                                      tau_grid = seq(0, 3, length.out = 601), chunk = 500L) {
+  Y <- as.matrix(Y)
+  K <- ncol(Y)
+  s <- if (length(s) == 1L) rep(s, K) else s
+  stopifnot(length(s) == K, all(is.finite(Y)), all(s > 0),
+            length(prior_mu_sd) == 1L, is.finite(prior_mu_sd), prior_mu_sd > 0)
+  p2 <- prior_mu_sd^2
+  V <- outer(tau_grid^2, s^2, `+`)
+  W <- 1 / V
+  log_det <- rowSums(log(2 * pi * V))
+  prec <- rowSums(W) + 1 / p2
+  sd_mu <- sqrt(1 / prec)
+  log_pi <- dnorm(tau_grid, 0, prior_tau_scale, log = TRUE) + log(trapezoid_weights(tau_grid))
+  log_sum_exp <- function(M) {
+    mx <- apply(M, 2L, max)
+    mx + log(colSums(exp(sweep(M, 2L, mx))))
+  }
+  n <- nrow(Y)
+  out <- numeric(n)
+  for (start in seq(1L, max(n, 1L), by = chunk)) {
+    if (n == 0L) break
+    idx <- start:min(n, start + chunk - 1L)
+    Yt <- t(Y[idx, , drop = FALSE])
+    Swy <- W %*% Yt                                              # G x chunk
+    log_m0 <- -0.5 * (log_det + W %*% (Yt^2))                    # log p(y | mu = 0, tau)
+    log_m1 <- log_m0 + 0.5 * Swy^2 / prec - 0.5 * log(p2 * prec) # mu ~ normal(0, p2)
+    log_neg <- pnorm(0, mean = Swy / prec, sd = sd_mu, log.p = TRUE)
+    out[idx] <- log_sum_exp(log_m1 + log(2) + log_neg + log_pi) - log_sum_exp(log_m0 + log_pi)
+  }
+  out
+}
+
+#' The stage-1 shrinkage that the registered analysis applies before stage 2.
+#'
+#' @inheritParams two_stage_p_negative
+#' @return list(Y, s): each language's posterior mean and SD under its own prior.
+stage1_posteriors <- function(Y, se_total, prior_sd) {
+  Y <- as.matrix(Y)
+  stopifnot(length(se_total) %in% c(1L, ncol(Y)), all(is.finite(se_total)), all(se_total > 0),
+            length(prior_sd) == 1L, is.finite(prior_sd), prior_sd > 0)
+  w <- prior_sd^2 / (prior_sd^2 + se_total^2)
+  list(Y = if (length(w) == 1L) w * Y else sweep(Y, 2L, w, `*`), s = sqrt(w) * se_total)
+}
+
+#' Log one-sided Bayes factor against a zero mean under the registered two-stage analysis.
+#'
+#' The stages of two_stage_p_negative(), with the one-sided Bayes factor of
+#' ra_meta_log_bf_null_batch() read off stage 2. The normal(0, prior_sd) prior on the
+#' mean across languages has its negative half as the hypothesis.
+#'
+#' @inheritParams two_stage_p_negative
+#' @return Each study's log Bayes factor for a negative mean against a zero one.
+two_stage_log_bf_null <- function(Y, se_total, prior_sd,
+                                  prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE) {
+  st <- stage1_posteriors(Y, se_total, prior_sd)
+  ra_meta_log_bf_null_batch(st$Y, st$s, prior_mu_sd = prior_sd, prior_tau_scale = prior_tau_scale)
+}
+
+#' Rate at which a set of simulated studies reaches the Bayes-factor threshold, from log BFs.
+#'
+#' @param log_bf Each study's log Bayes factor.
+#' @param bf_threshold Bayes factor a study must reach.
+#' @return One-row data frame as from detection_rate().
+detection_rate_log_bf <- function(log_bf, bf_threshold = 10) {
+  k <- sum(log_bf >= log(bf_threshold))
+  ci <- binom.test(k, length(log_bf))$conf.int
+  data.frame(power = k / length(log_bf), power_lo = ci[1], power_hi = ci[2], n_reps = length(log_bf))
 }
 
 # ---------------------------------------------------------------------------

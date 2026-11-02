@@ -13,9 +13,8 @@
 #   Individual-language models and ladder      fit_variety_model(), via R/09_model_ladder.R
 #   Per-SD interaction estimates               extract_interactions()
 #   Varieties averaged within a language       average_varieties()
-#   Meta-analysis and directional BF           run_meta_test(), bf_from_p_negative()
+#   Meta-analysis and one-sided BF vs zero     run_meta_test(), bf_onesided_null()
 #   Single model across languages (robustness) build_single_model_ladder(), build_pooled_data()
-#   Families (robustness)                      fit_family_meta()
 #
 # Scale of the estimates
 #   Semantics_scaled is centred and divided by two SDs of the VERBS' mean ratings,
@@ -117,7 +116,7 @@ read_language_table <- function(path) {
     stop("[stage2] duplicated varieties in ", path, ": ",
          paste(unique(tab$variety[duplicated(tab$variety)]), collapse = ", "))
   }
-  # A language in two families would make the family model ill-defined.
+  # A language listed under two Glottolog families is an error in the table.
   fam <- tapply(tab$family, tab$language, function(x) length(unique(x)))
   if (any(fam > 1)) {
     stop("[stage2] languages listed under more than one family: ",
@@ -206,7 +205,7 @@ validate_task_data <- function(df, task = c("acceptability", "ratings")) {
 #' @param attention_min_correct,straightline_share Registered thresholds.
 #' @return One row per participant and variety, with each criterion and `excluded`.
 participant_exclusions <- function(df, task = c("acceptability", "ratings"), n_attention,
-                                   attention_min_correct = 8, straightline_share = 0.9) {
+                                   attention_min_correct = 8, straightline_share = 0.95) {
   task <- match.arg(task)
   versions <- if (task == "acceptability") "S_Type" else "Agent"
   # The design count: each verb in every version the variety uses.
@@ -432,36 +431,52 @@ average_varieties <- function(est, lang_table) {
                      .groups = "drop")
 }
 
-#' Directional Bayes factor from the posterior probability that the mean is negative.
+#' One-sided Bayes factor against zero, by the Savage-Dickey density ratio.
 #'
-#' With a zero-centred, symmetric prior the prior odds of either sign are 1, so the
-#' Bayes factor for the predicted negative sign is the posterior odds.
+#' The hypothesis is that the parameter is negative, represented by the negative half
+#' of its zero-centred normal prior; the null is that it is zero. The two-sided Bayes
+#' factor against zero is the prior density at zero over the posterior density at zero
+#' (Wagenmakers et al., 2010, doi:10.1016/j.cogpsych.2009.12.001). Restricting the
+#' alternative to negative values multiplies it by P(negative | data) / P(negative),
+#' that is by 2 P(negative | data) under the symmetric prior (Morey & Wagenmakers, 2014,
+#' Theorem 1, doi:10.1016/j.spl.2014.05.010). The PI chose this test on 2 November 2026,
+#' so that a Bayes factor of 1/10 or less is evidence for no effect.
 #'
-#' @param p Posterior probability that the parameter is negative.
-#' @return The Bayes factor for "negative" against "positive".
-bf_from_p_negative <- function(p) p / (1 - p)
+#' @param post_density_at_0 Marginal posterior density of the parameter at zero.
+#' @param prior_sd SD of the zero-centred normal prior on the parameter.
+#' @param p_negative Posterior probability that the parameter is negative.
+#' @return The Bayes factor for "negative" against "zero".
+bf_onesided_null <- function(post_density_at_0, prior_sd, p_negative) {
+  stopifnot(all(post_density_at_0 > 0), all(prior_sd > 0), all(p_negative >= 0 & p_negative <= 1))
+  stats::dnorm(0, 0, prior_sd) / post_density_at_0 * 2 * p_negative
+}
 
 #' Label a Bayes factor by the registered thresholds.
 #'
-#' @param bf Directional Bayes factor for the predicted (negative) sign.
+#' @param bf One-sided Bayes factor for a negative effect against no effect.
 #' @param threshold Registered threshold, 10.
-#' @return "for" (BF >= threshold), "against" (BF <= 1/threshold: strong evidence
-#'   that the effect runs the other way) or "inconclusive".
+#' @return "for" (BF >= threshold), "against" (BF <= 1/threshold: strong evidence for
+#'   the null hypothesis of no effect over the predicted one) or "inconclusive".
 interpret_bf <- function(bf, threshold = 10) {
   ifelse(bf >= threshold, "for", ifelse(bf <= 1 / threshold, "against", "inconclusive"))
 }
 
 #' The registered random-effects meta-analysis of one hypothesis.
 #'
-#' Normal prior on the mean across languages and half-normal prior on the
-#' between-language SD, computed by bayesmeta (Röver, 2020), which integrates
-#' numerically, so the Bayes factor carries no Monte Carlo error.
+#' Normal prior on the mean across languages, whose negative half represents the
+#' hypothesis, and half-normal prior on the between-language SD, computed by bayesmeta
+#' (Röver, 2020), which integrates numerically, so the Bayes factor carries no Monte
+#' Carlo error. The null fixes the mean at zero and leaves the languages free to vary
+#' around it; bf_onesided_null() reads its Bayes factor off bayesmeta's marginal
+#' posterior density of the mean at zero (the $dposterior() function) and its
+#' posterior probability that the mean is negative ($pposterior()).
 #'
 #' @param y,se Per-language estimates and standard errors, per SD of affectedness.
 #' @param prior_mu_sd Prior SD of the mean (meta_prior_sd()).
 #' @param tau_scale Scale of the half-normal prior on the between-language SD.
-#' @return One-row tibble: k, P(mu < 0), the Bayes factor, the posterior mean, SD and
-#'   95% interval of mu, and the posterior median and 95% interval of tau.
+#' @return One-row tibble: k, P(mu < 0), the one-sided Bayes factor against a zero mean
+#'   and the two-sided one it comes from, the posterior mean, SD and 95% interval of
+#'   mu, and the posterior median and 95% interval of tau.
 run_meta_test <- function(y, se, prior_mu_sd, tau_scale = 0.5) {
   if (!requireNamespace("bayesmeta", quietly = TRUE)) {
     stop("[stage2] the bayesmeta package is required for the confirmatory meta-analysis")
@@ -470,10 +485,12 @@ run_meta_test <- function(y, se, prior_mu_sd, tau_scale = 0.5) {
   b <- bayesmeta::bayesmeta(y = y, sigma = se, mu.prior.mean = 0, mu.prior.sd = prior_mu_sd,
                             tau.prior = function(t) bayesmeta::dhalfnormal(t, scale = tau_scale))
   p_neg <- b$pposterior(mu = 0)
+  dens0 <- b$dposterior(mu = 0)
   mu_ci <- b$post.interval(mu.level = 0.95)
   tau_ci <- b$post.interval(tau.level = 0.95)
   tibble::tibble(
-    k = length(y), p_mu_negative = p_neg, bf = bf_from_p_negative(p_neg),
+    k = length(y), p_mu_negative = p_neg, bf = bf_onesided_null(dens0, prior_mu_sd, p_neg),
+    bf_two_sided = stats::dnorm(0, 0, prior_mu_sd) / dens0,
     mu_mean = b$summary["mean", "mu"], mu_sd = b$summary["sd", "mu"],
     mu_lo = mu_ci[1], mu_hi = mu_ci[2],
     tau_median = b$summary["median", "tau"], tau_lo = tau_ci[1], tau_hi = tau_ci[2]
@@ -549,51 +566,21 @@ build_pooled_data <- function(variety_data, lang_table) {
     code_s_type()
 }
 
-#' Directional Bayes factor from posterior draws, under a symmetric prior.
+#' One-sided Bayes factor against zero from posterior draws, for the robustness checks.
+#'
+#' bf_onesided_null() with the posterior density at zero taken from a normal
+#' approximation to the draws. A kernel estimate from the draws themselves is noisy in
+#' the tail, where zero lies whenever the Bayes factor is large (Wagenmakers et al.,
+#' 2010, section 8), while the posterior of a fixed effect in models this size is close
+#' to normal. The probability that the coefficient is negative is the share of draws
+#' below zero. The robustness check decides neither hypothesis.
 #'
 #' @param draws Posterior draws of the coefficient.
-#' @return List with p_negative, bf and, where every draw has the same sign, the
-#'   bound the draws allow in place of a point value.
-bf_from_draws <- function(draws) {
-  n <- length(draws)
-  k <- sum(draws < 0)
-  if (k == n) return(list(p_negative = 1, bf = Inf, bound = paste0("BF > ", n - 1)))
-  if (k == 0) return(list(p_negative = 0, bf = 0, bound = paste0("BF < 1/", n - 1)))
-  p <- k / n
-  list(p_negative = p, bf = bf_from_p_negative(p), bound = NA_character_)
-}
-
-# ---------------------------------------------------------------------------
-# Robustness 2: languages nested within families
-# ---------------------------------------------------------------------------
-
-#' The meta-analysis with languages nested within their Glottolog families.
-#'
-#' Same likelihood and priors as the confirmatory meta-analysis, with a second
-#' half-normal(0.5) prior on the between-family SD, fitted in brms.
-#'
-#' @param lang_est Rows of average_varieties() for one hypothesis.
-#' @param prior_mu_sd,tau_scale As for run_meta_test().
-#' @param sampler List with chains, iter, warmup, cores, adapt_delta, max_treedepth.
-#' @param seed Sampler seed.
-#' @return List with the fit, its convergence status and the directional Bayes factor.
-fit_family_meta <- function(lang_est, prior_mu_sd, tau_scale, sampler, seed) {
-  if (!exists("extract_convergence_diagnostics")) source("R/07_extract_diagnostics.R")
-  d <- data.frame(y = lang_est$y, se = lang_est$se,
-                  family = factor(lang_est$family), language = factor(lang_est$language))
-  pr <- c(brms::prior_string(sprintf("normal(0, %s)", prior_mu_sd), class = "Intercept"),
-          brms::prior_string(sprintf("normal(0, %s)", tau_scale), class = "sd", group = "family"),
-          brms::prior_string(sprintf("normal(0, %s)", tau_scale), class = "sd", group = "family:language"))
-  fit <- brms::brm(y | se(se) ~ 1 + (1 | family / language), data = d, prior = pr,
-                   backend = getOption("brms.backend", "cmdstanr"),
-                   chains = sampler$chains, iter = sampler$iter,
-                   warmup = sampler$warmup, cores = sampler$cores, seed = seed,
-                   control = list(adapt_delta = sampler$adapt_delta,
-                                  max_treedepth = sampler$max_treedepth),
-                   refresh = 0, silent = 2)
-  diag <- extract_convergence_diagnostics(fit, max_treedepth = sampler$max_treedepth)
-  mu <- as.data.frame(fit, variable = "b_Intercept")$b_Intercept
-  c(list(fit = fit, diagnostics = diag, status = classify_convergence(diag),
-         mu_mean = mean(mu), mu_sd = stats::sd(mu)),
-    bf_from_draws(mu))
+#' @param prior_sd SD of the coefficient's zero-centred normal prior, on the draws' scale.
+#' @return List with p_negative and bf.
+bf_from_draws <- function(draws, prior_sd) {
+  stopifnot(length(draws) > 1, length(prior_sd) == 1L, prior_sd > 0)
+  dens0 <- stats::dnorm(0, mean(draws), stats::sd(draws))
+  p <- mean(draws < 0)
+  list(p_negative = p, bf = bf_onesided_null(dens0, prior_sd, p))
 }

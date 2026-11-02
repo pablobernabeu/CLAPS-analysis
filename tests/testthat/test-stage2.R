@@ -55,22 +55,22 @@ test_that("each exclusion criterion is applied at its registered threshold", {
     make_participant("missing_trial"),
     make_participant("seven_right", n_right = 7),
     make_participant("eight_right", n_right = 8),
-    make_participant("flat90", responses = c(rep(7L, 27), 1:3)),
-    make_participant("flat87", responses = c(rep(7L, 26), 1:4))
+    make_participant("flat97", responses = c(rep(7L, 29), 1L)),
+    make_participant("flat90", responses = c(rep(7L, 27), 1:3))
   )
   d$Response[d$Participant == "missing_rating" & d$Trial == 5] <- NA
   d <- d[!(d$Participant == "missing_trial" & d$Trial == 6), ]
   e <- participant_exclusions(validate_task_data(d, "acceptability"), "acceptability",
-                              n_attention = 10, attention_min_correct = 8, straightline_share = 0.9)
+                              n_attention = 10, attention_min_correct = 8, straightline_share = 0.95)
   ex <- setNames(e$excluded, e$Participant)
   expect_false(ex[["ok"]])
   expect_true(ex[["missing_rating"]])
   expect_true(ex[["missing_trial"]])
   expect_true(ex[["seven_right"]])
   expect_false(ex[["eight_right"]])
-  expect_true(ex[["flat90"]])
-  expect_false(ex[["flat87"]])
-  expect_true(e$straightlined[e$Participant == "flat90"])
+  expect_true(ex[["flat97"]])
+  expect_false(ex[["flat90"]])
+  expect_true(e$straightlined[e$Participant == "flat97"])
   expect_true(e$incomplete[e$Participant == "missing_trial"])
 })
 
@@ -142,14 +142,24 @@ test_that("varieties are averaged within a language: mean of means, mean of SDs"
                "missing from the language table")
 })
 
-test_that("Bayes factors are read against the registered threshold of 10", {
-  expect_equal(bf_from_p_negative(10 / 11), 10)
+test_that("Bayes factors are one-sided against zero and read against the registered threshold of 10", {
+  # With no data the posterior is the prior, and the Bayes factor is 1.
+  expect_equal(bf_onesided_null(dnorm(0, 0, 0.25), 0.25, 0.5), 1)
+  # Normal prior and normal likelihood: the marginal likelihoods in closed form.
+  P <- 0.25
+  yhat <- -0.3
+  se <- 0.1
+  v <- 1 / (1 / P^2 + 1 / se^2)
+  m <- v * yhat / se^2
+  analytic <- 2 * pnorm(0, m, sqrt(v)) * dnorm(yhat, 0, sqrt(P^2 + se^2)) / dnorm(yhat, 0, se)
+  expect_equal(bf_onesided_null(dnorm(0, m, sqrt(v)), P, pnorm(0, m, sqrt(v))), analytic)
+  # The robustness checks' version, from draws of that posterior.
+  set.seed(1)
+  expect_equal(bf_from_draws(rnorm(2e5, m, sqrt(v)), P)$bf, analytic, tolerance = 0.02)
+  # A positive estimate favours the null.
+  expect_lt(bf_from_draws(rnorm(2e5, -m, sqrt(v)), P)$bf, 1)
   expect_equal(interpret_bf(c(10, 9.99, 0.1, 0.1001, 1)),
                c("for", "inconclusive", "against", "inconclusive", "inconclusive"))
-  b <- bf_from_draws(rep(-1, 100))
-  expect_equal(b$bf, Inf)
-  expect_equal(b$bound, "BF > 99")
-  expect_equal(bf_from_draws(c(-1, -1, -1, 1))$bf, 3)
 })
 
 test_that("the meta-analytic priors are the per-language priors halved: 0.25 and 0.3", {
@@ -166,9 +176,10 @@ test_that("the Stage 2 settings parse and match the Stage 1 report", {
   expect_equal(cfg$samples$acceptability, 80L)
   expect_equal(cfg$samples$ratings, 20L)
   expect_equal(cfg$exclusions$attention_min_correct, 8L)
-  expect_equal(cfg$exclusions$straightline_share, 0.9)
+  expect_equal(cfg$exclusions$straightline_share, 0.95)
   expect_equal(cfg$inference$bf_threshold, 10L)
   expect_equal(cfg$inference$tau_prior_halfnormal_scale, 0.5)
+  expect_equal(cfg$inference$min_languages, 25L)
   tab <- read_language_table(here::here(cfg$languages_table))
   expect_true(all(c("variety", "language", "family") %in% names(tab)))
   expect_equal(length(unique(tab$language)), 40L)
@@ -216,5 +227,7 @@ test_that("run_meta_test agrees with the design analysis engine", {
     m <- run_meta_test(y, s, prior_mu_sd = 0.25, tau_scale = 0.5)
     e <- ra_meta_batch(matrix(y, 1), s, prior_mu_sd = 0.25, prior_tau_scale = 0.5)
     expect_lt(abs(m$p_mu_negative - e$p_mu_negative), 1e-3)
+    lb <- ra_meta_log_bf_null_batch(matrix(y, 1), s, prior_mu_sd = 0.25, prior_tau_scale = 0.5)
+    expect_lt(abs(log(m$bf) - lb), 1e-2)
   }
 })

@@ -80,7 +80,7 @@ for (i in seq_len(nrow(varieties))) {
     d <- expand.grid(Verb = verbs, S_Type = types, stringsAsFactors = FALSE)
     d$Agent <- agent[match(d$Verb, verbs)]
     zz <- z[match(d$Verb, verbs)]
-    # Kept off the ceiling, so that no simulated participant meets the 90% criterion
+    # Kept off the ceiling, so that no simulated participant meets the 95% criterion
     # by chance and every variety ends with exactly the target number.
     eta <- 0.4 + 0.9 * zz + stats::rnorm(1, 0, 0.4) + verb_int[match(d$Verb, verbs)] +
       ifelse(d$S_Type == "Active", 0.8 + b_act * zz, 0) +

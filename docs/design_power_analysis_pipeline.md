@@ -255,15 +255,20 @@ this order, since steps 2 and 4 check themselves against tables written before t
    `klanguage_registered_verbs.csv`, the same test with every language using each of
    those numbers of verbs. Adding `--known=none` to any of these runs draws every
    language from the population, none of the measured ones taking part, and appends
-   `_none_known` to the table's name. The report quotes the three tables run this way:
-   `--known=none` alone, with `--se-scale=calibrated` and with `--n-verbs=60,72`.
-   `--mode=point` gives the power at the estimated mean and spread, `--k=20,25,30` other
-   numbers of languages and `--bf-bands` the shares of studies ending at or below 1/10
-   and between 1/10 and 10; each adds a word (`_point`, `_languages`, `_bands`) to the
-   table's name. The report also quotes `--mode=point --bf-bands --known=none` and
-   `--k=20,25,30 --bf-bands --known=none`. With `--known=recruited`, only the measured
-   languages with a team in `config/stage2_languages.csv` take part, and the report quotes
-   that run alone (`klanguage_registered_recruited_known.csv`).
+   `_none_known` to the table's name. `--mode=point` gives the power at the estimated mean
+   and spread, `--mode=null` studies with a mean of zero, `--k=20,25,30` other numbers of
+   languages and `--bf-bands` the shares of studies ending at or below 1/10 and between
+   1/10 and 10; each adds a word (`_point`, `_null`, `_languages`, `_bands`) to the
+   table's name. With `--known=recruited`, only the measured languages with a team in
+   `config/stage2_languages.csv` take part. By default the script applies the directional
+   Bayes factor of the tables reported until 2 November 2026; `--test=onesided` applies the
+   one-sided Bayes factor against a zero mean registered since, and appends `_onesided`.
+   The report quotes seven one-sided tables, all with `--test=onesided --known=none`:
+   `--mode=point --k=20,25,30,35,40 --bf-bands` (the quoted rates),
+   `--k=20,25,30,35,40 --bf-bands` (allowing for uncertainty), `--mode=null --k=20,25
+   --bf-bands` (misleading evidence), and `--k=20,25` with `--n-verbs=72,60` or
+   `--se-scale=calibrated`, each with and without `--mode=point`. Including 20 in `--k`
+   keeps the check against the reported cells.
 
 All four read the gitignored pilot extracts in `outputs/pilot_models/`, whose checksums
 are in `config/pilot_models_sha256.csv`. The report reads the tables they write.

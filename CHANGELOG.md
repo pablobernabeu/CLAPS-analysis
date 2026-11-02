@@ -80,8 +80,53 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   to all languages in the refit's verb-split arms, 0.16 (M1) and 0.18 (M2) for the
   active contrast, 0.08 for the intercept and 0.02 for the pseudo-passive contrast. The
   earlier columns are unchanged (2026-10-09).
+- The one-sided Bayes factor against a zero mean that the PI registered on 2 November
+  (`docs/preregistration_decisions.md`, section 4, amendment of 2026-11-02):
+  `ra_meta_log_bf_null_batch()`, `two_stage_log_bf_null()`, `stage1_posteriors()` and
+  `detection_rate_log_bf()` in `R/13_simulate_klanguage_pooled.R`, checked by a unit test
+  against direct numerical integration. `two_stage_p_negative()` now takes its stage 1
+  from `stage1_posteriors()`, with the same arithmetic, and the directional tables
+  regenerate byte-identically (2026-11-02).
+- `scripts/run_klanguage_registered.R --test=onesided`, which adds `_onesided` to the
+  table's name, and `--mode=null`, studies with a mean of zero and the estimated spread
+  for the rates of misleading evidence. `--k` can now be combined with `--n-verbs` and
+  `--se-scale`. Seven tables, all with no measured language taking part (section 8,
+  amendment of 2026-11-02): at the estimated effect, with 25 languages, H1 81.7% [80.4,
+  82.9] and H2 90.6% [89.6, 91.4] with 19, rising to 96.3% and 98.8% with 40 and 30;
+  67.8% and 71.6% allowing for uncertainty; with no effect, a Bayes factor of 10 in 1.0%
+  and 0.85%. They reproduce exactly the check behind the replies of 2 November
+  (`reports/correspondence_checks/onesided_vs_null.R`) (2026-11-02).
 
 ### Changed
+
+- The Stage 2 code tests H1 and H2 with the one-sided Bayes factor against a zero mean:
+  `run_meta_test()` reads it off bayesmeta's marginal posterior by the Savage–Dickey ratio
+  (`bf_onesided_null()`), the robustness check from a normal approximation to its
+  draws (`bf_from_draws()`, which now takes the prior SD and no longer returns a bound),
+  and step 4 reads the registered minimum of 25 languages from `inference: min_languages`
+  in `config/analysis_config.yaml` in place of a typed 20. bayesmeta 3.5, the version
+  `renv.lock` pins, and the five packages it needs were installed into the project
+  library on ARC (R 4.4.2), where every test in `tests/testthat/test-stage2.R` passes,
+  the bayesmeta comparison included: the one-sided Bayes factor agrees with the design
+  analysis engine to within 0.01 on the log scale. Dry-run step 4 reran there
+  (`outputs/stage2_dry_run/step04_arc_onesided_2026-11-02.log`): H1 BF 9.66 and H2 BF
+  0.86 on the five simulated languages, both inconclusive, with the language estimates
+  unchanged. Step 5 was rescored from its saved fit without refitting (H1 BF about
+  100,000, H2 11.1) (2026-11-02).
+- Straight-lining excludes a participant at 95% of test trials, the PI's decision of 19
+  October, in `config/analysis_config.yaml`, `participant_exclusions()` and the tests
+  (2026-11-02).
+- The report tests both hypotheses with the one-sided Bayes factor against a zero mean,
+  with the registered minimum of 25 languages: at the estimated effect, H1 82% and H2 91%,
+  rising to 96% and 99% with 40 languages, the rates allowing for uncertainty given once
+  (68% and 72%), and the rate of misleading evidence with no effect (1.0% and 0.8%). The
+  recruited-teams rates are dropped, the summary table follows the stopping rule and is
+  kept whole by `\Needspace`, and the widened-SE limitation now reads 1.55 points. Its
+  data chunk loses the helpers and tables no text used any longer, left from the
+  three-language pooled arm, the per-language detection rates and the directional Bayes
+  factor, so it no longer reads `pooled_power_pilot.csv`, the pooled grids or
+  `pseudo_passive_pilot_posterior.csv`
+  (2026-11-02).
 
 - The report gives the registered rates three ways (`docs/preregistration_decisions.md`,
   section 8, amendment of 2026-10-28): at the estimated effect (H1 95%, H2 97.5%), and
@@ -117,6 +162,13 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   computed, the posterior odds of the predicted sign over the prior odds, where it named
   a Savage–Dickey density ratio, and withdraws the bridge-sampling calibration, which
   could not calibrate that ratio. The computation is unchanged (2026-10-09).
+
+### Removed
+
+- The family check, `stage2/06_robustness_families.R` and `fit_family_meta()` in
+  `R/14_stage2.R`, which the PI dropped on 19 October and the Stage 1 protocol no longer
+  describes. The language table keeps each language's Glottolog family, and the Stage 2
+  README, the root README and the step numbers now describe five steps (2026-11-02).
 
 ### Fixed
 

@@ -32,6 +32,9 @@ format:
         % them run past the right edge.
         \usepackage{fvextra}
         \fvset{breaklines=true,breakanywhere=true}
+        % \Needspace before a table moves it, caption and all, to the next page when
+        % the rest of the page cannot hold it, so that no short table splits.
+        \usepackage{needspace}
         % Show the "Abstract" label, which KOMA suppresses by default. The
         % report follows APA 7 elsewhere, where the abstract is labelled.
         \KOMAoptions{abstract=on}
@@ -99,9 +102,6 @@ num3  <- function(x) sprintf("%.3f", x)
 mnum2 <- function(x) sprintf("$%.2f$", x)    # math mode, for a proper minus sign
 snum2 <- function(x) sprintf("$%+.2f$", x)   # signed, in math mode
 snum3 <- function(x) sprintf("$%+.3f$", x)
-# Probabilities without the leading zero, as APA 7 asks for quantities that cannot
-# exceed one.
-prob2 <- function(x) sub("^0", "", sprintf("%.2f", x))
 ppv   <- function(lang, col) pp[[col]][pp$language == lang]
 and_list <- function(x) {
   if (length(x) > 1) paste(paste(head(x, -1), collapse = ", "), "and", tail(x, 1)) else
@@ -111,7 +111,6 @@ and_list <- function(x) {
 # Grid cells are cited only when they hold a minimum number of replicates.
 MIN_REPS_V2 <- 10L
 jp_a <- filter(jp, mode == "assurance", reps >= MIN_REPS_V2)
-jval <- function(lang, N, col) jp_a[[col]][jp_a$language == lang & jp_a$n_participants == N]
 
 # The decision arm: the simulated studies at 70, 80 and 100 participants per language on
 # which the per-language results rest, each scored for every prediction and summarised by
@@ -120,8 +119,6 @@ jval <- function(lang, N, col) jp_a[[col]][jp_a$language == lang & jp_a$n_partic
 # stores integer counts, and a language without a pseudo-passive carries NA in every H2
 # column, so it cannot print as a test that failed.
 ppd <- read_csv("../outputs/design_summary_pilot/pseudo_passive_decision_arm.csv",
-                show_col_types = FALSE)
-ppp <- read_csv("../outputs/design_summary_pilot/pseudo_passive_pilot_posterior.csv",
                 show_col_types = FALSE)
 # The grid summary above counts the same replicates wherever its cell holds exactly the
 # decision arm, as at 80 participants. This stops the render if a re-aggregation of
@@ -137,84 +134,6 @@ da_reps <- unique(ppd$reps)
 da_ns   <- sort(unique(ppd$n_participants))
 stopifnot(length(da_reps) == 1)
 da      <- function(lang, N, col) ppd[[col]][ppd$language == lang & ppd$n_participants == N]
-da_rate <- function(lang, N, col = "n_h1b") da(lang, N, col) / da(lang, N, "reps")
-# Rates come with an exact interval, since each is a proportion over a limited number of
-# replicates and none is known to the precision a bare percentage implies. Intervals are
-# printed in percentage points, the unit of the rates they belong to.
-exact_ci <- function(k, n) stats::binom.test(k, n)$conf.int
-pct_ci   <- function(k, n) {
-  b <- exact_ci(k, n)
-  sprintf("[%.0f, %.0f]", 100 * b[1], 100 * b[2])
-}
-da_ci <- function(lang, N, col = "n_h1b") pct_ci(da(lang, N, col), da(lang, N, "reps"))
-
-# Pilot posterior of the pseudo-passive interaction, per SD of affectedness.
-h2post  <- function(lang, col) ppp[[col]][ppp$language == lang]
-# Every posterior draw on one side of zero is said in words, and anything short of that
-# is given as a count, so the sentence stays true if the pilot models are refitted.
-h2draws <- function(lang) {
-  k <- h2post(lang, "n_negative")
-  n <- h2post(lang, "ndraws")
-  if (k == n) paste("all", format(n, big.mark = ",")) else
-    paste(format(k, big.mark = ","), "of", format(n, big.mark = ","))
-}
-
-# A directional Bayes factor of k is met exactly when the posterior probability of the
-# predicted sign reaches k/(k+1).
-bf_sign <- function(k) k / (k + 1)
-
-# The limit the verbs set on the interaction's detection rate, from an approximate formula
-# applied to the fitted pilot models. It is quoted in whole percentages because the formula
-# ignores part of the covariance among the by-verb effects.
-ceil_txt <- function(lang) {
-  x <- ppv(lang, "ceiling_h1b_bf10")
-  if (x >= 0.99) "over 99%" else paste("about", pct0(x))
-}
-
-# The three-language pooled arm, aggregated by scripts/aggregate_pooled.R. Its cells are
-# combined at or below 100 participants per language, since the rate shows no trend over
-# that range and no single cell holds more than a few dozen replicates.
-pooledp <- read_csv("../outputs/design_summary_pilot/pooled_power_pilot.csv",
-                    show_col_types = FALSE)
-POOLED_MAX_N <- 100
-pooled_combined <- function(col = "p_h1b", max_n = POOLED_MAX_N) {
-  d <- pooledp[pooledp$n_participants <= max_n, ]
-  k <- sum(round(d[[col]] * d$reps))
-  n <- sum(d$reps)
-  list(p = k / n, k = k, n = n, ns = sort(unique(d$n_participants)),
-       txt = sprintf("%s %s", pct0(k / n), pct_ci(k, n)))
-}
-# The studies the two pooled grids planned at each sample size, every one of which
-# pooled_power_pilot.csv either counts or lacks, so the text can say how many returned no
-# result and what counting them as failures would do to the rate.
-pooled_planned <- bind_rows(
-  read_csv("../config/design_grid_pooled_v2.csv", show_col_types = FALSE),
-  read_csv("../config/design_grid_pooled_v2_N80.csv", show_col_types = FALSE)) |>
-  count(n_participants, name = "planned")
-pooled_missing <- local({
-  d <- pooled_planned |>
-    filter(n_participants <= POOLED_MAX_N) |>
-    left_join(select(pooledp, n_participants, reps), by = "n_participants") |>
-    mutate(reps = coalesce(reps, 0), missing = planned - reps)
-  stopifnot(all(d$missing >= 0), sum(d$reps) == pooled_combined()$n)
-  list(planned = sum(d$planned), missing = sum(d$missing),
-       at_max = d$missing[d$n_participants == max(d$n_participants)],
-       worst = pooled_combined()$k / sum(d$planned))
-})
-
-# The repository's wider grid (joint_power_pilot.csv) holds more studies than the decision
-# arm at some samples, scored for H1 alone. The excess is stated once, when it is the same at
-# every such cell, so a reader who opens the repository can match the two sets of figures.
-grid_extra <- jp_a |>
-  inner_join(select(ppd, language, n_participants, reps_da = reps),
-             by = c("language", "n_participants")) |>
-  mutate(extra = reps - reps_da) |>
-  filter(extra > 0)
-grid_extra_txt <- if (nrow(grid_extra) > 0 && length(unique(grid_extra$extra)) == 1) {
-  sprintf(paste("The repository's wider grid adds %d earlier studies at %s participants,",
-                "scored for H1 alone."),
-          unique(grid_extra$extra), and_list(sort(unique(grid_extra$n_participants))))
-} else ""
 
 # The populations of languages behind the pooled analysis, from
 # scripts/run_klanguage_design_analysis.R on the engine in R/13_simulate_klanguage_pooled.R:
@@ -230,10 +149,14 @@ kpop <- function(pop, col, variant = "canonical") {
   x
 }
 
-# The planned number of languages, from the PI's count of 6 October 2026: at least 20, 15
-# of them with a pseudo-passive.
-K_PLAN    <- 20L
-K_PLAN_PP <- 15L
+# The planned number of languages: the registered minimum of 25, set by the PI on 2
+# November 2026, three quarters of them, rounded, with a pseudo-passive, and the larger
+# numbers the protocol shows. The convergence simulations of the single model ran with 20.
+k_pp      <- function(K) as.integer(floor(0.75 * K + 0.5))
+K_PLAN    <- 25L
+K_PLAN_PP <- k_pp(K_PLAN)
+K_MORE    <- c(30L, 35L, 40L)
+K_LADDER_SIM <- 20L
 
 # The populations for the pseudo-passive interaction, from
 # scripts/run_klanguage_pseudo_passive.R, estimated from the measured languages with a
@@ -245,14 +168,21 @@ KPP_POPS <- c(claps_protocol = "claps_protocol", seven = "five",
 n_measured_pp <- kpppop$K[kpppop$population == "five"]
 
 # The confirmatory pooled tests as registered, from scripts/run_klanguage_registered.R
-# --known=none: the two-stage synthesis, with a normal prior on the mean across languages
-# and a half-normal(0.5) prior on tau, in simulated studies whose languages are all drawn
-# from a population, since which languages will take part is not yet known.
-kreg <- read_csv(paste0(K_DIR, "klanguage_registered_none_known.csv"), show_col_types = FALSE)
-stopifnot(all(kreg$known == "none"), length(unique(kreg$n_reps)) == 1)
-# The registered table names its sets as the two population tables above do.
+# --test=onesided --known=none: the two-stage synthesis with a one-sided Bayes factor
+# against a zero mean, whose hypothesis is the negative half of the normal prior on the
+# mean across languages, with a half-normal(0.5) prior on tau, in simulated studies whose
+# languages are all drawn from a population, since which languages will take part is not
+# yet known. The quoted rates hold the population's mean and spread at their posterior
+# mean and median, as a conventional power analysis does (--mode=point), at 20 to 40
+# languages (--k=20,25,30,35,40), with the shares of studies ending at or below 1/10
+# (--bf-bands).
+kpoint <- read_csv(paste0(K_DIR, "klanguage_registered_languages_point_bands_none_known_onesided.csv"),
+                   show_col_types = FALSE)
+stopifnot(all(kpoint$known == "none"), all(kpoint$mode == "point"), all(kpoint$test == "onesided"),
+          length(unique(kpoint$n_reps)) == 1)
+# The registered tables name their sets as the two population tables above do.
 KREG_POPS <- list(H1 = setNames(K_POPS, K_POPS), H2 = KPP_POPS)
-kreg_row <- function(h, pop = "seven", tab = kreg, K = if (h == "H1") K_PLAN else K_PLAN_PP) {
+kreg_row <- function(h, pop = "seven", tab = kpoint, K = if (h == "H1") K_PLAN else K_PLAN_PP) {
   x <- tab[tab$hypothesis == h & tab$population == KREG_POPS[[h]][[pop]] & tab$K == K, ]
   stopifnot(nrow(x) == 1)
   x
@@ -262,83 +192,84 @@ kreg_ci <- function(h, pop = "seven", ...) {
   x <- kreg_row(h, pop, ...)
   sprintf("[%.0f, %.0f]", 100 * x$power_lo, 100 * x$power_hi)
 }
-stopifnot(all(kreg$K[kreg$hypothesis == "H1"] == K_PLAN),
-          all(kreg$K[kreg$hypothesis == "H2"] == K_PLAN_PP))
-# The same tests at the estimated effect, with the population's mean and spread held at
-# their posterior mean and median as a conventional power analysis holds them (--mode=point
-# --bf-bands --known=none), and with the measured languages whose teams are recruited
-# taking part (--known=recruited).
-kpoint <- read_csv(paste0(K_DIR, "klanguage_registered_point_bands_none_known.csv"),
-                   show_col_types = FALSE)
-krecr <- read_csv(paste0(K_DIR, "klanguage_registered_recruited_known.csv"),
-                  show_col_types = FALSE)
-stopifnot(all(kpoint$mode == "point"), all(kpoint$known == "none"),
-          all(krecr$known == "recruited"))
-n_recruited_h1 <- unique(krecr$n_known[krecr$hypothesis == "H1"])
-n_recruited_h2 <- unique(krecr$n_known[krecr$hypothesis == "H2"])
-# The text names Balinese as the one measured language without a recruited team.
-stopifnot(n_recruited_h1 == 6L, n_recruited_h2 == 4L)
-# The assurance runs with --bf-bands at 20, 25 and 30 languages (--k=20,25,30
-# --known=none). Their 20- and 15-language rows must be the quoted rates. They give the
-# share of studies ending at a Bayes factor of 1/10 or less, and the H1 rate with more
-# languages, which the text quotes once for 25 and 30 and so stops the render if the two
-# differ. The text also says that no study at the estimated effect ends that low.
-kbands <- read_csv(paste0(K_DIR, "klanguage_registered_languages_bands_none_known.csv"),
-                   show_col_types = FALSE)
-stopifnot(all(kbands$known == "none"),
-          isTRUE(all.equal(kreg_rate("H1", tab = kbands), kreg_rate("H1"))),
-          isTRUE(all.equal(kreg_rate("H2", tab = kbands), kreg_rate("H2"))),
-          pct0(kreg_rate("H1", tab = kbands, K = 25)) == pct0(kreg_rate("H1", tab = kbands, K = 30)),
-          kreg_row("H1", tab = kpoint)$p_bf_low == 0, kreg_row("H2", tab = kpoint)$p_bf_low == 0)
-bf_low <- function(h) sprintf("%.1f%%", 100 * kreg_row(h, tab = kbands)$p_bf_low)
+# Every number of languages the text quotes is in the table, and the text says that no
+# study at the estimated effect ends at a Bayes factor of 1/10 or less.
+stopifnot(all(c(K_PLAN, K_MORE) %in% kpoint$K[kpoint$hypothesis == "H1"]),
+          all(k_pp(c(K_PLAN, K_MORE)) %in% kpoint$K[kpoint$hypothesis == "H2"]),
+          all(vapply(c(K_PLAN, K_MORE), function(k) kreg_row("H1", K = k)$p_bf_low, 0) == 0),
+          all(vapply(k_pp(c(K_PLAN, K_MORE)), function(k) kreg_row("H2", K = k)$p_bf_low, 0) == 0))
 # A rate that falls exactly on a half, such as 3,460 of 4,000 studies, is given to one
 # decimal, since sprintf() rounds halves to even and would print 86.5% as 86%.
 pct_h <- function(x) {
   p2 <- 200 * x
   if (isTRUE(all.equal(p2, round(p2))) && round(p2) %% 2 == 1) sprintf("%.1f%%", p2 / 2) else pct0(x)
 }
-# The same tests with 60 verbs per language, the fewest the protocol allows, from the same
-# script with --n-verbs=60,72. Its 72-verb rows must be the quoted rates, and the render
-# stops if either quoted rate falls by half a percentage point or more, which the text rules
-# out.
-kverbs <- read_csv(paste0(K_DIR, "klanguage_registered_verbs_none_known.csv"),
-                   show_col_types = FALSE)
-verbs_fall <- vapply(c("H1", "H2"), function(h) {
-  x <- kverbs[kverbs$hypothesis == h & kverbs$population == KREG_POPS[[h]][["seven"]], ]
-  stopifnot(nrow(x) == 2, setequal(x$n_verbs, c(60, 72)),
-            isTRUE(all.equal(x$power[x$n_verbs == 72], kreg_rate(h))))
-  x$power[x$n_verbs == 72] - x$power[x$n_verbs == 60]
-}, numeric(1))
-stopifnot(all(verbs_fall < 0.005))
-
-# The expected per-language detection rate in a language without a pilot, from
-# scripts/estimate_per_language_approximations.R: a normal approximation to the
-# per-language test, calibrated against the decision arm, with the language's effect drawn
-# from the population each set of measured languages implies.
-pla <- read_csv(paste0(K_DIR, "per_language_approximations.csv"), show_col_types = FALSE)
-pla_np <- pla[pla$quantity == "detection, language without a pilot", ]
-pla_rate  <- function(h, pop = "seven") {
-  x <- pla_np[[h]][pla_np$population == pop]
-  stopifnot(length(x) == 1)
-  x
+# Rates are given in whole percentages, except that a rate just below 95% that would round
+# up to it is given to one decimal, rounded down, so that none reads as reaching 95%.
+pct_r <- function(x) {
+  if (x < 0.95 && round(100 * x) >= 95) sprintf("%.1f%%", floor(1000 * x) / 10) else pct_h(x)
 }
-pla_range <- function(h) sprintf("%s to %s", pct0(min(pla_np[[h]])), pct0(max(pla_np[[h]])))
+# The rates at the larger numbers of languages, as text: H1 at K_MORE languages and H2 at
+# the three quarters of them with a pseudo-passive.
+more_rates <- function(h) {
+  ks <- if (h == "H1") K_MORE else k_pp(K_MORE)
+  vapply(ks, function(k) pct_r(kreg_rate(h, K = k)), character(1))
+}
+# The same tests allowing for uncertainty about the mean and spread, which each simulated
+# study draws from their posterior (the assurance, --k=20,25,30,35,40 --bf-bands). The text
+# quotes them once.
+kunc <- read_csv(paste0(K_DIR, "klanguage_registered_languages_bands_none_known_onesided.csv"),
+                 show_col_types = FALSE)
+stopifnot(all(kunc$known == "none"), !"mode" %in% names(kunc), all(kunc$test == "onesided"))
+# The same studies with 60 verbs per language, the fewest the protocol allows
+# (--n-verbs=72,60 at 20 and 25 languages), at the estimated effect and allowing for
+# uncertainty. Their 72-verb rows must be the quoted rates, and the render stops if any
+# quoted rate falls by a percentage point or more, which the text rules out.
+kverbs <- list(
+  point = read_csv(paste0(K_DIR, "klanguage_registered_verbs_languages_point_none_known_onesided.csv"),
+                   show_col_types = FALSE),
+  unc = read_csv(paste0(K_DIR, "klanguage_registered_verbs_languages_none_known_onesided.csv"),
+                 show_col_types = FALSE))
+verbs_fall <- unlist(lapply(names(kverbs), function(nm) {
+  vapply(c("H1", "H2"), function(h) {
+    k <- if (h == "H1") K_PLAN else K_PLAN_PP
+    x <- kverbs[[nm]]
+    x <- x[x$hypothesis == h & x$population == KREG_POPS[[h]][["seven"]] & x$K == k, ]
+    stopifnot(nrow(x) == 2, setequal(x$n_verbs, c(60, 72)),
+              isTRUE(all.equal(x$power[x$n_verbs == 72],
+                               kreg_rate(h, tab = if (nm == "point") kpoint else kunc))))
+    x$power[x$n_verbs == 72] - x$power[x$n_verbs == 60]
+  }, numeric(1))
+}))
+stopifnot(all(verbs_fall < 0.01))
+# Studies with no effect, a mean of zero with the estimated spread (--mode=null
+# --bf-bands): the share that reaches 10 is the rate of misleading evidence.
+knull <- read_csv(paste0(K_DIR, "klanguage_registered_languages_null_bands_none_known_onesided.csv"),
+                  show_col_types = FALSE)
+stopifnot(all(knull$mode == "null"), all(knull$test == "onesided"))
+null_rate <- function(h) sprintf("%.1f%%", 100 * kreg_rate(h, tab = knull))
+
+# The normal approximation to each language's analysis, from
+# scripts/estimate_per_language_approximations.R, calibrated against the decision arm by
+# widening its standard error by a factor k.
+pla <- read_csv(paste0(K_DIR, "per_language_approximations.csv"), show_col_types = FALSE)
 # The registered tests again, on the same simulated studies, with every language's
-# standard error widened by the factor that calibrates the normal approximation above
-# (scripts/run_klanguage_registered.R --known=none --se-scale=calibrated). The text quotes
-# the larger fall of the two quoted rates, and stops the render if either rose instead.
-kreg_wide <- read_csv(paste0(K_DIR, "klanguage_registered_se_scaled_none_known.csv"),
-                      show_col_types = FALSE)
+# standard error widened by that factor
+# (scripts/run_klanguage_registered.R --test=onesided --known=none --se-scale=calibrated
+# --k=20,25, at the estimated effect and allowing for uncertainty). The text quotes the
+# largest fall of the quoted rates, and stops the render if any rose instead.
+kreg_wide <- list(
+  point = read_csv(paste0(K_DIR, "klanguage_registered_se_scaled_languages_point_none_known_onesided.csv"),
+                   show_col_types = FALSE),
+  unc = read_csv(paste0(K_DIR, "klanguage_registered_se_scaled_languages_none_known_onesided.csv"),
+                 show_col_types = FALSE))
 kreg_shift <- local({
-  d <- inner_join(select(kreg, hypothesis, population, power),
-                  select(kreg_wide, hypothesis, population, power_wide = power, se_scale),
-                  by = c("hypothesis", "population"))
-  stopifnot(nrow(d) == nrow(kreg), length(unique(d$se_scale)) == 1,
-            isTRUE(all.equal(unique(d$se_scale), unique(pla$k))))
-  d <- d[(d$hypothesis == "H1" & d$population == KREG_POPS$H1[["seven"]]) |
-         (d$hypothesis == "H2" & d$population == KREG_POPS$H2[["seven"]]), ]
-  stopifnot(nrow(d) == 2, all(d$power_wide <= d$power))
-  list(k = unique(d$se_scale), max_fall = max(d$power - d$power_wide))
+  k <- unique(c(kreg_wide$point$se_scale, kreg_wide$unc$se_scale))
+  stopifnot(length(k) == 1, isTRUE(all.equal(k, unique(pla$k))))
+  fall <- c(vapply(c("H1", "H2"), function(h) kreg_rate(h) - kreg_rate(h, tab = kreg_wide$point), 0),
+            vapply(c("H1", "H2"), function(h) kreg_rate(h, tab = kunc) - kreg_rate(h, tab = kreg_wide$unc), 0))
+  stopifnot(all(fall >= 0))
+  list(k = k, max_fall = max(fall))
 })
 # Counts below ten in words, as APA 7 asks.
 num_word <- function(n) c("one", "two", "three", "four", "five", "six", "seven", "eight",
@@ -377,18 +308,16 @@ actives, and the secondary hypothesis (H2) that it is also steeper for passives 
 pseudo-passives. This report evaluates by simulation what the planned design, 80 participants per
 language in at least `r K_PLAN` languages, can be expected to deliver. Both hypotheses are tested
 across languages in a two-stage synthesis: each language is analysed with the planned ordinal
-model, and the estimates are combined in a Bayesian random-effects meta-analysis. Which languages
-will take part is not yet known, so the simulations draw the effect of every language from a
-population whose mean and spread are estimated from the seven languages measured so far: English,
-Turkish and Norwegian in the CLAPS pilot, and Balinese, Hebrew, Indonesian and Mandarin in
-published studies. With `r K_PLAN` languages, the synthesis reaches a directional Bayes
-factor of 10 in `r pct0(kreg_rate("H1"))` of simulated studies on H1, and in
-`r pct0(kreg_rate("H2"))` on H2 across the `r K_PLAN_PP` languages with a pseudo-passive. These
-rates allow for uncertainty about the size of the effect, and depend mainly on how much it varies
-between languages. They rise to `r pct_h(kreg_rate("H1", tab = krecr))` and
-`r pct_h(kreg_rate("H2", tab = krecr))` if the measured languages whose teams are already
-recruited take part, and at the estimated effect itself, the usual basis of a power analysis, they
-are `r pct_h(kreg_rate("H1", tab = kpoint))` and `r pct_h(kreg_rate("H2", tab = kpoint))`. In the pilots, the active
+model, and the estimates are combined in a Bayesian random-effects meta-analysis, with a one-sided
+Bayes factor against the null hypothesis of no effect. Which languages will take part is not yet
+known, so the simulations draw the effect of every language from a population whose mean and
+spread are estimated from the seven languages measured so far: English, Turkish and Norwegian in
+the CLAPS pilot, and Balinese, Hebrew, Indonesian and Mandarin in published studies. With
+`r K_PLAN` languages and the effect at its estimated size, the usual basis of a power analysis,
+the synthesis reaches a Bayes factor of 10 in `r pct_r(kreg_rate("H1"))` of simulated studies on
+H1, and in `r pct_r(kreg_rate("H2"))` on H2 across the `r K_PLAN_PP` languages with a
+pseudo-passive. With `r max(K_MORE)` languages, the rates rise to
+`r pct_r(kreg_rate("H1", K = max(K_MORE)))` and `r pct_r(kreg_rate("H2", K = k_pp(max(K_MORE))))`. In the pilots, the active
 interaction runs in the predicted direction in all three languages, and the pseudo-passive
 interaction in English but not in Turkish. Because affectedness is a property of the verb, the
 verbs bound the precision of each language's estimate.
@@ -487,7 +416,7 @@ Norwegian materials include no pseudo-passive.
 The design analysis simulates many studies and analyses each one as the real data will be
 analysed. Simulations of single languages, from the cumulative-logit model planned for each
 language's data, show how precisely one language's data estimate each interaction. Simulations of
-`r K_PLAN` languages then evaluate the confirmatory test, which combines the per-language
+`r K_PLAN` to `r max(K_MORE)` languages then evaluate the confirmatory test, which combines the per-language
 estimates in the way described below. The procedure stays within the Bayesian framework
 throughout, because the confirmatory test is a Bayes factor. Its result is therefore the
 probability that a study reaches a Bayes factor of 10, a different quantity from the power to
@@ -497,9 +426,9 @@ The per-language simulations take their effects from the pilot. For each languag
 model is fitted to the pilot ratings. On every simulated study, the fixed effects and ordinal
 thresholds are drawn together from one draw of that fit's posterior, and the random-effect
 covariance is held at its posterior mean. New participants and new verb deviations are then drawn
-around the pilot's own verbs and their measured affectedness scores. Each reported rate is an
-assurance, a detection rate averaged over the effect sizes the pilot leaves plausible, which
-allows for the uncertainty of a single pilot's point estimate [@albersLakens2018]. Every pilot
+around the pilot's own verbs and their measured affectedness scores. The simulated studies thus
+range over the effect sizes the pilot leaves plausible, which allows for the uncertainty of a
+single pilot's point estimate [@albersLakens2018]. Every pilot
 language goes forward whatever its pilot showed, so the follow-up bias that Albers and Lakens
 describe does not arise.
 
@@ -556,16 +485,16 @@ and each language here contributes 80 participants and about 72 verbs. A single 
 Limitations), so it is kept as a planned robustness check, reported beside the confirmatory test
 but deciding neither hypothesis.
 
-Evidence for each hypothesis is a directional Bayes factor, the posterior odds that the
-coefficient, or in the synthesis the mean across languages, carries the predicted sign divided by
-the same odds under the prior [@moreyWagenmakers2014]. The hypothesis is represented by the half
-of the zero-centred prior on the predicted side, a half-normal distribution of the kind *Nature
-Human Behaviour* names for representing a prediction. Its competitor, the reversed effect,
-is represented by the same half-normal on the other side. Under these symmetric priors, a Bayes
-factor of 10 corresponds to a posterior probability of `r prob2(bf_sign(10))` that the effect has
-the predicted sign, and a Bayes factor of 1/10 or less is equally strong evidence for the reversal.
-Within a language, the Bayes factor is estimated from posterior draws and from prior draws sampled
-alongside them. A simulated study counts as a detection when its Bayes factor reaches 10.
+Evidence for each hypothesis is a one-sided Bayes factor against the null hypothesis that the
+mean across languages is zero, with the languages free to vary around the mean under both
+hypotheses. The hypothesis is represented by the half of the zero-centred prior on the predicted
+side, a half-normal distribution of the kind *Nature Human Behaviour* names for representing a
+prediction [@dienes2014], and the null by a mean of exactly zero. The Bayes factor is the
+Savage–Dickey ratio of the prior and posterior densities of the mean at zero
+[@wagenmakersLodewyckxKuriyalGrasman2010], multiplied by twice the posterior probability that the
+mean is negative [@moreyWagenmakers2014]. A Bayes factor of 1/10 or less is therefore strong
+evidence for no effect, and an effect in the other direction counts towards it. A simulated study
+counts as a detection when its Bayes factor reaches 10.
 
 Each stimulus exists in two versions, one with a woman agent and one with a man agent. Each
 participant will see one version of each verb, so an English or Turkish session has
@@ -628,38 +557,34 @@ pseudo-passive.
 
 ## The Confirmatory Pooled Test
 
-The collaborators expect at least `r K_PLAN` languages, `r K_PLAN_PP` of them with a
-pseudo-passive, so the confirmatory test is simulated with `r K_PLAN` languages. Which languages
-will take part is not yet known, so the main simulations do not assume that any of the seven
-measured so far, the three CLAPS pilots and the four other meta-analysis languages, is among them. Instead,
-every language's effect is drawn from a population whose mean and between-language spread are
-estimated from those seven. Each language's estimate is simulated at the precision that 80
-participants and 72 verbs achieve, and each simulated study is analysed as registered. H2 is
-simulated in the same way in `r K_PLAN_PP` languages with a pseudo-passive, drawn from the
-population estimated from the `r num_word(n_measured_pp)` measured languages that have one.
+The protocol sets a minimum of `r K_PLAN` languages, and the collaborators hope for 30 or more, so
+the confirmatory test is simulated with `r K_PLAN` languages and with `r and_list(K_MORE)`. In
+earlier studies, about three quarters of the languages had a pseudo-passive, so H2 is simulated
+with `r K_PLAN_PP` languages, and with `r and_list(k_pp(K_MORE))` respectively. Which languages
+will take part is not yet known, so the simulations do not assume that any of the seven measured
+so far, the three CLAPS pilots and the four other meta-analysis languages, is among them. Instead,
+every language's effect is drawn from a population whose mean and between-language spread are held
+at their estimates from those seven (the posterior mean and median), as in a conventional power
+analysis. Each language's estimate is simulated at the precision that 80 participants and 72 verbs
+achieve, and each simulated study is analysed as registered. For H2, the population is estimated
+from the `r num_word(n_measured_pp)` measured languages with a pseudo-passive.
 
 On these assumptions, the pooled test of H1 reaches a Bayes factor of 10 in
-`r pct0(kreg_rate("H1"))` of `r format(unique(kreg$n_reps), big.mark = ",")` simulated studies
+`r pct_r(kreg_rate("H1"))` of `r format(unique(kpoint$n_reps), big.mark = ",")` simulated studies
 (95% Monte Carlo interval `r kreg_ci("H1")`), and the pooled test of H2 in
-`r pct0(kreg_rate("H2"))` (`r kreg_ci("H2")`). With 60 verbs in every language, the fewest the
-protocol allows, neither rate falls by as much as half a percentage point. Like the per-language
-rates, these are assurances, since each simulated study draws the population's mean and spread
-from their posterior. With the mean and spread held at their estimates (the posterior mean and
-median), as in a conventional power analysis, the rates are `r pct_h(kreg_rate("H1", tab = kpoint))`
-`r kreg_ci("H1", tab = kpoint)` for H1 and `r pct_h(kreg_rate("H2", tab = kpoint))`
-`r kreg_ci("H2", tab = kpoint)` for H2. Of the seven measured languages, `r num_word(n_recruited_h1)`
-(all but Balinese) already have recruited teams. If they take part, each
-with its effect drawn around its estimate, the assurance for H1 is
-`r pct_h(kreg_rate("H1", tab = krecr))` `r kreg_ci("H1", tab = krecr)`, and with the
-`r num_word(n_recruited_h2)` of them that have a pseudo-passive, the assurance for H2 is
-`r pct_h(kreg_rate("H2", tab = krecr))` `r kreg_ci("H2", tab = krecr)`.
-
-A Bayes factor of 1/10 or less, strong evidence against a hypothesis, arises in `r bf_low("H1")`
-of simulated studies for H1 and `r bf_low("H2")` for H2, and in none at the estimated effect, so
-nearly every study that misses 10 is inconclusive. The assurances depend mainly on how much the
-effect varies between languages, which seven languages can estimate only roughly. More languages
-would add little, since no number of them makes up for a mean effect that proves close to zero:
-with 25 or 30 languages, H1 reaches `r pct0(kreg_rate("H1", tab = kbands, K = 25))`.
+`r pct_r(kreg_rate("H2"))` (`r kreg_ci("H2")`). The rates rise with the number of languages: to
+`r more_rates("H1")[1]` for H1 and `r more_rates("H2")[1]` for H2 with `r K_MORE[1]` languages,
+`r more_rates("H1")[2]` and `r more_rates("H2")[2]` with `r K_MORE[2]`, and
+`r more_rates("H1")[3]` and `r more_rates("H2")[3]` with `r K_MORE[3]`. With 60 verbs in every
+language, the fewest the protocol allows, no rate falls by as much as a percentage point. No study
+at the estimated effects ends with strong evidence for the null, a Bayes factor of 1/10 or less.
+In studies with no effect, a mean of zero with the estimated spread, a Bayes factor of 10 arises in
+`r null_rate("H1")` of studies for H1 and `r null_rate("H2")` for H2, which is the rate of
+misleading evidence [@schonbrodtWagenmakers2018]. Allowing for uncertainty about the mean and spread
+as well, by drawing them from their posterior in each simulated study, the rates with `r K_PLAN`
+languages are `r pct_r(kreg_rate("H1", tab = kunc))` for H1 and
+`r pct_r(kreg_rate("H2", tab = kunc))` for H2, since the seven measured languages leave some
+chance that the mean effect is small.
 
 # The Sampling Plan
 
@@ -671,28 +596,6 @@ leaving a language out on the strength of its pilot would amount to choosing lan
 results. The H2 rates above already allow for the Turkish reversal, since Turkish is one of the
 `r num_word(n_measured_pp)` languages behind its population. @tbl-design summarises the
 planned analyses and their detection rates.
-
-<!-- The table follows the paragraph that introduces it, ahead of the stopping rule. Placed
-     after the stopping rule, it could not fit at the foot of that page and pushed the last
-     paragraph of Limitations onto a page of its own. Check the rendered pages whenever the
-     text above changes. -->
-
-| Analysis | Coefficient and direction | Test | Detection rate |
-|:-------------|:--------------------------|:-----------------------------|:-----------------------------|
-| H1, primary | Active by affectedness, mean across languages, negative | Directional Bayes factor of 10 in the two-stage synthesis | `r pct_h(kreg_rate("H1", tab = kpoint))` at the estimated effect, `r pct_h(kreg_rate("H1"))` to `r pct_h(kreg_rate("H1", tab = krecr))` allowing for its uncertainty |
-| H2, secondary | Pseudo-passive by affectedness, mean across languages, negative | As for H1, in the languages with a pseudo-passive | `r pct_h(kreg_rate("H2", tab = kpoint))` at the estimated effect, `r pct_h(kreg_rate("H2"))` to `r pct_h(kreg_rate("H2", tab = krecr))` allowing for its uncertainty |
-| Robustness check | Both interactions in a single model across languages | Reported with its directional Bayes factors, deciding neither hypothesis | Not used to plan the sample |
-
-: Planned Analyses and Their Detection Rates {#tbl-design}
-
-`\vspace{-8pt}`{=latex}
-
-*Note.* The rates are at 80 participants per language, with `r K_PLAN` languages for H1 and
-`r K_PLAN_PP` for H2. Allowing for uncertainty about the effect, the lower rate draws every
-language from the population estimated from the measured languages, and the higher lets the
-measured languages with recruited teams take part.
-
-`\vspace{12pt}`{=latex}
 
 *Nature Human Behaviour* sets its 0.95 power requirement for frequentist analysis plans. For a
 Bayesian plan, it asks that data collection continue until the Bayes factor is "at least 10 times in
@@ -706,6 +609,29 @@ that sample, each language is close to the limit its verbs set, so further parti
 little. An inconclusive result from at least `r K_PLAN` languages and
 `r format(80 * K_PLAN, big.mark = ",")` participants would still be an important message for the
 field.
+
+<!-- The table follows the stopping rule. With the text of 2 November 2026, placing it
+     straight after the paragraph that introduces it split its rows across two pages, and
+     keeping it whole there left a quarter page empty. The \Needspace keeps it whole, caption
+     and all, wherever the page breaks fall. Check the rendered pages whenever the text above
+     changes. -->
+
+`\Needspace{16\baselineskip}`{=latex}
+
+| Analysis | Coefficient and direction | Test | Detection rate |
+|:-------------|:--------------------------|:-----------------------------|:-----------------------------|
+| H1, primary | Active by affectedness, mean across languages, negative | One-sided Bayes factor of 10 against a zero mean, in the two-stage synthesis | `r pct_r(kreg_rate("H1"))` with `r K_PLAN` languages; `r more_rates("H1")[1]`, `r more_rates("H1")[2]` and `r more_rates("H1")[3]` with `r and_list(K_MORE)` |
+| H2, secondary | Pseudo-passive by affectedness, mean across languages, negative | As for H1, in the languages with a pseudo-passive | `r pct_r(kreg_rate("H2"))` with `r K_PLAN_PP` languages; `r more_rates("H2")[1]`, `r more_rates("H2")[2]` and `r more_rates("H2")[3]` with `r and_list(k_pp(K_MORE))` |
+| Robustness check | Both interactions in a single model across languages | Reported with its one-sided Bayes factors, deciding neither hypothesis | Not used to plan the sample |
+
+: Planned Analyses and Their Detection Rates {#tbl-design}
+
+`\vspace{-8pt}`{=latex}
+
+*Note.* The rates are at 80 participants per language and at the estimated effects. For H2, the
+numbers of languages are those with a pseudo-passive, three quarters of the total.
+
+`\vspace{12pt}`{=latex}
 
 # Limitations
 
@@ -732,7 +658,7 @@ estimated the interaction at about $-0.24$ logits per standard deviation of affe
 95% credible interval from $-0.51$ to $+0.15$. That is close to the average of the three pilot
 estimates, `r mnum2(mean(pp$interaction_per_sd))`, but the model is much harder to fit than the
 per-language ones. It saturated the maximum treedepth on three quarters of its iterations, a
-problem longer chains do not fix. In simulations with `r K_PLAN` languages of 20 verbs each, no
+problem longer chains do not fix. In simulations with `r K_LADDER_SIM` languages of 20 verbs each, no
 form more complex than one with sentence-type slopes for participants and verbs and uncorrelated
 by-language slopes converged. The robustness check's model ladder is therefore expected to end at
 that form.
@@ -742,8 +668,8 @@ far are a convenience sample from five families in two macroareas, and the simul
 every language as a draw from a population like them. They also give each language's estimate the
 standard error of a normal approximation to its analysis. The calibration behind the rates for a
 language without a pilot widens that standard error by a factor of `r num2(kreg_shift$k)`, and
-with it neither of the rates with no measured language taking part falls by more than
-`r sprintf("%.1f", 100 * kreg_shift$max_fall)` of a percentage point.
+with it no rate with `r K_PLAN` languages falls by more than
+`r sprintf("%.2f", 100 * kreg_shift$max_fall)` percentage points.
 
 {{< pagebreak >}}
 

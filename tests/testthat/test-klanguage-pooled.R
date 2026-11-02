@@ -604,6 +604,50 @@ test_that("the two-stage analysis refuses inputs it cannot interpret", {
   expect_error(two_stage_p_negative(Y, 0.1, c(0.25, 0.3)))
 })
 
+test_that("the one-sided Bayes factor against a zero mean equals direct integration", {
+  # Both marginal likelihoods integrated numerically over mu and tau, independently of
+  # the closed form and the grid the function uses.
+  y <- c(-0.31, -0.12, 0.04, -0.22, -0.40)
+  s <- c(0.08, 0.10, 0.09, 0.12, 0.07)
+  prior_sd <- 0.25
+  lik <- function(mu, tau) exp(sum(dnorm(y, mu, sqrt(s^2 + tau^2), log = TRUE)) + 20)
+  m0 <- integrate(Vectorize(function(t) lik(0, t) * 2 * dnorm(t, 0, 0.5)), 0, 3, rel.tol = 1e-10)$value
+  m1 <- integrate(Vectorize(function(t) {
+    integrate(Vectorize(function(m) lik(m, t) * 2 * dnorm(m, 0, prior_sd)), -3, 0, rel.tol = 1e-10)$value *
+      2 * dnorm(t, 0, 0.5)
+  }), 0, 3, rel.tol = 1e-8)$value
+  got <- exp(ra_meta_log_bf_null_batch(matrix(y, 1), s, prior_mu_sd = prior_sd, prior_tau_scale = 0.5))
+  expect_equal(got, m1 / m0, tolerance = 1e-4)
+})
+
+test_that("the one-sided Bayes factor reads stage 2 off the same stage-1 posteriors", {
+  Y <- matrix(c(-0.30, -0.10, 0.05, -0.20, -0.45, 0.10), nrow = 2, byrow = TRUE)
+  st <- stage1_posteriors(Y, 0.1, 0.25)
+  expect_equal(two_stage_log_bf_null(Y, 0.1, 0.25),
+               ra_meta_log_bf_null_batch(st$Y, st$s, prior_mu_sd = 0.25))
+  # The directional analysis uses the same stage 1.
+  expect_equal(two_stage_p_negative(Y, 0.1, 0.25),
+               ra_meta_batch(st$Y, st$s, prior_mu_sd = 0.25,
+                             prior_tau_scale = REGISTERED_TAU_PRIOR_SCALE)$p_mu_negative)
+})
+
+test_that("the one-sided Bayes factor favours the null for positive estimates and grows with negative ones", {
+  base <- c(-0.1, 0.05, -0.05, 0.0, -0.08)
+  shifts <- c(0.3, 0, -0.1, -0.2, -0.3)
+  lb <- ra_meta_log_bf_null_batch(t(sapply(shifts, function(d) base + d)), 0.08, prior_mu_sd = 0.25)
+  expect_lt(lb[1], 0)
+  expect_true(all(diff(lb) > 0))
+  expect_gt(lb[5], log(10))
+})
+
+test_that("the detection rate on log Bayes factors counts and intervals as on Bayes factors", {
+  lb <- log(c(rep(19, 3), rep(1, 4), 9, rep(999, 2)))
+  r <- detection_rate_log_bf(lb)
+  expect_equal(r$power, 0.5)
+  expect_equal(c(r$power_lo, r$power_hi), binom.test(5, 10)$conf.int[1:2])
+  expect_equal(detection_rate_log_bf(lb, bf_threshold = 8)$power, 0.6)
+})
+
 test_that("the detection rate counts Bayes factors above the threshold and gives the exact interval", {
   # Under the symmetric prior P(mu < 0) = 0.95 is a Bayes factor of 19, 0.999 one of
   # 999, 0.9 one of 9 and 0.5 one of 1. A probability of exactly 10/11 is not used:

@@ -1,15 +1,17 @@
 #!/usr/bin/env Rscript
 # stage2/04_meta_analysis.R
 # ---------------------------------------------------------------------------
-# Stage 2, step 4 of 6: the confirmatory tests of H1 and H2.
+# Stage 2, step 4 of 5: the confirmatory tests of H1 and H2.
 #
 # Collects the per-variety estimates from step 3, averages each language's varieties
 # into one estimate (the mean of their posterior means, with the mean of their
 # posterior SDs as its standard error), and runs the registered Bayesian
 # random-effects meta-analysis with bayesmeta: H1 over every language, H2 over the
 # languages whose data include a pseudo-passive. Each hypothesis is decided by its
-# directional Bayes factor: 10 or more is strong evidence for it, 1/10 or less strong
-# evidence that the interaction runs the other way, anything in between inconclusive.
+# one-sided Bayes factor against a zero mean: 10 or more is strong evidence for it, 1/10
+# or less strong evidence for the null hypothesis of no interaction, anything in
+# between inconclusive. The registered minimum number of languages is read from the
+# configuration (25 since 2 November 2026).
 #
 # Writes:
 #   results/language_estimates.csv   one row per language and hypothesis
@@ -53,8 +55,10 @@ tests <- dplyr::bind_rows(lapply(c("H1", "H2"), function(h) {
                 result = interpret_bf(bf, cfg$inference$bf_threshold), .before = 1)
 }))
 n_lang <- dplyr::n_distinct(by_lang$language)
+min_lang <- cfg$inference$min_languages
+if (is.null(min_lang)) stop("[stage2:04] the configuration lacks inference: min_languages")
 tests$languages_total <- n_lang
-tests$minimum_reached <- n_lang >= 20
+tests$minimum_reached <- n_lang >= min_lang
 readr::write_csv(tests, file.path(P$results, "meta_analysis.csv"))
 
 for (i in seq_len(nrow(tests))) {
@@ -67,4 +71,4 @@ for (i in seq_len(nrow(tests))) {
   }
 }
 if (nrow(left_out)) message("[stage2:04] left out, no converged model: ", paste(left_out$Variety, collapse = ", "))
-if (n_lang < 20) message("[stage2:04] ", n_lang, " languages, fewer than the registered minimum of 20")
+if (n_lang < min_lang) message("[stage2:04] ", n_lang, " languages, fewer than the registered minimum of ", min_lang)

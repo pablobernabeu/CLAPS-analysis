@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # stage2/05_robustness_single_model.R
 # ---------------------------------------------------------------------------
-# Stage 2, step 5 of 6: the first planned robustness check, a single model across
+# Stage 2, step 5 of 5: the first planned robustness check, a single model across
 # languages.
 #
 # Stacks the analysed varieties, with participants and verbs nested within variety
@@ -9,8 +9,9 @@
 # registered ladder (R/14_stage2.R, build_single_model_ladder: from the maximal model
 # of the Stage 1 report down to random intercepts), with the primary priors, the
 # registered sampler and convergence criteria. The two interactions are reported with
-# their directional Bayes factors from the most complex level that converged. The
-# check is reported beside the confirmatory tests and decides neither hypothesis.
+# their one-sided Bayes factors against zero (R/14_stage2.R, bf_from_draws, with the
+# interactions' primary priors) from the most complex level that converged. The check
+# is reported beside the confirmatory tests and decides neither hypothesis.
 #
 # Writes:
 #   fits/single_model_primary_<level>.rds and fits/diagnostics/...
@@ -71,11 +72,12 @@ out <- if (is.null(res$fit)) {
   terms <- STAGE2_TERMS[STAGE2_TERMS %in% brms::variables(res$fit)]
   dplyr::bind_rows(lapply(names(terms), function(h) {
     x <- as.data.frame(res$fit, variable = terms[[h]])[[1]]
-    b <- bf_from_draws(x)
+    # On the per-SD scale, where the prior is the meta-analytic prior SD (0.25 or 0.3).
+    b <- bf_from_draws(x / 2, prior_sd = cfg$meta_prior_sd[[h]])
     tibble::tibble(hypothesis = h, term = terms[[h]], model_level = res$selected_model,
                    status = "converged", per_sd_mean = mean(x) / 2, per_sd_sd = stats::sd(x) / 2,
                    per_sd_lo = stats::quantile(x, 0.025) / 2, per_sd_hi = stats::quantile(x, 0.975) / 2,
-                   p_negative = b$p_negative, bf = b$bf, bf_bound = b$bound,
+                   p_negative = b$p_negative, bf = b$bf,
                    result = interpret_bf(b$bf, cfg$inference$bf_threshold))
   }))
 }

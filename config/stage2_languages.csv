@@ -2,7 +2,7 @@
 # One row per variety (language team), mapping it to its language and family as
 # defined by Glottolog 5.3 (Hammarstrom et al., 2026), as the Stage 1 report
 # registers. Varieties of one language are averaged into one estimate before the
-# meta-analysis and count once towards the minimum of 20 languages. The variety
+# meta-analysis and count once towards the minimum of 25 languages. The variety
 # labels must match the Variety column of the teams' data. Rows are the teams
 # recruited by October 2026; the note column flags the cases where Glottolog
 # splits a name into several languages and the team's variety decides which.

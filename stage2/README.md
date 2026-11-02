@@ -11,14 +11,13 @@ with the priors in `R/03_define_priors.R` (primary regime). The functions they c
 | 1 | `01_check_and_exclude.R` | Checks the teams' data, applies the three exclusion criteria to both tasks, keeps 80 participants and 20 raters per variety | Exclusion criteria; Sampling plan |
 | 2 | `02_affectedness.R` | Takes each verb's mean affectedness rating, runs the outcome-neutral check, centres the means and divides them by two SDs | Pre-processing; outcome-neutral check |
 | 3 | `03_fit_language_models.R` | Fits each variety's model by the ladder, from the maximal model down, and extracts both interactions per SD of affectedness | Individual-language models |
-| 4 | `04_meta_analysis.R` | Averages each language's varieties and tests H1 and H2 by the Bayesian random-effects meta-analysis and its directional Bayes factors | Meta-analytic synthesis |
+| 4 | `04_meta_analysis.R` | Averages each language's varieties and tests H1 and H2 by the Bayesian random-effects meta-analysis and its one-sided Bayes factors against a zero mean | Meta-analytic synthesis |
 | 5 | `05_robustness_single_model.R` | Fits the single model across languages by its ladder | Robustness check |
-| 6 | `06_robustness_families.R` | Repeats the meta-analysis with languages nested within Glottolog families | Second robustness check |
 
 Steps 3 and 5 are the long ones and run on the cluster: `hpc/submit_stage2_language_fits.sh`
 (one array task per analysed variety) and `hpc/submit_stage2_single_model.sh`. Step 5 needs
-only steps 1 and 2, so it can run alongside step 3. Steps 1, 2, 4 and 6 take minutes on a
-laptop.
+only steps 1 and 2, so it can run alongside step 3. Steps 1, 2 and 4 take minutes. Step 4
+needs the bayesmeta package, at the version `renv.lock` pins.
 
 ```bash
 Rscript stage2/01_check_and_exclude.R
@@ -26,14 +25,13 @@ Rscript stage2/02_affectedness.R
 sbatch --account=<project> --array=1-<number of analysed varieties> hpc/submit_stage2_language_fits.sh
 sbatch --account=<project> hpc/submit_stage2_single_model.sh
 Rscript stage2/04_meta_analysis.R        # after every step-3 task has finished
-Rscript stage2/06_robustness_families.R
 ```
 
 ## How the decisions are made
 
 - **Exclusions.** A participant is excluded for a missing rating or trial, for answering
   fewer than 8 of the 10 attention checks with their target, or for giving the same rating
-  on 90% or more of the test trials. Teams replace excluded participants, so a variety is
+  on 95% or more of the test trials. Teams replace excluded participants, so a variety is
   analysed once it has 80 usable participants and 20 usable raters, and at least 60 verbs.
   If it has more, the first 80 (or 20) in order of data collection are kept, which needs
   `sessions.csv` (below).
@@ -55,11 +53,17 @@ Rscript stage2/06_robustness_families.R
   coefficient), enter a random-effects meta-analysis with a normal(0, 0.25) prior on the
   mean for H1 and normal(0, 0.3) for H2, and a half-normal(0.5) prior on the
   between-language SD, computed by the bayesmeta package (Röver, 2020). H1 uses every
-  language and H2 the languages whose data include a pseudo-passive. A directional Bayes
-  factor of 10 or more is strong evidence for the hypothesis, 1/10 or less strong evidence
-  that the interaction runs the other way, and anything in between is inconclusive.
-- **Robustness.** The single model and the family model are reported beside the tests and
-  decide neither hypothesis.
+  language and H2 the languages whose data include a pseudo-passive. Each is tested with a
+  one-sided Bayes factor against the null that the mean is zero, with the languages free
+  to vary around it, the negative half of the prior on the mean representing the
+  hypothesis: the Savage–Dickey ratio of the prior and posterior densities at zero, times
+  twice the posterior probability that the mean is negative. A Bayes factor of 10 or more
+  is strong evidence for the hypothesis, 1/10 or less strong evidence for the null, and
+  anything in between is inconclusive. `results/meta_analysis.csv` also reports whether the
+  registered minimum of 25 languages was reached.
+- **Robustness.** The single model is reported beside the tests with the same one-sided
+  Bayes factor, taken from a normal approximation to its posterior draws, and decides
+  neither hypothesis.
 
 ## Input format
 
@@ -89,7 +93,7 @@ Prolific or formr identifiers.
 `outputs/stage2/fits/` the selected fits and the diagnostics of every level tried, and
 `outputs/stage2/results/` the tables: the exclusions and samples, the outcome-neutral
 check, the per-variety estimates, the per-language estimates, the two tests
-(`meta_analysis.csv`) and the two robustness checks.
+(`meta_analysis.csv`) and the robustness check.
 
 ## Dry run
 
@@ -106,10 +110,9 @@ Rscript stage2/02_affectedness.R --dry-run
 Rscript stage2/03_fit_language_models.R --all --dry-run
 Rscript stage2/04_meta_analysis.R --dry-run
 Rscript stage2/05_robustness_single_model.R --dry-run
-Rscript stage2/06_robustness_families.R --dry-run
 ```
 
 The unit tests in `tests/testthat/test-stage2.R` check each rule on constructed data.
 With `CLAPS_SLOW_TESTS=true` they also check that the bayesmeta meta-analysis agrees with
-the engine of the power simulations to within 0.001 in the posterior probability that the
-mean is negative.
+the engine of the power simulations, to within 0.001 in the posterior probability that the
+mean is negative and to within 0.01 in the log of the one-sided Bayes factor.

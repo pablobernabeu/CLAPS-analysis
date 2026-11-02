@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # stage2/02_affectedness.R
 # ---------------------------------------------------------------------------
-# Stage 2, step 2 of 6: the affectedness predictor and the outcome-neutral check.
+# Stage 2, step 2 of 5: the affectedness predictor and the outcome-neutral check.
 #
 # For each variety, takes the mean affectedness rating of each verb over the
 # analysed raters and both AGENT versions, checks that the verbs' means have an SD of

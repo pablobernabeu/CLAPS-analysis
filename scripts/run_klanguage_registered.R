@@ -12,8 +12,9 @@
 #            random-effects meta-analysis with Language as the random effect, a
 #            normal(0, P) prior on the mean across languages (so each hypothesis is
 #            the half-normal on its predicted side) and a half-normal(0, 0.5) prior
-#            on the between-language SD, tau. H1 and H2 are directional Bayes factors
-#            on that mean.
+#            on the between-language SD, tau. H1 and H2 are tested on that mean, with
+#            a directional Bayes factor until 2 November 2026 and a one-sided Bayes
+#            factor against a zero mean since (--test=onesided, below).
 #
 # Both stages are two_stage_p_negative() in R/13_simulate_klanguage_pooled.R. The
 # simulated studies are those of the reported 20-language cells, drawn by the
@@ -66,6 +67,18 @@
 # "_languages", "_bands"), so the registered tables are never overwritten. A study
 # whose cell was reported is checked against it; the others say that no check exists.
 #
+# On 2 November 2026 the PI replaced the directional Bayes factor (a negative mean
+# against a positive one) with a one-sided Bayes factor against a zero mean, and set
+# the minimum at 25 languages (docs/preregistration_decisions.md, section 8, amendment
+# of 2026-11-02). --test=onesided analyses the same studies with that Bayes factor
+# (two_stage_log_bf_null() in R/13_simulate_klanguage_pooled.R) and adds "_onesided" to
+# the table's name; the default, --test=directional, reproduces the tables reported
+# until then. --mode=null draws every language from a population with a mean of zero
+# and the estimated between-language SD, for the rates of misleading evidence, and
+# needs --known=none. --k can be combined with --n-verbs and --se-scale, so that those
+# checks can run at 25 languages; include 20 in --k to keep the check against the
+# reported cells.
+#
 # Inputs: outputs/design_summary_pilot/{cross_language_effects_harmonised,
 #   pilot_params_ceilings,klanguage_known7,klanguage_pseudo_passive}.csv,
 #   config/prior_grid.yaml and the pilot posteriors in outputs/pilot_models
@@ -74,13 +87,13 @@
 #   config/stage2_languages.csv.
 # Output: klanguage_registered.csv in --outdir, or klanguage_registered_se_scaled.csv
 #   when the SEs are widened, or klanguage_registered_verbs.csv for other verb counts,
-#   each with the words above and "_none_known" or "_recruited_known" added, and a run
-#   log. Writing into outputs/design_summary_pilot replaces the reported table, so it
+#   each with the words above, "_none_known" or "_recruited_known" and "_onesided" added,
+#   and a run log. Writing into outputs/design_summary_pilot replaces the reported table, so it
 #   needs --overwrite-reported, and the log then goes to outputs/logs.
 # Run from design_analysis/:
 #   Rscript scripts/run_klanguage_registered.R --outdir=DIR [--reps=4000]
-#     [--se-scale=calibrated | --n-verbs=72,48,36 | --k=20,25,30] [--mode=point]
-#     [--bf-bands] [--known=none | --known=recruited] [--log=FILE]
+#     [--se-scale=calibrated | --n-verbs=72,48,36] [--k=20,25,30] [--mode=point | --mode=null]
+#     [--bf-bands] [--known=none | --known=recruited] [--test=onesided] [--log=FILE]
 # ---------------------------------------------------------------------------
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -118,11 +131,15 @@ if (!length(K_LIST) || anyNA(K_LIST) || any(K_LIST < 2L) || anyDuplicated(K_LIST
   stop("--k must list distinct whole numbers of at least 2")
 }
 K_RUN <- !identical(K_LIST, 20L)
-if (K_RUN && (VERBS_RUN || SE_SCALE != 1)) stop("--k cannot be combined with --n-verbs or --se-scale")
-# How each study's population mean and SD are set: drawn ("assurance") for the registered table.
+# How each study's population mean and SD are set: drawn ("assurance") for the registered
+# table, held at the estimates ("point"), or a mean of zero with the estimated SD ("null").
 MODE <- aval("--mode", "assurance")
-if (!MODE %in% c("assurance", "point")) stop("--mode must be 'assurance' or 'point'")
+if (!MODE %in% c("assurance", "point", "null")) stop("--mode must be 'assurance', 'point' or 'null'")
 BANDS <- "--bf-bands" %in% args
+# The Bayes factor: directional (a negative mean against a positive one) for the tables
+# reported until 2 November 2026, or one-sided against a zero mean, as registered since.
+TEST <- aval("--test", "directional")
+if (!TEST %in% c("directional", "onesided")) stop("--test must be 'directional' or 'onesided'")
 OUT_NAME <- if (VERBS_RUN) {
   "klanguage_registered_verbs"
 } else if (SE_SCALE == 1) {
@@ -131,7 +148,7 @@ OUT_NAME <- if (VERBS_RUN) {
   "klanguage_registered_se_scaled"
 }
 if (K_RUN) OUT_NAME <- paste0(OUT_NAME, "_languages")
-if (MODE == "point") OUT_NAME <- paste0(OUT_NAME, "_point")
+if (MODE != "assurance") OUT_NAME <- paste0(OUT_NAME, "_", MODE)
 if (BANDS) OUT_NAME <- paste0(OUT_NAME, "_bands")
 # Whether the measured languages take part: "measured" for the registered table.
 KNOWN <- aval("--known", "measured")
@@ -139,7 +156,10 @@ if (!KNOWN %in% c("measured", "none", "recruited")) {
   stop("--known must be 'measured', 'none' or 'recruited'")
 }
 NONE_KNOWN <- KNOWN == "none"
+# With no effect there is nothing for a measured language to bring, so every place is new.
+if (MODE == "null" && !NONE_KNOWN) stop("--mode=null needs --known=none")
 if (KNOWN != "measured") OUT_NAME <- paste0(OUT_NAME, "_", KNOWN, "_known")
+if (TEST == "onesided") OUT_NAME <- paste0(OUT_NAME, "_onesided")
 RECRUITED_TABLE <- "config/stage2_languages.csv"
 
 source("R/13_simulate_klanguage_pooled.R")
@@ -153,13 +173,16 @@ INPUTS <- c(file.path(IN, c("cross_language_effects_harmonised.csv", "pilot_para
             if (KNOWN == "recruited") RECRUITED_TABLE)
 log_con <- start_run_log(LOG, INPUTS, replicates = REPS, se_scale = SE_SCALE,
                          n_verbs = paste(N_VERBS, collapse = ","), known = KNOWN,
-                         k = paste(K_LIST, collapse = ","), mode = MODE, bf_bands = BANDS, out = OUT)
+                         k = paste(K_LIST, collapse = ","), mode = MODE, bf_bands = BANDS, test = TEST,
+                         out = OUT)
 
 H  <- read.csv(file.path(IN, "cross_language_effects_harmonised.csv"))
 PP <- read.csv(file.path(IN, "pilot_params_ceilings.csv"))
 
-# The planned number of languages, from the PI's count of 6 October 2026: at least 20,
-# 15 of them with a pseudo-passive. The report checks that this table carries the same K.
+# The number of languages of the registered cells, from the PI's count of 6 October
+# 2026: at least 20, 15 of them with a pseudo-passive. The checks against the reported
+# cells use it, and it is the default --k. Since 2 November 2026 the minimum is 25, which
+# the one-sided tables run with --k.
 K_PLAN <- 20L
 K_PLAN_PP <- 15L
 # The H2 count for any number of languages: three quarters with a pseudo-passive, the
@@ -297,17 +320,31 @@ ref1 <- read.csv(file.path(IN, "klanguage_known7.csv"))
 variant_rows <- function(Y0, sp0, variants, draw, lead, prior_sd) {
   do.call(rbind, lapply(variants, function(v) {
     Y <- if (identical(v$sp, sp0)) Y0 else draw(v$sp)
-    p <- two_stage_p_negative(Y, sqrt(v$sp$indep^2 + v$sp$shared^2), prior_sd)
-    row <- cbind(lead, detection_rate(p))
+    se_total <- sqrt(v$sp$indep^2 + v$sp$shared^2)
+    if (TEST == "onesided") {
+      lb <- two_stage_log_bf_null(Y, se_total, prior_sd)
+      row <- cbind(lead, detection_rate_log_bf(lb))
+      low <- lb <= log(1 / 10)
+      mid <- lb > log(1 / 10) & lb < log(10)
+    } else {
+      p <- two_stage_p_negative(Y, se_total, prior_sd)
+      row <- cbind(lead, detection_rate(p))
+      bf <- bf_from_p_negative(p)
+      low <- bf <= 1 / 10
+      mid <- bf > 1 / 10 & bf < 10
+    }
     if (VERBS_RUN) row$n_verbs <- v$n_verbs
     if (BANDS) {
-      bf <- bf_from_p_negative(p)
-      row$p_bf_low <- mean(bf <= 1 / 10)
-      row$p_inconclusive <- mean(bf > 1 / 10 & bf < 10)
+      row$p_bf_low <- mean(low)
+      row$p_inconclusive <- mean(mid)
     }
     row
   }))
 }
+
+#' The mode and point values a study set is drawn with: a zero mean for "null".
+draw_mode <- function() if (MODE == "null") "point" else MODE
+mu_for <- function(pv) if (MODE == "null") 0 else pv$mu
 
 variants1 <- se_variants(SE_VERB, SE_PPT1)
 known1 <- take_part(P1$seven)
@@ -323,7 +360,7 @@ h1_cell <- function(K, pn) {
     simulate_partly_known_estimates(K, known1, REPS, sp$indep, pop = P1[[pn]],
                                     shared_verb_sd = sp$shared,
                                     transfer_sd = transfer_sd_by_source(known1, tsd),
-                                    mode = MODE, mu_point = pv$mu, tau_point = pv$tau,
+                                    mode = draw_mode(), mu_point = mu_for(pv), tau_point = pv$tau,
                                     seed = 7000L + K)$Y
   }
   Y0 <- draw(sp1)
@@ -401,7 +438,7 @@ h2_cell <- function(kp, pn) {
     simulate_partly_known_estimates(kp, known2, REPS, sp$indep, pop = P2[[pn]],
                                     shared_verb_sd = sp$shared,
                                     transfer_sd = transfer_sd_by_source(known2, tsd2),
-                                    mode = MODE, mu_point = pv$mu, tau_point = pv$tau,
+                                    mode = draw_mode(), mu_point = mu_for(pv), tau_point = pv$tau,
                                     seed = 8000L + kp)$Y
   }
   Y0 <- draw(sp2)
@@ -427,7 +464,8 @@ h2 <- do.call(rbind, lapply(k_pp(K_LIST), function(kp) do.call(rbind, lapply(nam
 out <- rbind(h1, h2)
 # The registered table keeps its columns; a widened run records its factor.
 if (SE_SCALE != 1) out$se_scale <- SE_SCALE
-if (MODE == "point") out$mode <- MODE
+if (MODE != "assurance") out$mode <- MODE
+if (TEST == "onesided") out$test <- TEST
 if (KNOWN != "measured") out$known <- KNOWN
 if (KNOWN == "recruited") out$n_known <- ifelse(out$hypothesis == "H1", nrow(known1), nrow(known2))
 print(out, row.names = FALSE, digits = 3)

@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # stage2/01_check_and_exclude.R
 # ---------------------------------------------------------------------------
-# Stage 2, step 1 of 6: check the teams' data and apply the registered exclusions.
+# Stage 2, step 1 of 5: check the teams' data and apply the registered exclusions.
 #
 # Reads every *acceptability*.csv and *ratings*.csv file in the raw directory (the
 # canonical format described in stage2/README.md), checks them, applies the three

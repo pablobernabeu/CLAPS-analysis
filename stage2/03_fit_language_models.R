@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # stage2/03_fit_language_models.R
 # ---------------------------------------------------------------------------
-# Stage 2, step 3 of 6: the individual-language models.
+# Stage 2, step 3 of 5: the individual-language models.
 #
 # Fits each variety's cumulative-logit model by the registered ladder (R/09, starting
 # at the maximal model of the Stage 1 report), with the primary priors, the
