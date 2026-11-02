@@ -3,7 +3,7 @@
 CLAPS (A Crosslinguistic Approach to Passive Semantics) asks whether the acceptability of
 passive sentences tracks how strongly the event affects the person it happens to, more than
 the acceptability of actives and pseudo-passives does, and whether this holds across languages.
-Teams in at least 20 languages will each collect acceptability judgments from 80 participants
+Teams in at least 25 languages will each collect acceptability judgments from 80 participants
 and affectedness ratings from 20 more. This repository holds the analysis registered in the
 Stage 1 Registered Report, the design analysis behind its sampling plan, and the report of
 that design analysis.
@@ -21,13 +21,14 @@ that design analysis.
 
 Each language is analysed with a Bayesian cumulative-logit mixed-effects model, and the
 per-language estimates are combined in a Bayesian random-effects meta-analysis. Each hypothesis
-is decided by a directional Bayes factor: 10 or more is strong evidence for it, 1/10 or less
-strong evidence that the interaction runs the other way, and anything in between is
-inconclusive. In the code and output files, H1 and H2 carry the labels `h1b` and `h2b`.
+is decided by a one-sided Bayes factor against the null that the mean across languages is
+zero: 10 or more is strong evidence for it, 1/10 or less strong evidence for no effect, and
+anything in between is inconclusive. In the code and output files, H1 and H2 carry the labels
+`h1b` and `h2b`.
 
 ## The registered analysis
 
-`stage2/` holds the confirmatory analysis as six numbered scripts, run in this order from the
+`stage2/` holds the confirmatory analysis as five numbered scripts, run in this order from the
 repository root:
 
 | Order | Script | What it does |
@@ -37,7 +38,6 @@ repository root:
 | 3 | `stage2/03_fit_language_models.R` | Fits each language's model by the registered ladder |
 | 4 | `stage2/04_meta_analysis.R` | Tests H1 and H2 |
 | 5 | `stage2/05_robustness_single_model.R` | Robustness check: a single model across languages |
-| 6 | `stage2/06_robustness_families.R` | Robustness check: languages nested within families |
 
 `stage2/README.md` describes the input format, the decisions each step makes and the cluster
 scripts, and `stage2/dry_run/` runs every step end to end on simulated data. The functions are
@@ -46,13 +46,16 @@ are in the `stage2` block of `config/analysis_config.yaml`.
 
 ## The design analysis
 
-With 20 languages, 15 of them with a pseudo-passive, and 80 participants per language, the
-registered test reaches a directional Bayes factor of 10 in 88% of simulated studies for H1 and
-89% for H2 (`outputs/design_summary_pilot/klanguage_registered.csv`, from
-`scripts/run_klanguage_registered.R`). These rates take the spread of the effect between
-languages from the seven languages measured so far: the three CLAPS pilots (English, Norwegian
-and Turkish) and the four further languages of Ambridge, Arnon and Bekman (2023). The spread is
-what limits the test, and the report gives the rates under other plausible spreads.
+With 25 languages, 19 of them with a pseudo-passive, and 80 participants per language, the
+registered test reaches a Bayes factor of 10 in 82% of simulated studies for H1 and 91% for H2
+at the estimated effect sizes, rising to 96% and 99% with 40 languages
+(`outputs/design_summary_pilot/klanguage_registered_languages_point_bands_none_known_onesided.csv`,
+from `scripts/run_klanguage_registered.R --test=onesided --known=none --mode=point`). The
+simulations draw every language from a population whose mean and between-language spread are
+estimated from the seven languages measured so far: the three CLAPS pilots (English, Norwegian
+and Turkish) and the four further languages of Ambridge, Arnon and Bekman (2023). The report
+also gives the rates allowing for uncertainty about that mean and spread, and the rate of
+misleading evidence when there is no effect.
 
 ## The report
 
