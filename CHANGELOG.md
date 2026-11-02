@@ -72,9 +72,8 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   languages with a team in `config/stage2_languages.csv` take part, all but Balinese for
   H1 and English, Turkish, Indonesian and Mandarin for H2, and
   `klanguage_registered_recruited_known.csv` from it: H1 90.65% [89.7, 91.5] and H2
-  86.5% [85.4, 87.5]. Both reproduce exactly the check behind the reply of 16 October
-  (`reports/correspondence_checks/no_balinese.R`), and the default and `--known=none`
-  tables are byte-identical (2026-10-28).
+  86.5% [85.4, 87.5]. Both reproduce exactly an earlier one-off check, and the default
+  and `--known=none` tables are byte-identical (2026-10-28).
 - Three columns in `glossa_tau_refit_summary.csv`, from
   `scripts/summarise_glossa_tau_refit.R`: the share of each verb term's variance common
   to all languages in the refit's verb-split arms, 0.16 (M1) and 0.18 (M2) for the
@@ -94,8 +93,7 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
   amendment of 2026-11-02): at the estimated effect, with 25 languages, H1 81.7% [80.4,
   82.9] and H2 90.6% [89.6, 91.4] with 19, rising to 96.3% and 98.8% with 40 and 30;
   67.8% and 71.6% allowing for uncertainty; with no effect, a Bayes factor of 10 in 1.0%
-  and 0.85%. They reproduce exactly the check behind the replies of 2 November
-  (`reports/correspondence_checks/onesided_vs_null.R`) (2026-11-02).
+  and 0.85%. They reproduce exactly an earlier one-off check (2026-11-02).
 
 ### Changed
 
