@@ -34,10 +34,10 @@
 #   No brms, no Stan, no cluster.
 #
 # USAGE
-#   Rscript scripts/extract_cross_language_effects.R [--osf=<dir>] [--claps=<dir>] [--out=<dir>]
+#   Rscript scripts/extract_cross_language_effects.R --osf=<dir> [--claps=<dir>] [--out=<dir>]
 #   --claps  the design_analysis/ directory; by default the one this script sits in
-#   --osf    the unpacked Sub2_OSF_Passives archive of Ambridge, Arnon & Bekman (2023);
-#            by default the copy kept beside design_analysis/ in the private repository
+#   --osf    the unpacked Sub2_OSF_Passives archive of Ambridge, Arnon & Bekman (2023),
+#            from its OSF deposit; there is no default, so pass it or set CLAPS_OSF_DIR
 #   --out    by default <claps>/outputs/design_summary_pilot
 # ---------------------------------------------------------------------------
 
@@ -80,7 +80,12 @@ script_dir <- function() {
 }
 CLAPS <- argval("--claps", NA_character_)
 if (is.na(CLAPS)) CLAPS <- dirname(script_dir())
-OSF   <- argval("--osf",   file.path(dirname(CLAPS), "PRIVATE_background", "Sub2_OSF_Passives"))
+# The archive is kept outside both repositories, so it has no default here: a default
+# would publish the layout of a private folder.
+OSF   <- argval("--osf",   Sys.getenv("CLAPS_OSF_DIR", NA_character_))
+if (is.na(OSF) || !nzchar(OSF)) {
+  stop("[paths] pass --osf=<unpacked Sub2_OSF_Passives archive> or set CLAPS_OSF_DIR")
+}
 OUT   <- argval("--out",   file.path(CLAPS, "outputs/design_summary_pilot"))
 
 for (p in c(OSF, CLAPS)) {

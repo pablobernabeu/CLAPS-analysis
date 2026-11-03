@@ -170,6 +170,11 @@ repeat it. The format follows [Keep a Changelog](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- `scripts/extract_cross_language_effects.R` no longer defaults `--osf` to a folder of
+  the private repository. The archive of Ambridge, Arnon and Bekman (2023) must now be
+  given with `--osf` or `CLAPS_OSF_DIR`, and the script stops with a message when it is
+  not (audit items klanguage-data#7 and x-structure-deadcode-outputs#4). No output
+  changes (2026-11-03).
 - The derivation given for the verb correlation now reproduces the value in use and says
   which input was not recorded (`RHO_EFF_VERB`, audit item 8OCT-3). The value is unchanged
   (2026-10-09).
