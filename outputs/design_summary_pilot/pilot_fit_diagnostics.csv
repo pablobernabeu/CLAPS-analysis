@@ -1,0 +1,4 @@
+"language","n_obs","n_verbs","n_params","n_chains","n_iter","n_warmup","max_rhat","min_ess_bulk","min_ess_tail","n_divergent","n_max_treedepth","convergence_ok"
+"English",30240,72,44,4,3000,1000,1.0103,376,556.8,0,0,FALSE
+"Norwegian",15048,66,28,4,3000,1000,1.0118,402.3,818.4,0,0,FALSE
+"Turkish",30240,72,44,4,3000,1000,1.0506,111.1,281.1,0,0,FALSE

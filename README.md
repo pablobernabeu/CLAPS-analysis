@@ -74,6 +74,16 @@ The rebuild should reproduce the content, tables and pagination of the committed
 byte for byte: the source carries the render date, TeX records creation metadata, and the public
 build embeds the raster of Figure 1 where the private build draws it from the pilot ratings.
 
+## The Supplementary Information
+
+`reports/CLAPS_supplementary_information.pdf` is the Supplementary Information of the Stage 1
+Registered Report. It reports the English, Norwegian and Turkish pilot studies in full: their
+recruitment and exclusions, measures and descriptive statistics, and the individual-language
+model fitted to each language, with its convergence and its estimates of the two interactions.
+Its source reads the pilot data, so only the PDF is included. The model summaries behind its
+tables are in `outputs/design_summary_pilot/pilot_fit_parameters.csv` and
+`outputs/design_summary_pilot/pilot_fit_diagnostics.csv`.
+
 ## Repository structure
 
 ```
@@ -82,7 +92,7 @@ R/         Analysis modules (model formulas, priors, ladder, meta-analysis, ...)
 scripts/   Runnable scripts of the design analysis (fitting, simulation, aggregation, ...)
 hpc/       SLURM batch and array scripts (University of Oxford ARC)
 config/    YAML and CSV configuration, including the design grids and the language table
-reports/   Report source, rendered PDF and citation style
+reports/   Report source and PDF, Supplementary Information PDF, citation style
 outputs/   Aggregated design-analysis results (CSV)
 tests/     Unit tests
 docs/      Pipeline, submission and preregistration documentation
